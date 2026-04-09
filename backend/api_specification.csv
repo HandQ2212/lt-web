@@ -1,0 +1,39 @@
+Module,Method,Endpoint,Input DTO,Output DTO,Assignee,Description
+Auth,POST,/api/auth/login,LoginRequest,UserResponse,Dev 1,Xác thực người dùng và trả về JWT
+Auth,POST,/api/auth/register,RegisterRequest,UserResponse,Dev 1,Đăng ký tài khoản học viên mới
+Auth,GET,/api/auth/me,None,UserResponse,Dev 1,Lấy thông tin người dùng đang đăng nhập
+Auth,GET,/api/users,None,List<UserResponse>,Dev 1,(Admin) Liệt kê toàn bộ người dùng
+CRM,GET,/api/leads,None,List<LeadResponse>,Dev 2,Danh sách Leads với bộ lọc status/nguồn
+CRM,POST,/api/leads,LeadRequest,LeadResponse,Dev 2,Tạo khách hàng tiềm năng mới
+CRM,GET,/api/leads/{id},None,LeadResponse,Dev 2,Lấy chi tiết thông tin Lead
+CRM,PUT,/api/leads/{id},LeadRequest,LeadResponse,Dev 2,Cập nhật thông tin Lead
+CRM,GET,/api/consultations,None,List<ConsultationResponse>,Dev 2,Danh sách nhật ký tư vấn
+CRM,POST,/api/consultations,ConsultationRequest,ConsultationResponse,Dev 2,Ghi nhật ký tư vấn mới
+SMS,GET,/api/branches,None,List<BranchResponse>,Dev 2,Danh sách các chi nhánh trung tâm
+SMS,GET,/api/courses,None,List<CourseResponse>,Dev 2,Xem danh mục khóa học
+SMS,POST,/api/courses,CourseRequest,CourseResponse,Dev 2,(Admin) Tạo khóa học mới
+SMS,GET,/api/rooms,None,List<RoomResponse>,Dev 2,Kiểm tra tình trạng và sức chứa phòng học
+SMS,GET,/api/classes,None,List<ClassResponse>,Dev 3,Danh sách các lớp học
+SMS,POST,/api/classes,ClassRequest,ClassResponse,Dev 3,(Staff) Tạo lớp học mới
+Finance,GET,/api/invoices,None,List<InvoiceResponse>,Dev 4,Danh sách hóa đơn
+Finance,GET,/api/invoices/debt,None,List<InvoiceResponse>,Dev 4,Danh sách học viên đang nợ học phí
+Finance,POST,/api/invoices/{id}/refund,RefundRequest,InvoiceResponse,Dev 4,Xử lý hoàn tiền cho hóa đơn
+Finance,POST,/api/transactions,TransactionRequest,TransactionResponse,Dev 4,Ghi nhận giao dịch thanh toán
+Finance,GET,/api/expenses,None,List<ExpenseResponse>,Dev 4,Danh sách các khoản chi (Điện/nước/mặt bằng)
+Finance,POST,/api/expenses,ExpenseRequest,ExpenseResponse,Dev 4,Tạo phiếu chi mới
+Finance,GET,/api/promotions,None,List<PromotionResponse>,Dev 4,Danh sách các chương trình khuyến mãi
+Reporting,GET,/api/reports/revenue,None,RevenueReportDTO,Dev 4,Báo cáo doanh thu tổng hợp
+Reporting,GET,/api/reports/expenses,None,ExpenseReportDTO,Dev 4,Báo cáo chi phí tổng hợp
+Reporting,GET,/api/reports/profit-loss,None,PLReportDTO,Dev 4,Báo cáo Lợi nhuận & Thua lỗ (P&L)
+Reporting,GET,/api/reports/conversion,None,ConversionReportDTO,Dev 4,Báo cáo tỷ lệ chuyển đổi Lead -> Student
+Reporting,GET,/api/reports/top-courses,None,List<CourseReportDTO>,Dev 4,Thống kê các khóa học hiệu quả nhất
+Reporting,GET,/api/reports/churn-rate,None,ChurnReportDTO,Dev 4,Báo cáo tỷ lệ học viên nghỉ học
+LMS,GET,/api/enrollments,None,List<EnrollmentResponse>,Dev 3,Thông tin ghi danh của học viên
+LMS,POST,/api/enrollments,EnrollmentRequest,EnrollmentResponse,Dev 3,Ghi danh học viên vào lớp học
+LMS,GET,/api/attendance,None,List<AttendanceResponse>,Dev 3,Lịch sử điểm danh của học viên
+LMS,POST,/api/attendance,AttendanceRequest,AttendanceResponse,Dev 3,Thực hiện điểm danh lớp học
+LMS,GET,/api/assignments,None,List<AssignmentResponse>,Dev 3,Danh sách bài tập của lớp học
+LMS,POST,/api/submissions,SubmissionRequest,SubmissionResponse,Dev 3,Nộp bài làm bài tập
+Notification,GET,/api/announcements,None,List<AnnouncementResponse>,Dev 1,Lấy các thông báo chung từ trung tâm
+Notification,GET,/api/notifications,None,List<NotificationResponse>,Dev 1,Lấy thông báo cá nhân của User
+Notification,PATCH,/api/notifications/{id}/read,None,NotificationResponse,Dev 1,Đánh dấu thông báo đã đọc
