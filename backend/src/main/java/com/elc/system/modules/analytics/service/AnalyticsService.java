@@ -16,6 +16,7 @@ import com.elc.system.modules.sms.entity.Branch;
 import com.elc.system.modules.sms.repository.BranchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class AnalyticsService {
 
@@ -153,17 +155,26 @@ public class AnalyticsService {
     private BranchAnalyticsDto calculateBranchMetrics(Branch branch) {
         UUID branchId = branch.getId();
 
-        long totalLeads = leadRepository.count(); // Simplified: assuming all leads are branch-agnostic for now or adding filter if needed
-        long totalStudents = enrollmentRepository.findAll().stream()
-                .filter(e -> e.getClazz().getBranch().getId().equals(branchId))
-                .count();
+        // Count leads – simplified (leads don't currently have branchId FK)
+        long totalLeads = leadRepository.count();
+
+        // Count students enrolled in classes belonging to this branch
+        // Uses branchId directly from Clazz — avoids lazy loading Clazz.branch proxy
+        long totalStudents = clazzRepository.findByBranchId(branchId).stream()
+                .mapToLong(c -> enrollmentRepository.findByClazzId(c.getId()).size())
+                .sum();
 
         long activeClasses = clazzRepository.findByBranchId(branchId).stream()
                 .filter(c -> c.getStatus() == ClassStatus.ONGOING)
                 .count();
 
-        BigDecimal totalRevenue = paymentRepository.findAll().stream()
-                .filter(p -> p.getInvoice().getEnrollment().getClazz().getBranch().getId().equals(branchId))
+        // Revenue: sum all payments for invoices whose enrollment belongs to a class in this branch
+        BigDecimal totalRevenue = clazzRepository.findByBranchId(branchId).stream()
+                .flatMap(c -> enrollmentRepository.findByClazzId(c.getId()).stream())
+                .flatMap(e -> paymentRepository.findAll().stream()
+                        .filter(p -> p.getInvoice() != null
+                                && p.getInvoice().getEnrollment() != null
+                                && e.getId().equals(p.getInvoice().getEnrollment().getId())))
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
