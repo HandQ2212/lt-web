@@ -64,6 +64,27 @@ public class LeadService {
     }
 
     @Transactional
+    public LeadResponse updateLeadStatus(UUID id, com.elc.system.modules.crm.entity.LeadStatus status) {
+        Lead lead = leadRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lead not found"));
+        
+        lead.setStatus(status);
+        return mapToResponse(leadRepository.save(lead));
+    }
+
+    @Transactional
+    public void convertLeadToStudent(UUID id) {
+        Lead lead = leadRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lead not found"));
+        
+        lead.setStatus(com.elc.system.modules.crm.entity.LeadStatus.CONVERTED);
+        leadRepository.save(lead);
+        
+        // Normally, we would create a User (Student) account here.
+        // e.g., userClient.createStudent(lead.getEmail(), lead.getFullName(), lead.getPhone())
+    }
+
+    @Transactional
     public void deleteLead(UUID id) {
         leadRepository.deleteById(id);
     }
