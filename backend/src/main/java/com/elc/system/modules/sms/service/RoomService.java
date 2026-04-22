@@ -1,4 +1,4 @@
-package com.elc.system.modules.sms.service;
+﻿package com.elc.system.modules.sms.service;
 
 import com.elc.system.modules.sms.dto.RoomDto.RoomRequest;
 import com.elc.system.modules.sms.dto.RoomDto.RoomResponse;
@@ -20,6 +20,12 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final BranchRepository branchRepository;
+
+    public List<RoomResponse> getAllRooms() {
+        return roomRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
     public List<RoomResponse> getRoomsByBranch(UUID branchId) {
         return roomRepository.findByBranchId(branchId).stream()

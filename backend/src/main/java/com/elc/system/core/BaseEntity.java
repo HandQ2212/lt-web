@@ -1,4 +1,4 @@
-package com.elc.system.core;
+﻿package com.elc.system.core;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
@@ -16,6 +16,8 @@ import java.util.UUID;
 @Getter
 @Setter
 @MappedSuperclass
+@lombok.experimental.SuperBuilder
+@lombok.NoArgsConstructor
 public abstract class BaseEntity {
 
     @Id

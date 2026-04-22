@@ -1,4 +1,4 @@
-package com.elc.system.modules.sms.controller;
+﻿package com.elc.system.modules.sms.controller;
 
 import com.elc.system.modules.sms.dto.RoomDto.RoomRequest;
 import com.elc.system.modules.sms.dto.RoomDto.RoomResponse;
@@ -17,6 +17,11 @@ import java.util.UUID;
 public class RoomController {
 
     private final RoomService roomService;
+
+    @GetMapping
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        return ResponseEntity.ok(roomService.getAllRooms());
+    }
 
     @GetMapping("/branch/{branchId}")
     public ResponseEntity<List<RoomResponse>> getRoomsByBranch(@PathVariable UUID branchId) {
