@@ -2,6 +2,7 @@ package com.elc.system.modules.analytics.controller;
 
 import com.elc.system.modules.analytics.dto.AcademicAnalyticsDto;
 import com.elc.system.modules.analytics.dto.BranchAnalyticsDto;
+import com.elc.system.modules.analytics.dto.DashboardDto;
 import com.elc.system.modules.analytics.dto.RevenueAnalyticsDto;
 import com.elc.system.modules.analytics.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -32,5 +33,10 @@ public class AnalyticsController {
     @GetMapping("/academic")
     public ResponseEntity<AcademicAnalyticsDto> getAcademicReport() {
         return ResponseEntity.ok(analyticsService.getAcademicReport());
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardDto> getDashboardOverview() {
+        return ResponseEntity.ok(analyticsService.getDashboardOverview());
     }
 }

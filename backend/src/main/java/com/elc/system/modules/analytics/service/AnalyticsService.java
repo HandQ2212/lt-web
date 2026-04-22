@@ -2,6 +2,7 @@ package com.elc.system.modules.analytics.service;
 
 import com.elc.system.modules.analytics.dto.AcademicAnalyticsDto;
 import com.elc.system.modules.analytics.dto.BranchAnalyticsDto;
+import com.elc.system.modules.analytics.dto.DashboardDto;
 import com.elc.system.modules.analytics.dto.RevenueAnalyticsDto;
 import com.elc.system.modules.crm.repository.LeadRepository;
 import com.elc.system.modules.finance.entity.Invoice;
@@ -35,10 +36,46 @@ public class AnalyticsService {
     private final InvoiceRepository invoiceRepository;
     private final com.elc.system.modules.lms.repository.CourseResultRepository courseResultRepository;
 
+    private final com.elc.system.modules.auth.repository.UserRepository userRepository;
+    private final com.elc.system.modules.lms.repository.AttendanceRepository attendanceRepository;
+
     public List<BranchAnalyticsDto> getBranchPerformance() {
         return branchRepository.findAll().stream()
                 .map(this::calculateBranchMetrics)
                 .collect(Collectors.toList());
+    }
+
+    public DashboardDto getDashboardOverview() {
+        long totalStudents = enrollmentRepository.count();
+        long totalLeads = leadRepository.count();
+        long totalClasses = clazzRepository.count();
+        long totalTeachers = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == com.elc.system.modules.auth.entity.UserRole.TEACHER)
+                .count();
+
+        BigDecimal totalRevenue = paymentRepository.findAll().stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalInvoiced = invoiceRepository.findAll().stream()
+                .map(Invoice::getFinalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal outstandingBalance = totalInvoiced.subtract(totalRevenue);
+
+        List<com.elc.system.modules.lms.entity.Attendance> allAttendance = attendanceRepository.findAll();
+        double avgAttendance = allAttendance.isEmpty() ? 0.0 : 
+                (double) allAttendance.stream().filter(com.elc.system.modules.lms.entity.Attendance::isPresent).count() / allAttendance.size();
+
+        return DashboardDto.builder()
+                .totalStudents(totalStudents)
+                .totalLeads(totalLeads)
+                .totalTeachers(totalTeachers)
+                .totalClasses(totalClasses)
+                .totalRevenue(totalRevenue)
+                .outstandingBalance(outstandingBalance)
+                .averageAttendanceRate(avgAttendance)
+                .build();
     }
 
     public AcademicAnalyticsDto getAcademicReport() {
