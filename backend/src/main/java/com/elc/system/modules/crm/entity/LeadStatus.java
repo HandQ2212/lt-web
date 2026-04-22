@@ -6,5 +6,6 @@ public enum LeadStatus {
     CONSULTED,
     TESTED,
     ENROLLED,
+    CONVERTED,
     LOST
 }

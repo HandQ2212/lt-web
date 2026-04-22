@@ -3,6 +3,7 @@ package com.elc.system.modules.sms.entity;
 import com.elc.system.core.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Entity representing a classroom in a branch.
@@ -14,7 +15,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Room extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

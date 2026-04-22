@@ -7,6 +7,7 @@ import com.elc.system.modules.sms.entity.Course;
 import com.elc.system.modules.sms.entity.Room;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
@@ -20,7 +21,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Clazz extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

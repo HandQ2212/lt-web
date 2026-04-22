@@ -4,6 +4,7 @@ import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.lms.entity.Enrollment;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Invoice extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

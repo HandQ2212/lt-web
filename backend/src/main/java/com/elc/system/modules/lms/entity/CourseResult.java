@@ -3,6 +3,7 @@ package com.elc.system.modules.lms.entity;
 import com.elc.system.core.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
@@ -16,7 +17,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class CourseResult extends BaseEntity {
 
     @OneToOne(fetch = FetchType.LAZY)

@@ -16,6 +16,8 @@ import java.util.UUID;
 @Getter
 @Setter
 @MappedSuperclass
+@lombok.experimental.SuperBuilder
+@lombok.NoArgsConstructor
 public abstract class BaseEntity {
 
     @Id

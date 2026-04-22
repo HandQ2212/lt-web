@@ -3,6 +3,7 @@ package com.elc.system.modules.finance.entity;
 import com.elc.system.core.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
@@ -17,7 +18,7 @@ import java.time.ZonedDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Payment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

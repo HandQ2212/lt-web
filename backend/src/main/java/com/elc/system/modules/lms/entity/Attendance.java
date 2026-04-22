@@ -3,6 +3,7 @@ package com.elc.system.modules.lms.entity;
 import com.elc.system.core.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
@@ -18,7 +19,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Attendance extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

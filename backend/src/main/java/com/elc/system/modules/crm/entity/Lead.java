@@ -4,6 +4,7 @@ import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.sms.entity.CourseLevel;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Lead extends BaseEntity {
 
     @Column(name = "full_name", nullable = false)

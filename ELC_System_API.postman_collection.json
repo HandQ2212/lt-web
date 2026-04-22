@@ -1,13 +1,13 @@
 {
 	"info": {
 		"_postman_id": "e553603b-944c-405d-bfff-fba8d390aebd",
-		"name": "ELC System API Testing - Full Suite",
-		"description": "Bộ sưu tập API kiểm thử tích hợp toàn diện 100% (Auth, CRM, SMS, LMS, Finance, Analytics) theo đặc tả API_SPECIFICATION.md",
+		"name": "ELC System API Testing - v2 Specification",
+		"description": "Bộ API đầy đủ 8 Module (Auth, Users, SMS, LMS, CRM, Finance, Notifications, Reports) dựa trên API_SPECIFICATION.md v2",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "01. Auth",
+			"name": "1. Authentication & Profile",
 			"item": [
 				{
 					"name": "Login",
@@ -19,7 +19,9 @@
 									"var jsonData = pm.response.json();",
 									"if (jsonData.accessToken) {",
 									"    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
-									"    console.log(\"Access Token has been saved to collection variables.\");",
+									"}",
+									"if (jsonData.refreshToken) {",
+									"    pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -32,246 +34,180 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"admin@elc.com\",\n    \"password\": \"password123\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"options": {"raw": {"language": "json"}}
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]}
+					}
 				},
 				{
-					"name": "Get Profile",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/auth/profile",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"profile"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Change Password",
+					"name": "Register",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"oldPassword\": \"password123\",\n    \"newPassword\": \"newpassword123\",\n    \"confirmPassword\": \"newpassword123\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"email\": \"newstudent@elc.com\",\n    \"password\": \"password123\",\n    \"fullName\": \"New Student\"\n}",
+							"options": {"raw": {"language": "json"}}
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/change-password",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"change-password"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"]}
+					}
 				},
 				{
 					"name": "Logout",
 					"request": {
 						"method": "POST",
 						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/auth/logout",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"logout"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "02. CRM",
-			"item": [
-				{
-					"name": "Get All Leads",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/leads",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"leads"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"]}
+					}
 				},
 				{
-					"name": "Create Lead",
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh?refreshToken={{refreshToken}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"],
+							"query": [{"key": "refreshToken", "value": "{{refreshToken}}"}]
+						}
+					}
+				},
+				{
+					"name": "Forgot Password",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"fullName\": \"Nguyen Van B\",\n    \"email\": \"vanb@gmail.com\",\n    \"phone\": \"0912345678\",\n    \"preferredLevel\": \"BEGINNER\",\n    \"source\": \"WEBSITE_FORM\",\n    \"notes\": \"Interested in IELTS course\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"email\": \"admin@elc.com\"\n}",
+							"options": {"raw": {"language": "json"}}
 						},
-						"url": {
-							"raw": "{{baseUrl}}/leads",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"leads"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"]}
+					}
 				},
 				{
-					"name": "Update Lead",
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"sample-reset-token\",\n    \"newPassword\": \"newpass123\",\n    \"confirmPassword\": \"newpass123\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"]}
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/profile", "host": ["{{baseUrl}}"], "path": ["profile"]}
+					}
+				},
+				{
+					"name": "Update Profile",
 					"request": {
 						"method": "PUT",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"fullName\": \"Nguyen Van B Updated\",\n    \"email\": \"vanb_updated@gmail.com\",\n    \"phone\": \"0912345678\",\n    \"status\": \"IN_PROGRESS\",\n    \"notes\": \"Followed up via phone\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"fullName\": \"Admin User Updated\",\n    \"phone\": \"0988888888\"\n}",
+							"options": {"raw": {"language": "json"}}
 						},
-						"url": {
-							"raw": "{{baseUrl}}/leads/{{leadId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"leads",
-								"{{leadId}}"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/profile", "host": ["{{baseUrl}}"], "path": ["profile"]}
+					}
 				},
 				{
-					"name": "Record Consultation",
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"oldPassword\": \"password123\",\n    \"newPassword\": \"newpass123\",\n    \"confirmPassword\": \"newpass123\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/profile/password", "host": ["{{baseUrl}}"], "path": ["profile", "password"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. User Management",
+			"item": [
+				{
+					"name": "Create User",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"leadId\": \"{{leadId}}\",\n    \"notes\": \"Had a deep talk about career goals\",\n    \"followUpDate\": \"2024-06-01\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"email\": \"newteacher@elc.com\",\n    \"password\": \"password123\",\n    \"fullName\": \"New Teacher\",\n    \"role\": \"TEACHER\"\n}",
+							"options": {"raw": {"language": "json"}}
 						},
-						"url": {
-							"raw": "{{baseUrl}}/consultations",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"consultations"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"]}
+					}
 				},
 				{
-					"name": "Get Consultations by Lead",
+					"name": "Get All Users",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/consultations/lead/{{leadId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"consultations",
-								"lead",
-								"{{leadId}}"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"]}
+					}
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"]}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Jane Teacher\",\n    \"role\": \"TEACHER\",\n    \"status\": \"ACTIVE\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"]}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"]}
+					}
 				}
 			]
 		},
 		{
-			"name": "03. SMS (Core)",
+			"name": "3. School Management (SMS)",
 			"item": [
 				{
 					"name": "Get Branches",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/branches",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"branches"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/branches", "host": ["{{baseUrl}}"], "path": ["branches"]}
+					}
 				},
 				{
 					"name": "Get Courses",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/courses",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"courses"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/courses", "host": ["{{baseUrl}}"], "path": ["courses"]}
+					}
 				},
 				{
 					"name": "Create Course",
@@ -280,538 +216,391 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Advanced TOEFL iBT\",\n    \"code\": \"TOEFL-ADV\",\n    \"description\": \"Intensive course for TOEFL\",\n    \"price\": 6500000.00,\n    \"durationWeeks\": 12,\n    \"level\": \"ADVANCED\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"name\": \"TOEIC Mastery\",\n    \"code\": \"TOEIC-M\",\n    \"price\": 5000000\n}",
+							"options": {"raw": {"language": "json"}}
 						},
-						"url": {
-							"raw": "{{baseUrl}}/courses",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"courses"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/courses", "host": ["{{baseUrl}}"], "path": ["courses"]}
+					}
 				},
 				{
-					"name": "Check Schedule Conflict",
+					"name": "Get All Rooms",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/rooms", "host": ["{{baseUrl}}"], "path": ["rooms"]}
+					}
+				},
+				{
+					"name": "Get Classes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/classes", "host": ["{{baseUrl}}"], "path": ["classes"]}
+					}
+				},
+				{
+					"name": "Create Class",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"teacherId\": \"u0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12\",\n    \"roomId\": \"r0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11\",\n    \"dayOfWeek\": \"MON\",\n    \"startTime\": \"08:00:00\",\n    \"endTime\": \"10:00:00\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"name\": \"IELTS 101\",\n    \"courseId\": \"{{courseId}}\",\n    \"branchId\": \"{{branchId}}\",\n    \"maxStudents\": 15\n}",
+							"options": {"raw": {"language": "json"}}
 						},
+						"url": {"raw": "{{baseUrl}}/classes", "host": ["{{baseUrl}}"], "path": ["classes"]}
+					}
+				},
+				{
+					"name": "Get Class Schedule",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/classes/{{classId}}/schedule", "host": ["{{baseUrl}}"], "path": ["classes", "{{classId}}", "schedule"]}
+					}
+				},
+				{
+					"name": "Check Conflict",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"teacherId\": \"{{userId}}\",\n    \"dayOfWeek\": \"MON\",\n    \"startTime\": \"08:00:00\",\n    \"endTime\": \"10:00:00\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/classes/check-conflict", "host": ["{{baseUrl}}"], "path": ["classes", "check-conflict"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Learning Management (LMS)",
+			"item": [
+				{
+					"name": "Create Enrollment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classId\": \"{{classId}}\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/enrollments", "host": ["{{baseUrl}}"], "path": ["enrollments"]}
+					}
+				},
+				{
+					"name": "Get All Enrollments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/enrollments", "host": ["{{baseUrl}}"], "path": ["enrollments"]}
+					}
+				},
+				{
+					"name": "Update Enrollment Status",
+					"request": {
+						"method": "PUT",
+						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/classes/check-conflict",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"classes",
-								"check-conflict"
-							]
+							"raw": "{{baseUrl}}/enrollments/{{enrollmentId}}?status=APPROVED",
+							"host": ["{{baseUrl}}"],
+							"path": ["enrollments", "{{enrollmentId}}"],
+							"query": [{"key": "status", "value": "APPROVED"}]
 						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "04. LMS (Academic)",
-			"item": [
-				{
-					"name": "Classes",
-					"item": [
-						{
-							"name": "Get All Classes",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/classes",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"classes"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Create Class",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"IELTS Spring 2024\",\n    \"courseId\": \"c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11\",\n    \"branchId\": \"b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11\",\n    \"startDate\": \"2024-05-01\",\n    \"endDate\": \"2024-08-01\",\n    \"maxStudents\": 15\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/classes",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"classes"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Get Class Schedule",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/classes/{{classId}}/schedule",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"classes",
-										"{{classId}}",
-										"schedule"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Add Schedule to Class",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"dayOfWeek\": \"MON\",\n    \"startTime\": \"18:00:00\",\n    \"endTime\": \"20:00:00\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/classes/{{classId}}/schedule",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"classes",
-										"{{classId}}",
-										"schedule"
-									]
-								}
-							},
-							"response": []
-						}
-					]
+					}
 				},
 				{
-					"name": "Attendance",
-					"item": [
-						{
-							"name": "Mark Attendance",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"enrollmentId\": \"{{enrollmentId}}\",\n    \"date\": \"2024-05-15\",\n    \"isPresent\": true,\n    \"notes\": \"On time\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/attendance",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"attendance"
-									]
-								}
-							},
-							"response": []
+					"name": "Mark Attendance",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enrollmentId\": \"{{enrollmentId}}\",\n    \"date\": \"2024-05-15\",\n    \"isPresent\": true\n}",
+							"options": {"raw": {"language": "json"}}
 						},
-						{
-							"name": "Get Attendance by Class",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/attendance/{{classId}}?date=2024-05-15",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"attendance",
-										"{{classId}}"
-									],
-									"query": [
-										{
-											"key": "date",
-											"value": "2024-05-15"
-										}
-									]
-								}
-							},
-							"response": []
-						}
-					]
+						"url": {"raw": "{{baseUrl}}/attendance", "host": ["{{baseUrl}}"], "path": ["attendance"]}
+					}
 				},
 				{
-					"name": "Assignments",
-					"item": [
-						{
-							"name": "Create Assignment",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"classId\": \"{{classId}}\",\n    \"title\": \"Writing Essay #1\",\n    \"description\": \"Write an essay about environment\",\n    \"dueDate\": \"2024-06-01T23:59:59Z\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/assignments",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"assignments"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Get Assignments by Class",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/assignments/class/{{classId}}",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"assignments",
-										"class",
-										"{{classId}}"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "Submissions",
-					"item": [
-						{
-							"name": "Submit Work",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"assignmentId\": \"{{assignmentId}}\",\n    \"content\": \"This is my essay about green energy...\",\n    \"fileUrl\": \"http://example.com/essay.pdf\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/submissions/submit",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"submissions",
-										"submit"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Get Submissions by Assignment",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/submissions/assignment/{{assignmentId}}",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"submissions",
-										"assignment",
-										"{{assignmentId}}"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Grade Submission",
-							"request": {
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"grade\": 8.5,\n    \"feedback\": \"Good job on the arguments, but check your grammar!\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/submissions/{{submissionId}}/grade",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"submissions",
-										"{{submissionId}}",
-										"grade"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "05. Finance",
-			"item": [
-				{
-					"name": "Invoices",
-					"item": [
-						{
-							"name": "Get All Invoices",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/invoices",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"invoices"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Create Manual Invoice",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"enrollmentId\": \"{{enrollmentId}}\",\n    \"totalAmount\": 4500000.00,\n    \"discountAmount\": 500000.00,\n    \"dueDate\": \"2024-06-15\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/invoices",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"invoices"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Update Invoice Status",
-							"request": {
-								"method": "PATCH",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/invoices/{{invoiceId}}/status?status=PAID",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"invoices",
-										"{{invoiceId}}",
-										"status"
-									],
-									"query": [
-										{
-											"key": "status",
-											"value": "PAID"
-										}
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "Expenses",
-					"item": [
-						{
-							"name": "Get All Expenses",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/expenses",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"expenses"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Create Expense",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"category\": \"OFFICE_SUPPLIES\",\n    \"amount\": 1200000.00,\n    \"vendor\": \"VinMart\",\n    \"notes\": \"Buy stationery for teachers\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/expenses",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"expenses"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "06. Analytics",
-			"item": [
-				{
-					"name": "Dashboard Overview",
+					"name": "Get Class Attendance",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/analytics/dashboard",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"analytics",
-								"dashboard"
-							]
+							"raw": "{{baseUrl}}/attendance/{{classId}}?date=2024-05-15",
+							"host": ["{{baseUrl}}"],
+							"path": ["attendance", "{{classId}}"],
+							"query": [{"key": "date", "value": "2024-05-15"}]
 						}
-					},
-					"response": []
+					}
 				},
 				{
-					"name": "Revenue Analytics",
+					"name": "Create Assignment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"classId\": \"{{classId}}\",\n    \"title\": \"Essay 1\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/assignments", "host": ["{{baseUrl}}"], "path": ["assignments"]}
+					}
+				},
+				{
+					"name": "Get Assignments By Class",
 					"request": {
 						"method": "GET",
 						"header": [],
+						"url": {"raw": "{{baseUrl}}/assignments/class/{{classId}}", "host": ["{{baseUrl}}"], "path": ["assignments", "class", "{{classId}}"]}
+					}
+				},
+				{
+					"name": "Submit Assignment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Here is my essay...\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/assignments/{{assignmentId}}/submit", "host": ["{{baseUrl}}"], "path": ["assignments", "{{assignmentId}}", "submit"]}
+					}
+				},
+				{
+					"name": "Get Submissions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/assignments/{{assignmentId}}/submissions", "host": ["{{baseUrl}}"], "path": ["assignments", "{{assignmentId}}", "submissions"]}
+					}
+				},
+				{
+					"name": "Grade Submission",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"grade\": 9.5,\n    \"feedback\": \"Excellent work!\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/submissions/{{submissionId}}/grade", "host": ["{{baseUrl}}"], "path": ["submissions", "{{submissionId}}", "grade"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. CRM",
+			"item": [
+				{
+					"name": "Create Lead",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"New Lead\",\n    \"email\": \"lead@example.com\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/leads", "host": ["{{baseUrl}}"], "path": ["leads"]}
+					}
+				},
+				{
+					"name": "Get All Leads",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/leads", "host": ["{{baseUrl}}"], "path": ["leads"]}
+					}
+				},
+				{
+					"name": "Update Lead Status",
+					"request": {
+						"method": "PUT",
+						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/analytics/revenue",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"analytics",
-								"revenue"
-							]
+							"raw": "{{baseUrl}}/leads/{{leadId}}/status?status=CONTACTED",
+							"host": ["{{baseUrl}}"],
+							"path": ["leads", "{{leadId}}", "status"],
+							"query": [{"key": "status", "value": "CONTACTED"}]
 						}
-					},
-					"response": []
+					}
+				},
+				{
+					"name": "Log Consultation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Had a good talk.\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/leads/{{leadId}}/consultations", "host": ["{{baseUrl}}"], "path": ["leads", "{{leadId}}", "consultations"]}
+					}
+				},
+				{
+					"name": "Convert to Student",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/leads/{{leadId}}/convert", "host": ["{{baseUrl}}"], "path": ["leads", "{{leadId}}", "convert"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Financial Management",
+			"item": [
+				{
+					"name": "Get All Invoices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/invoices", "host": ["{{baseUrl}}"], "path": ["invoices"]}
+					}
+				},
+				{
+					"name": "Get My Invoices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/invoices/student/me", "host": ["{{baseUrl}}"], "path": ["invoices", "student", "me"]}
+					}
+				},
+				{
+					"name": "Record Transaction",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"invoiceId\": \"{{invoiceId}}\",\n    \"amount\": 4000000,\n    \"paymentMethod\": \"BANK_TRANSFER\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/transactions", "host": ["{{baseUrl}}"], "path": ["transactions"]}
+					}
+				},
+				{
+					"name": "Verify Transaction",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/transactions/{{transactionId}}/verify", "host": ["{{baseUrl}}"], "path": ["transactions", "{{transactionId}}", "verify"]}
+					}
+				},
+				{
+					"name": "Create Expense",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"category\": \"MARKETING\",\n    \"amount\": 500000\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/expenses", "host": ["{{baseUrl}}"], "path": ["expenses"]}
+					}
+				},
+				{
+					"name": "Get Promotions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/promotions", "host": ["{{baseUrl}}"], "path": ["promotions"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Notifications & Communication",
+			"item": [
+				{
+					"name": "Get Announcements",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/announcements", "host": ["{{baseUrl}}"], "path": ["announcements"]}
+					}
+				},
+				{
+					"name": "Post Announcement",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Holiday Notice\",\n    \"content\": \"Center is closed tomorrow.\"\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {"raw": "{{baseUrl}}/announcements", "host": ["{{baseUrl}}"], "path": ["announcements"]}
+					}
+				},
+				{
+					"name": "Get My Notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/notifications", "host": ["{{baseUrl}}"], "path": ["notifications"]}
+					}
+				},
+				{
+					"name": "Mark Notification Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/notifications/{{notificationId}}/read", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "read"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Reports & Analytics",
+			"item": [
+				{
+					"name": "Revenue Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/reports/revenue", "host": ["{{baseUrl}}"], "path": ["reports", "revenue"]}
+					}
+				},
+				{
+					"name": "Enrollment Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/reports/enrollment", "host": ["{{baseUrl}}"], "path": ["reports", "enrollment"]}
+					}
+				},
+				{
+					"name": "Performance Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/reports/performance", "host": ["{{baseUrl}}"], "path": ["reports", "performance"]}
+					}
+				},
+				{
+					"name": "Salary Preview",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{baseUrl}}/reports/salary", "host": ["{{baseUrl}}"], "path": ["reports", "salary"]}
+					}
 				},
 				{
 					"name": "Branch Performance",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/analytics/branch-performance",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"analytics",
-								"branch-performance"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Academic Analytics",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/analytics/academic",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"analytics",
-								"academic"
-							]
-						}
-					},
-					"response": []
+						"url": {"raw": "{{baseUrl}}/reports/branch-performance", "host": ["{{baseUrl}}"], "path": ["reports", "branch-performance"]}
+					}
 				}
 			]
 		}
@@ -819,73 +608,23 @@
 	"auth": {
 		"type": "bearer",
 		"bearer": [
-			{
-				"key": "token",
-				"value": "{{accessToken}}",
-				"type": "string"
-			}
+			{"key": "token", "value": "{{accessToken}}", "type": "string"}
 		]
 	},
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		},
-		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		}
-	],
 	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:8080/api",
-			"type": "string"
-		},
-		{
-			"key": "accessToken",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "classId",
-			"value": "00eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-			"type": "string"
-		},
-		{
-			"key": "enrollmentId",
-			"value": "10eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-			"type": "string"
-		},
-		{
-			"key": "invoiceId",
-			"value": "20eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-			"type": "string"
-		},
-		{
-			"key": "leadId",
-			"value": "30eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-			"type": "string"
-		},
-		{
-			"key": "assignmentId",
-			"value": "50eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-			"type": "string"
-		},
-		{
-			"key": "submissionId",
-			"value": "60eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-			"type": "string"
-		}
+		{"key": "baseUrl", "value": "http://localhost:8080/api"},
+		{"key": "accessToken", "value": ""},
+		{"key": "refreshToken", "value": ""},
+		{"key": "userId", "value": "u0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "courseId", "value": "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "branchId", "value": "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "classId", "value": "00eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "enrollmentId", "value": "10eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "leadId", "value": "30eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "assignmentId", "value": "50eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "submissionId", "value": "60eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "invoiceId", "value": "20eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "transactionId", "value": "70eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
+		{"key": "notificationId", "value": "80eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"}
 	]
 }

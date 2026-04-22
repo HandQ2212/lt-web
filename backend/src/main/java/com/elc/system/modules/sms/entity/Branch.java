@@ -4,6 +4,7 @@ import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Entity representing a school branch.
@@ -15,7 +16,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Branch extends BaseEntity {
 
     @Column(nullable = false)

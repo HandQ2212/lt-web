@@ -4,6 +4,7 @@ import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
@@ -19,7 +20,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Enrollment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
