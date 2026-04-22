@@ -71,4 +71,17 @@ public class AuthDto {
         private String fullName;
         private UserRole role;
     }
+
+    @Data
+    public static class ChangePasswordRequest {
+        @NotBlank(message = "Old password is required")
+        private String oldPassword;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 6, message = "Password must be at least 6 characters")
+        private String newPassword;
+
+        @NotBlank(message = "Confirm password is required")
+        private String confirmPassword;
+    }
 }
