@@ -20,7 +20,7 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
-    @GetMapping("/class/{classId}")
+    @GetMapping("/{classId}")
     public ResponseEntity<List<AttendanceResponse>> getAttendanceByClass(
             @PathVariable UUID classId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
