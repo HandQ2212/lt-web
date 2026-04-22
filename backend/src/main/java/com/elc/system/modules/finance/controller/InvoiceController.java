@@ -24,6 +24,12 @@ public class InvoiceController {
         return ResponseEntity.ok(invoiceService.getAllInvoices());
     }
 
+    @GetMapping("/student/me")
+    public ResponseEntity<List<InvoiceResponse>> getMyInvoices(@org.springframework.security.core.annotation.AuthenticationPrincipal com.elc.system.modules.auth.entity.User student) {
+        // We will add the logic to InvoiceService
+        return ResponseEntity.ok(invoiceService.getInvoicesByStudent(student.getId()));
+    }
+
     @PostMapping
     public ResponseEntity<InvoiceResponse> createInvoice(@Valid @RequestBody InvoiceRequest request) {
         return ResponseEntity.ok(invoiceService.createInvoice(request));

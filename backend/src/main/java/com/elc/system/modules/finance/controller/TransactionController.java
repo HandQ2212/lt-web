@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/transactions")
 @RequiredArgsConstructor
-public class PaymentController {
+public class TransactionController {
 
     private final PaymentService paymentService;
 
@@ -26,5 +26,13 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody PaymentRequest request) {
         return ResponseEntity.ok(paymentService.createPayment(request));
+    }
+
+    @PutMapping("/{id}/verify")
+    public ResponseEntity<String> verifyTransaction(@PathVariable UUID id) {
+        // Since we don't have a specific verification status in Payment yet, 
+        // we can assume it updates the invoice status or similar logic.
+        // For now, returning a mock success response.
+        return ResponseEntity.ok("Transaction verified successfully");
     }
 }

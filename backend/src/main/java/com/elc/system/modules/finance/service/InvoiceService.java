@@ -28,6 +28,13 @@ public class InvoiceService {
                 .collect(Collectors.toList());
     }
 
+    public List<InvoiceResponse> getInvoicesByStudent(UUID studentId) {
+        return invoiceRepository.findAll().stream()
+                .filter(invoice -> invoice.getEnrollment().getStudent().getId().equals(studentId))
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public InvoiceResponse createInvoice(InvoiceRequest request) {
         Enrollment enrollment = enrollmentRepository.findById(request.getEnrollmentId())
