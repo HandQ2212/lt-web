@@ -20,7 +20,7 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    @GetMapping("/branches")
+    @GetMapping("/branch-performance")
     public ResponseEntity<List<BranchAnalyticsDto>> getBranchPerformance() {
         return ResponseEntity.ok(analyticsService.getBranchPerformance());
     }
