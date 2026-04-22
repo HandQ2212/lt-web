@@ -21,4 +21,9 @@ public class AnalyticsController {
     public ResponseEntity<List<BranchAnalyticsDto>> getBranchPerformance() {
         return ResponseEntity.ok(analyticsService.getBranchPerformance());
     }
+
+    @GetMapping("/revenue")
+    public ResponseEntity<com.elc.system.modules.analytics.dto.RevenueAnalyticsDto> getRevenueReport() {
+        return ResponseEntity.ok(analyticsService.getRevenueReport());
+    }
 }
