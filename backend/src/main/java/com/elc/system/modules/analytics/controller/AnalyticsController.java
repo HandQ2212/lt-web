@@ -1,6 +1,8 @@
 package com.elc.system.modules.analytics.controller;
 
+import com.elc.system.modules.analytics.dto.AcademicAnalyticsDto;
 import com.elc.system.modules.analytics.dto.BranchAnalyticsDto;
+import com.elc.system.modules.analytics.dto.RevenueAnalyticsDto;
 import com.elc.system.modules.analytics.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,5 +27,10 @@ public class AnalyticsController {
     @GetMapping("/revenue")
     public ResponseEntity<com.elc.system.modules.analytics.dto.RevenueAnalyticsDto> getRevenueReport() {
         return ResponseEntity.ok(analyticsService.getRevenueReport());
+    }
+
+    @GetMapping("/academic")
+    public ResponseEntity<AcademicAnalyticsDto> getAcademicReport() {
+        return ResponseEntity.ok(analyticsService.getAcademicReport());
     }
 }

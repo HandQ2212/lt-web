@@ -1,5 +1,6 @@
 package com.elc.system.modules.analytics.service;
 
+import com.elc.system.modules.analytics.dto.AcademicAnalyticsDto;
 import com.elc.system.modules.analytics.dto.BranchAnalyticsDto;
 import com.elc.system.modules.analytics.dto.RevenueAnalyticsDto;
 import com.elc.system.modules.crm.repository.LeadRepository;
@@ -32,11 +33,44 @@ public class AnalyticsService {
     private final PaymentRepository paymentRepository;
 
     private final InvoiceRepository invoiceRepository;
+    private final com.elc.system.modules.lms.repository.CourseResultRepository courseResultRepository;
 
     public List<BranchAnalyticsDto> getBranchPerformance() {
         return branchRepository.findAll().stream()
                 .map(this::calculateBranchMetrics)
                 .collect(Collectors.toList());
+    }
+
+    public AcademicAnalyticsDto getAcademicReport() {
+        List<com.elc.system.modules.lms.entity.CourseResult> allResults = courseResultRepository.findAll();
+
+        double avgMidterm = allResults.stream()
+                .filter(r -> r.getMidtermScore() != null)
+                .mapToDouble(r -> r.getMidtermScore().doubleValue())
+                .average().orElse(0.0);
+
+        double avgFinal = allResults.stream()
+                .filter(r -> r.getFinalScore() != null)
+                .mapToDouble(r -> r.getFinalScore().doubleValue())
+                .average().orElse(0.0);
+
+        Map<String, Long> gradeDist = allResults.stream()
+                .filter(r -> r.getFinalGrade() != null)
+                .collect(Collectors.groupingBy(com.elc.system.modules.lms.entity.CourseResult::getFinalGrade, Collectors.counting()));
+
+        long totalPass = allResults.stream()
+                .filter(r -> r.getFinalGrade() != null && !r.getFinalGrade().equalsIgnoreCase("F"))
+                .count();
+
+        double passRate = allResults.isEmpty() ? 0.0 : (double) totalPass / allResults.size();
+
+        return AcademicAnalyticsDto.builder()
+                .averageMidtermScore(avgMidterm)
+                .averageFinalScore(avgFinal)
+                .totalCompletedEnrollments(allResults.size())
+                .gradeDistribution(gradeDist)
+                .passRate(passRate)
+                .build();
     }
 
     public RevenueAnalyticsDto getRevenueReport() {
