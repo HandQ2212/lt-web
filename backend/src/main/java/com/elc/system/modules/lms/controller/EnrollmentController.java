@@ -19,6 +19,11 @@ public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
 
+    @GetMapping
+    public ResponseEntity<List<EnrollmentResponse>> getAllEnrollments() {
+        return ResponseEntity.ok(enrollmentService.getAllEnrollments());
+    }
+
     @GetMapping("/class/{classId}")
     public ResponseEntity<List<EnrollmentResponse>> getEnrollmentsByClass(@PathVariable UUID classId) {
         return ResponseEntity.ok(enrollmentService.getEnrollmentsByClass(classId));
@@ -34,7 +39,8 @@ public class EnrollmentController {
         return ResponseEntity.ok(enrollmentService.enrollStudent(request));
     }
 
-    @PatchMapping("/{id}/status")
+    @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> updateStatus(@PathVariable UUID id, @RequestParam EnrollmentStatus status) {
         enrollmentService.updateStatus(id, status);
         return ResponseEntity.noContent().build();

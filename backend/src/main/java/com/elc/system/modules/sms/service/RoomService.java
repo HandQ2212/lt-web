@@ -21,6 +21,12 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final BranchRepository branchRepository;
 
+    public List<RoomResponse> getAllRooms() {
+        return roomRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<RoomResponse> getRoomsByBranch(UUID branchId) {
         return roomRepository.findByBranchId(branchId).stream()
                 .map(this::mapToResponse)

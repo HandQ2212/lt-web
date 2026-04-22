@@ -18,6 +18,11 @@ public class RoomController {
 
     private final RoomService roomService;
 
+    @GetMapping
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        return ResponseEntity.ok(roomService.getAllRooms());
+    }
+
     @GetMapping("/branch/{branchId}")
     public ResponseEntity<List<RoomResponse>> getRoomsByBranch(@PathVariable UUID branchId) {
         return ResponseEntity.ok(roomService.getRoomsByBranch(branchId));

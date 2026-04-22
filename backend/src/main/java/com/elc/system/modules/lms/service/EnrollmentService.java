@@ -25,6 +25,12 @@ public class EnrollmentService {
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
 
+    public List<EnrollmentResponse> getAllEnrollments() {
+        return enrollmentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<EnrollmentResponse> getEnrollmentsByClass(UUID classId) {
         return enrollmentRepository.findByClazzId(classId).stream()
                 .map(this::mapToResponse)
