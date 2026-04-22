@@ -1,62 +1,55 @@
 package com.elc.system.modules.auth.service;
 
 import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
-import com.elc.system.modules.auth.dto.UserDto.ChangePasswordRequest;
-import com.elc.system.modules.auth.dto.UserDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserStatus;
 import com.elc.system.modules.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserResponse getCurrentUserResponse() {
-        User user = getCurrentUser();
-        return mapToUserResponse(user);
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    @Transactional
-    public UserResponse updateProfile(ProfileUpdateRequest request) {
-        User user = getCurrentUser();
-        
-        user.setFullName(request.getFullName());
-        user.setPhone(request.getPhone());
-        user.setDateOfBirth(request.getDateOfBirth());
-        user.setGender(request.getGender());
-        user.setAddress(request.getAddress());
-        user.setAvatarUrl(request.getAvatarUrl());
-
-        userRepository.save(user);
-        return mapToUserResponse(user);
-    }
-
-    @Transactional
-    public void changePassword(ChangePasswordRequest request) {
-        User user = getCurrentUser();
-
-        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password does not match");
-        }
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-    }
-
-    public User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
+    public UserResponse getUserById(UUID id) {
+        return userRepository.findById(id)
+                .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    private UserResponse mapToUserResponse(User user) {
+    @Transactional
+    public UserResponse updateUser(UUID id, User userDetails) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setFullName(userDetails.getFullName());
+        user.setRole(userDetails.getRole());
+        user.setStatus(userDetails.getStatus());
+        user.setBranchId(userDetails.getBranchId());
+        
+        return mapToResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public void deleteUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus(UserStatus.DEACTIVATED);
+        userRepository.save(user);
+    }
+
+    private UserResponse mapToResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
