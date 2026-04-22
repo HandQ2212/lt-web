@@ -57,6 +57,7 @@ public class AuthDto {
     @NoArgsConstructor
     public static class AuthResponse {
         private String accessToken;
+        private String refreshToken;
         private String tokenType = "Bearer";
         private UserResponse user;
     }
@@ -83,5 +84,44 @@ public class AuthDto {
 
         @NotBlank(message = "Confirm password is required")
         private String confirmPassword;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ForgotPasswordRequest {
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ResetPasswordRequest {
+        @NotBlank(message = "Token is required")
+        private String token;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 6, message = "Password must be at least 6 characters")
+        private String newPassword;
+
+        @NotBlank(message = "Confirm password is required")
+        private String confirmPassword;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProfileUpdateRequest {
+        @NotBlank(message = "Full name is required")
+        private String fullName;
+        private String phone;
+        private String address;
+        private String gender;
+        private LocalDate dateOfBirth;
     }
 }

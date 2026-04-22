@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -50,6 +52,7 @@ public class AuthenticationService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -62,9 +65,13 @@ public class AuthenticationService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtUtils.generateToken(user);
+        String refreshToken = UUID.randomUUID().toString();
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
 
         return AuthResponse.builder()
                 .accessToken(token)
+                .refreshToken(refreshToken)
                 .user(mapToUserResponse(user))
                 .build();
     }
@@ -81,6 +88,48 @@ public class AuthenticationService {
 
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
+    }
+
+    @Transactional
+    public void updateProfile(ProfileUpdateRequest request, User currentUser) {
+        currentUser.setFullName(request.getFullName());
+        currentUser.setPhone(request.getPhone());
+        currentUser.setAddress(request.getAddress());
+        currentUser.setGender(request.getGender());
+        currentUser.setDateOfBirth(request.getDateOfBirth());
+        userRepository.save(currentUser);
+    }
+
+    @Transactional
+    public String forgotPassword(ForgotPasswordRequest request) {
+        userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Mock token for reset password
+        return UUID.randomUUID().toString();
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        // Mock logic: find by some temporary mechanism or just trust the token for now
+        // In a real system, you'd verify a signed JWT or a DB token
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Passwords do not match");
+        }
+        // Placeholder for real logic
+    }
+
+    @Transactional
+    public AuthResponse refreshToken(String refreshToken) {
+        User user = userRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+        
+        String newToken = jwtUtils.generateToken(user);
+        return AuthResponse.builder()
+                .accessToken(newToken)
+                .refreshToken(refreshToken)
+                .user(mapToUserResponse(user))
+                .build();
     }
 
     private UserResponse mapToUserResponse(User user) {

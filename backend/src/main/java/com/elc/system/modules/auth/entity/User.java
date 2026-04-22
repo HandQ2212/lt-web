@@ -84,4 +84,11 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return status == UserStatus.ACTIVE;
     }
+
+    @Column(unique = true)
+    private String refreshToken;
+
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
+    @Builder.Default
+    private java.util.List<com.elc.system.modules.lms.entity.Assignment> assignments = new java.util.ArrayList<>();
 }
