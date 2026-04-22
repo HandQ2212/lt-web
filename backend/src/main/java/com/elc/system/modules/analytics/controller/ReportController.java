@@ -14,29 +14,36 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/analytics")
+@RequestMapping("/api/reports")
 @RequiredArgsConstructor
-public class AnalyticsController {
+public class ReportController {
 
     private final AnalyticsService analyticsService;
-
-    @GetMapping("/branch-performance")
-    public ResponseEntity<List<BranchAnalyticsDto>> getBranchPerformance() {
-        return ResponseEntity.ok(analyticsService.getBranchPerformance());
-    }
 
     @GetMapping("/revenue")
     public ResponseEntity<com.elc.system.modules.analytics.dto.RevenueAnalyticsDto> getRevenueReport() {
         return ResponseEntity.ok(analyticsService.getRevenueReport());
     }
 
-    @GetMapping("/academic")
+    @GetMapping("/enrollment")
+    public ResponseEntity<String> getEnrollmentStats() {
+        // Mocking enrollment stats.
+        return ResponseEntity.ok("{\"newStudents\": 150, \"classFillRate\": 85.5}");
+    }
+
+    @GetMapping("/performance")
     public ResponseEntity<AcademicAnalyticsDto> getAcademicReport() {
         return ResponseEntity.ok(analyticsService.getAcademicReport());
     }
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<DashboardDto> getDashboardOverview() {
-        return ResponseEntity.ok(analyticsService.getDashboardOverview());
+    @GetMapping("/salary")
+    public ResponseEntity<String> getSalaryPreview() {
+        // Mocking salary calculation preview.
+        return ResponseEntity.ok("{\"totalPayroll\": 125000000.00, \"teacherCount\": 25}");
+    }
+
+    @GetMapping("/branch-performance")
+    public ResponseEntity<List<BranchAnalyticsDto>> getBranchPerformance() {
+        return ResponseEntity.ok(analyticsService.getBranchPerformance());
     }
 }
