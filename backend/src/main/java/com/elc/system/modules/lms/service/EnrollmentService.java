@@ -1,4 +1,4 @@
-package com.elc.system.modules.lms.service;
+﻿package com.elc.system.modules.lms.service;
 
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.repository.UserRepository;
@@ -24,6 +24,12 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
+
+    public List<EnrollmentResponse> getAllEnrollments() {
+        return enrollmentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
     public List<EnrollmentResponse> getEnrollmentsByClass(UUID classId) {
         return enrollmentRepository.findByClazzId(classId).stream()
