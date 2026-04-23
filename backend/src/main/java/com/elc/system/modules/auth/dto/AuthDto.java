@@ -90,4 +90,32 @@ public class AuthDto {
         private String fullName;
         private UserRole role;
     }
+
+    // ==================== Profile Management DTOs ====================
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProfileUpdateRequest {
+        private String fullName;
+        private String phone;
+        private LocalDate dateOfBirth;
+        private String gender;
+        private String address;
+        private String avatarUrl;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangePasswordRequest {
+        @NotBlank(message = "Old password is required")
+        private String oldPassword;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 6, message = "New password must be at least 6 characters")
+        private String newPassword;
+    }
 }
