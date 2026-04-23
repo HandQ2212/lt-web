@@ -30,6 +30,12 @@ public class Assignment extends BaseEntity {
     @Column(nullable = false)
     private ZonedDateTime dueDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String fileUrl;
+
+    @Column(length = 500)
+    private String externalLink;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;

@@ -1,6 +1,8 @@
 package com.elc.system.core.exception;
 
 import com.elc.system.modules.auth.exception.*;
+import com.elc.system.modules.lms.exception.ClassDeletionException;
+import com.elc.system.modules.lms.exception.InvalidClassStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -69,6 +71,28 @@ public class GlobalExceptionHandler {
                 .timestamp(ZonedDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(InvalidClassStatusException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidClassStatus(InvalidClassStatusException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(ex.getStatus())
+                .message(ex.getMessage())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(ClassDeletionException.class)
+    public ResponseEntity<ErrorResponse> handleClassDeletion(ClassDeletionException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(ex.getStatus())
+                .message(ex.getMessage())
+                .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(Exception.class)

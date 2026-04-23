@@ -6,7 +6,11 @@ import com.elc.system.modules.lms.dto.ClassDto.ClassRequest;
 import com.elc.system.modules.lms.dto.ClassDto.ClassResponse;
 import com.elc.system.modules.lms.entity.ClassStatus;
 import com.elc.system.modules.lms.entity.Clazz;
+import com.elc.system.modules.lms.entity.EnrollmentStatus;
+import com.elc.system.modules.lms.exception.ClassDeletionException;
+import com.elc.system.modules.lms.exception.InvalidClassStatusException;
 import com.elc.system.modules.lms.repository.ClazzRepository;
+import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import com.elc.system.modules.sms.dto.ClassScheduleDto.*;
 import com.elc.system.modules.sms.entity.Branch;
 import com.elc.system.modules.sms.entity.ClassSchedule;
@@ -34,6 +38,7 @@ public class ClazzService {
     private final BranchRepository branchRepository;
     private final UserRepository userRepository;
     private final ClassScheduleRepository classScheduleRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     public List<ClassResponse> getAllClasses() {
         return clazzRepository.findAll().stream()
@@ -83,6 +88,136 @@ public class ClazzService {
                 .build();
 
         return mapToResponse(clazzRepository.save(clazz));
+    }
+
+    @Transactional
+    public ClassResponse updateClass(UUID id, ClassRequest request) {
+        Clazz existingClass = clazzRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        // Update fields if provided
+        if (request.getCourseId() != null) {
+            Course course = courseRepository.findById(request.getCourseId())
+                    .orElseThrow(() -> new RuntimeException("Course not found"));
+            existingClass.setCourse(course);
+        }
+
+        if (request.getRoomId() != null) {
+            Room room = roomRepository.findById(request.getRoomId())
+                    .orElseThrow(() -> new RuntimeException("Room not found"));
+            existingClass.setRoom(room);
+        }
+
+        if (request.getTeacherId() != null) {
+            User teacher = userRepository.findById(request.getTeacherId())
+                    .orElseThrow(() -> new RuntimeException("Teacher not found"));
+            existingClass.setTeacher(teacher);
+        }
+
+        if (request.getBranchId() != null) {
+            Branch branch = branchRepository.findById(request.getBranchId())
+                    .orElseThrow(() -> new RuntimeException("Branch not found"));
+            existingClass.setBranch(branch);
+        }
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            existingClass.setName(request.getName());
+        }
+
+        if (request.getStatus() != null) {
+            validateStatusTransition(existingClass.getStatus(), request.getStatus());
+            existingClass.setStatus(request.getStatus());
+        }
+
+        if (request.getStartDate() != null) {
+            existingClass.setStartDate(request.getStartDate());
+        }
+
+        if (request.getEndDate() != null) {
+            existingClass.setEndDate(request.getEndDate());
+        }
+
+        if (request.getMaxStudents() != null) {
+            // Validate new capacity doesn't conflict with current enrollments
+            long currentEnrollments = enrollmentRepository.findByClazzId(id).stream()
+                    .filter(e -> e.getStatus() == EnrollmentStatus.ACTIVE || e.getStatus() == EnrollmentStatus.PENDING)
+                    .count();
+
+            if (request.getMaxStudents() < currentEnrollments) {
+                throw new IllegalArgumentException("Cannot reduce max students below current enrollment count");
+            }
+            existingClass.setMaxStudents(request.getMaxStudents());
+        }
+
+        return mapToResponse(clazzRepository.save(existingClass));
+    }
+
+    @Transactional
+    public void deleteClass(UUID id) {
+        Clazz clazz = clazzRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        // Check for active enrollments
+        long activeEnrollments = enrollmentRepository.findByClazzId(id).stream()
+                .filter(e -> e.getStatus() == EnrollmentStatus.ACTIVE || e.getStatus() == EnrollmentStatus.PENDING)
+                .count();
+
+        if (activeEnrollments > 0) {
+            throw new ClassDeletionException("Cannot delete class with active enrollments. Current active enrollments: " + activeEnrollments);
+        }
+
+        // Check if class has already started
+        if (clazz.getStartDate() != null && clazz.getStartDate().isBefore(java.time.LocalDate.now())) {
+            throw new ClassDeletionException("Cannot delete class that has already started");
+        }
+
+        clazzRepository.delete(clazz);
+    }
+
+    @Transactional
+    public ClassResponse updateClassStatus(UUID id, ClassStatus newStatus) {
+        Clazz clazz = clazzRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        validateStatusTransition(clazz.getStatus(), newStatus);
+        clazz.setStatus(newStatus);
+
+        return mapToResponse(clazzRepository.save(clazz));
+    }
+
+    private void validateStatusTransition(ClassStatus currentStatus, ClassStatus newStatus) {
+        if (currentStatus == newStatus) {
+            return; // No change needed
+        }
+
+        switch (currentStatus) {
+            case UPCOMING:
+                if (newStatus != ClassStatus.ONGOING && newStatus != ClassStatus.CANCELLED) {
+                    throw new InvalidClassStatusException(
+                            "Invalid status transition from " + currentStatus + " to " + newStatus +
+                                    ". Allowed transitions: UPCOMING → ONGOING, UPCOMING → CANCELLED");
+                }
+                break;
+
+            case ONGOING:
+                if (newStatus != ClassStatus.COMPLETED && newStatus != ClassStatus.CANCELLED) {
+                    throw new InvalidClassStatusException(
+                            "Invalid status transition from " + currentStatus + " to " + newStatus +
+                                    ". Allowed transitions: ONGOING → COMPLETED, ONGOING → CANCELLED");
+                }
+                break;
+
+            case COMPLETED:
+                throw new InvalidClassStatusException(
+                        "Cannot change status from COMPLETED. Class is already finalized.");
+
+            case CANCELLED:
+                throw new InvalidClassStatusException(
+                        "Cannot change status from CANCELLED. Class is already cancelled.");
+
+            default:
+                throw new InvalidClassStatusException("Unknown current status: " + currentStatus);
+        }
     }
 
     public List<ScheduleResponse> getClassSchedules(UUID classId) {

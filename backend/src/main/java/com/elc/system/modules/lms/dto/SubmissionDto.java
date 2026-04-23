@@ -1,5 +1,6 @@
 package com.elc.system.modules.lms.dto;
 
+import com.elc.system.modules.lms.entity.SubmissionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,10 +46,13 @@ public class SubmissionDto {
         private UUID studentId;
         private String studentName;
         private ZonedDateTime submissionDate;
+        private ZonedDateTime dueDate;
         private String fileUrl;
         private String content;
         private Double grade;
         private String feedback;
-        private String status;
+        private SubmissionStatus status;
+        private Boolean isLate;
+        private Long lateMinutes;
     }
 }

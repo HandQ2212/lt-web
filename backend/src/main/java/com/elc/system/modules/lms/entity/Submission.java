@@ -34,8 +34,16 @@ public class Submission extends BaseEntity {
 
     private Double grade;
 
+    @Column(columnDefinition = "TEXT")
     private String feedback;
 
-    @Builder.Default
-    private String status = "SUBMITTED"; // SUBMITTED, GRADED, LATE
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SubmissionStatus status = SubmissionStatus.SUBMITTED;
+
+    @Column(name = "is_late")
+    private Boolean isLate = false;
+
+    @Column(name = "late_minutes")
+    private Long lateMinutes = 0L;
 }

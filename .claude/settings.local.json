@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "Bash(printf:*)",
+      "Bash(wc:*)",
+      "WebSearch",
+      "Bash(cd backend:*)"
+    ]
+  }
+}

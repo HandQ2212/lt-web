@@ -27,6 +27,10 @@ public class AssignmentDto {
 
         @NotNull(message = "Due date is required")
         private ZonedDateTime dueDate;
+
+        private String fileUrl;
+
+        private String externalLink;
     }
 
     @Data
@@ -40,6 +44,8 @@ public class AssignmentDto {
         private String title;
         private String description;
         private ZonedDateTime dueDate;
+        private String fileUrl;
+        private String externalLink;
         private UUID createdById;
         private String createdByName;
         private ZonedDateTime createdAt;

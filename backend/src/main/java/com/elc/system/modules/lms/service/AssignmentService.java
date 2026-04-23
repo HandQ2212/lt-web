@@ -38,6 +38,8 @@ public class AssignmentService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .dueDate(request.getDueDate())
+                .fileUrl(request.getFileUrl())
+                .externalLink(request.getExternalLink())
                 .createdBy(teacher)
                 .build();
 
@@ -52,6 +54,8 @@ public class AssignmentService {
                 .title(assignment.getTitle())
                 .description(assignment.getDescription())
                 .dueDate(assignment.getDueDate())
+                .fileUrl(assignment.getFileUrl())
+                .externalLink(assignment.getExternalLink())
                 .createdById(assignment.getCreatedBy().getId())
                 .createdByName(assignment.getCreatedBy().getFullName())
                 .createdAt(assignment.getCreatedAt())
