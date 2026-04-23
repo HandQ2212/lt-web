@@ -1,3 +1,8 @@
 claude-engineer/
 src\main\resources\application-local.yml
 Code_BTL7_BTL8/
+.claude/
+.agents/
+AGENTS.md
+CLAUDE.md
+CHANGELOG.md
