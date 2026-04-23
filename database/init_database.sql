@@ -356,3 +356,22 @@ VALUES
 ('SUMMER2024', 'PERCENTAGE', 20.00, 1000000, '2024-08-31'),
 ('ELCNEW500', 'FIXED_AMOUNT', 500000.00, 3000000, '2024-12-31')
 ON CONFLICT DO NOTHING;
+
+
+-- 1. Thêm refresh_token column vào bảng users                                                                                           
+  ALTER TABLE public.users                                                                                                                 
+  ADD COLUMN IF NOT EXISTS refresh_token VARCHAR(255);                                                                                     
+                                                                                                                                           
+  -- 2. Tạo index cho email (tăng tốc độ login)                                                                                            
+  CREATE INDEX IF NOT EXISTS idx_users_email                                                                                               
+  ON public.users(email);
+                                                                                                                                           
+  -- 3. Tạo index cho refresh_token (tăng tốc độ refresh token validation)
+  CREATE INDEX IF NOT EXISTS idx_users_refresh_token
+  ON public.users(refresh_token);                
+
+  -- 4. Verify changes - Kiểm tra kết quả
+  SELECT column_name, data_type, is_nullable
+  FROM information_schema.columns
+  WHERE table_name = 'users'
+  AND column_name IN ('email', 'password_hash', 'refresh_token');

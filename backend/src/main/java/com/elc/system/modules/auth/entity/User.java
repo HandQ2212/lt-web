@@ -55,6 +55,9 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "branch_id")
     private UUID branchId;
 
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
