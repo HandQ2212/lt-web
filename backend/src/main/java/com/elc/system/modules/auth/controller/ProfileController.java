@@ -4,7 +4,7 @@ import com.elc.system.modules.auth.dto.AuthDto.ChangePasswordRequest;
 import com.elc.system.modules.auth.dto.AuthDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
 import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.auth.service.AuthenticationService;
+import com.elc.system.modules.auth.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ProfileController {
 
-    private final AuthenticationService authenticationService;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal User currentUser) {
@@ -30,17 +30,15 @@ public class ProfileController {
 
     @PutMapping
     public ResponseEntity<String> updateProfile(
-            @Valid @RequestBody ProfileUpdateRequest request,
-            @AuthenticationPrincipal User currentUser) {
-        authenticationService.updateProfile(request, currentUser);
+            @Valid @RequestBody ProfileUpdateRequest request) {
+        userService.updateProfile(request);
         return ResponseEntity.ok("Profile updated successfully");
     }
 
     @PutMapping("/password")
     public ResponseEntity<String> changePassword(
-            @Valid @RequestBody ChangePasswordRequest request,
-            @AuthenticationPrincipal User currentUser) {
-        authenticationService.changePassword(request, currentUser);
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
         return ResponseEntity.ok("Password changed successfully");
     }
 }

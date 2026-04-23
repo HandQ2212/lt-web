@@ -55,6 +55,24 @@ public class AuthDto {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
+    public static class LogoutRequest {
+        @NotBlank(message = "Refresh token is required")
+        private String refreshToken;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class RefreshRequest {
+        @NotBlank(message = "Refresh token is required")
+        private String refreshToken;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class AuthResponse {
         private String accessToken;
         private String refreshToken;
@@ -73,55 +91,31 @@ public class AuthDto {
         private UserRole role;
     }
 
-    @Data
-    public static class ChangePasswordRequest {
-        @NotBlank(message = "Old password is required")
-        private String oldPassword;
-
-        @NotBlank(message = "New password is required")
-        @Size(min = 6, message = "Password must be at least 6 characters")
-        private String newPassword;
-
-        @NotBlank(message = "Confirm password is required")
-        private String confirmPassword;
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ForgotPasswordRequest {
-        @NotBlank(message = "Email is required")
-        @Email(message = "Invalid email format")
-        private String email;
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ResetPasswordRequest {
-        @NotBlank(message = "Token is required")
-        private String token;
-
-        @NotBlank(message = "New password is required")
-        @Size(min = 6, message = "Password must be at least 6 characters")
-        private String newPassword;
-
-        @NotBlank(message = "Confirm password is required")
-        private String confirmPassword;
-    }
+    // ==================== Profile Management DTOs ====================
 
     @Data
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ProfileUpdateRequest {
-        @NotBlank(message = "Full name is required")
         private String fullName;
         private String phone;
-        private String address;
-        private String gender;
         private LocalDate dateOfBirth;
+        private String gender;
+        private String address;
+        private String avatarUrl;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangePasswordRequest {
+        @NotBlank(message = "Old password is required")
+        private String oldPassword;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 6, message = "New password must be at least 6 characters")
+        private String newPassword;
     }
 }

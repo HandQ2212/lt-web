@@ -4,10 +4,21 @@ spring:
   profiles:
     active: local
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres?prepareThreshold=0}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: ELC-HikariPool
+      connection-test-query: SELECT 1
+      # Disable prepared statement cache to prevent corruption
+      prep-stmt-cache-size: 0
+      prep-stmt-cache-sql-limit: 0
   jpa:
     open-in-view: false
     hibernate:
@@ -16,6 +27,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        # Disable prepared statement cache at Hibernate level
+        jdbc:
+          batch_versioned_data: false
 
 app:
   jwt:

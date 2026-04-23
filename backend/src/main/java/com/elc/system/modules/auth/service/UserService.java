@@ -1,32 +1,36 @@
 package com.elc.system.modules.auth.service;
 
-import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
-import com.elc.system.modules.auth.dto.UserDto.ChangePasswordRequest;
-import com.elc.system.modules.auth.dto.UserDto.ProfileUpdateRequest;
+import com.elc.system.modules.auth.dto.AuthDto.ChangePasswordRequest;
+import com.elc.system.modules.auth.dto.AuthDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserResponse getCurrentUserResponse() {
-        User user = getCurrentUser();
-        return mapToUserResponse(user);
+    public User getCurrentUser() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     @Transactional
-    public UserResponse updateProfile(ProfileUpdateRequest request) {
+    public void updateProfile(ProfileUpdateRequest request) {
         User user = getCurrentUser();
-        
+
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
         user.setDateOfBirth(request.getDateOfBirth());
@@ -35,33 +39,22 @@ public class UserService {
         user.setAvatarUrl(request.getAvatarUrl());
 
         userRepository.save(user);
-        return mapToUserResponse(user);
+        log.info("Profile updated for user: {}", user.getEmail());
     }
 
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         User user = getCurrentUser();
 
+        // Verify old password
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password does not match");
+            throw new RuntimeException("Current password is incorrect");
         }
 
+        // Encode and save new password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-    }
 
-    public User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
-    private UserResponse mapToUserResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole())
-                .build();
+        log.info("Password changed for user: {}", user.getEmail());
     }
 }

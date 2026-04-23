@@ -22,6 +22,9 @@ public class JwtUtils {
     @Value("${app.jwt.expiration}")
     private long jwtExpiration;
 
+    @Value("${app.jwt.refresh-expiration}")
+    private long refreshExpiration;
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -41,6 +44,10 @@ public class JwtUtils {
 
     public long getExpirationTime() {
         return jwtExpiration;
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        return buildToken(Map.of(), userDetails, refreshExpiration);
     }
 
     private String buildToken(
@@ -63,7 +70,7 @@ public class JwtUtils {
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 

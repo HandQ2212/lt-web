@@ -19,6 +19,7 @@ public class NotificationDto {
         private String title;
         private String message;
         private boolean isRead;
+        private String type; // PERSONAL, ANNOUNCEMENT, SYSTEM
         private ZonedDateTime createdAt;
     }
 

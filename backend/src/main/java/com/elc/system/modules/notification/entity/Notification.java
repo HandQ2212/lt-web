@@ -30,4 +30,8 @@ public class Notification extends BaseEntity {
 
     @Column(name = "is_read")
     private boolean read = false;
+
+    @Column(name = "type")
+    @Enumerated(EnumType.STRING)
+    private NotificationType type = NotificationType.PERSONAL;
 }
