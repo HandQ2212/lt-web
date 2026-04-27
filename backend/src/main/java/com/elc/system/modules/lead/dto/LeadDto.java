@@ -4,6 +4,7 @@ import com.elc.system.modules.lead.entity.LeadSource;
 import com.elc.system.modules.lead.entity.LeadStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -81,6 +82,16 @@ public class LeadDto {
 
         @Size(max = 2000, message = "Notes must be at most 2000 characters")
         private String notes;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UpdateLeadStatusRequest {
+        @NotNull(message = "Lead status is required")
+        private LeadStatus status;
     }
 
     @Getter

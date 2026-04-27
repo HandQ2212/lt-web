@@ -9,6 +9,7 @@ import com.elc.system.modules.lead.dto.LeadDto.CreateLeadRequest;
 import com.elc.system.modules.lead.dto.LeadDto.LeadConversionResponse;
 import com.elc.system.modules.lead.dto.LeadDto.LeadResponse;
 import com.elc.system.modules.lead.dto.LeadDto.UpdateLeadRequest;
+import com.elc.system.modules.lead.dto.LeadDto.UpdateLeadStatusRequest;
 import com.elc.system.modules.lead.entity.Lead;
 import com.elc.system.modules.lead.entity.LeadSource;
 import com.elc.system.modules.lead.entity.LeadStatus;
@@ -90,6 +91,20 @@ public class LeadService {
 
         leadRepository.save(lead);
         log.info("Lead updated: {}", lead.getId());
+        return mapToResponse(lead);
+    }
+
+    @Transactional
+    public LeadResponse updateLeadStatus(UUID id, UpdateLeadStatusRequest request) {
+        if (request.getStatus() == null) {
+            throw new IllegalArgumentException("Lead status is required");
+        }
+
+        Lead lead = findLeadOrThrow(id);
+        lead.setStatus(request.getStatus());
+
+        leadRepository.save(lead);
+        log.info("Lead status updated: {} -> {}", lead.getId(), lead.getStatus());
         return mapToResponse(lead);
     }
 

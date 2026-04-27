@@ -40,18 +40,6 @@ public class ConsultationDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class MarkReminderSentRequest {
-        private ZonedDateTime sentAt;
-
-        @Size(max = 1000, message = "Reminder note must be at most 1000 characters")
-        private String reminderNote;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
     public static class ConsultationResponse {
         private UUID id;
         private UUID leadId;
@@ -66,16 +54,5 @@ public class ConsultationDto {
         private String reminderNote;
         private ZonedDateTime createdAt;
         private ZonedDateTime updatedAt;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class ReminderDispatchResponse {
-        private int dueCount;
-        private int dispatchedCount;
-        private ZonedDateTime dispatchedAt;
     }
 }

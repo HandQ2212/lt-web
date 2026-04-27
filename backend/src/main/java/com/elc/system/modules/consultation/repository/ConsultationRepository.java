@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -31,27 +30,4 @@ public interface ConsultationRepository extends JpaRepository<Consultation, UUID
             @Param("toDate") ZonedDateTime toDate,
             Pageable pageable
     );
-
-    @Query("""
-            SELECT c
-            FROM Consultation c
-            WHERE c.nextReminderAt IS NOT NULL
-              AND c.reminderSentAt IS NULL
-              AND c.nextReminderAt <= :dueBefore
-            ORDER BY c.nextReminderAt ASC
-            """)
-    Page<Consultation> findDueReminders(
-            @Param("dueBefore") ZonedDateTime dueBefore,
-            Pageable pageable
-    );
-
-    @Query("""
-            SELECT c
-            FROM Consultation c
-            WHERE c.nextReminderAt IS NOT NULL
-              AND c.reminderSentAt IS NULL
-              AND c.nextReminderAt <= :dueBefore
-            ORDER BY c.nextReminderAt ASC
-            """)
-    List<Consultation> findDueRemindersForDispatch(@Param("dueBefore") ZonedDateTime dueBefore);
 }
