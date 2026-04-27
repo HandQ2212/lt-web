@@ -82,7 +82,7 @@ Tracking leads and initial consultations.
 ## 6. Financial Management
 Billing, transactions, and operational expenses.
 
-| Method | Endpoint | Description | Role Access |
+| Method | Endpoint | Description | Role Access |`
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/invoices` | List invoices and payment status | ACCOUNTANT |
 | `GET` | `/api/invoices/student/me` | Student views their own bills | STUDENT |

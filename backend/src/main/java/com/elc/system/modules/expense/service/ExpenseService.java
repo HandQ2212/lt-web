@@ -56,14 +56,17 @@ public class ExpenseService {
         return mapToResponse(expense);
     }
 
+    @Transactional(readOnly = true)
     public Page<ExpenseResponse> getAllExpenses(Pageable pageable) {
         return expenseRepository.findAll(pageable).map(this::mapToResponse);
     }
 
+    @Transactional(readOnly = true)
     public Page<ExpenseResponse> getExpensesByStatus(ExpenseStatus status, Pageable pageable) {
         return expenseRepository.findByStatus(status, pageable).map(this::mapToResponse);
     }
 
+    @Transactional(readOnly = true)
     public ExpenseResponse getExpenseById(UUID id) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Expense not found: " + id));
@@ -146,7 +149,7 @@ public class ExpenseService {
                 .approvedByName(expense.getApprovedBy() != null
                         ? expense.getApprovedBy().getFullName() : null)
                 .notes(expense.getNotes())
-                .status(expense.getStatus().name())
+                .status(expense.getStatus() != null ? expense.getStatus().name() : "DRAFT")
                 .createdAt(expense.getCreatedAt())
                 .build();
     }

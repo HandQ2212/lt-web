@@ -97,19 +97,23 @@ public class InvoiceService {
                 return mapToResponse(invoice);
         }
 
+        @Transactional(readOnly = true)
         public Page<InvoiceResponse> getAllInvoices(Pageable pageable) {
                 return invoiceRepository.findAll(pageable).map(this::mapToResponse);
         }
 
+        @Transactional(readOnly = true)
         public Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, Pageable pageable) {
                 return invoiceRepository.findByStatus(status, pageable).map(this::mapToResponse);
         }
 
+        @Transactional(readOnly = true)
         public Page<InvoiceResponse> getMyInvoices(Pageable pageable) {
                 User currentUser = userService.getCurrentUser();
                 return invoiceRepository.findByStudentId(currentUser.getId(), pageable).map(this::mapToResponse);
         }
 
+        @Transactional(readOnly = true)
         public InvoiceResponse getInvoiceById(UUID id) {
                 Invoice invoice = invoiceRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Invoice not found: " + id));
@@ -119,6 +123,7 @@ public class InvoiceService {
         /**
          * Get overdue invoices (debt list).
          */
+        @Transactional(readOnly = true)
         public Page<InvoiceResponse> getOverdueInvoices(Pageable pageable) {
                 return invoiceRepository.findOverdueInvoices(LocalDate.now(), pageable).map(this::mapToResponse);
         }
@@ -192,7 +197,7 @@ public class InvoiceService {
                                 .paidAmount(invoice.getPaidAmount())
                                 .remainingBalance(invoice.getRemainingBalance())
                                 .dueDate(invoice.getDueDate())
-                                .status(invoice.getStatus().name())
+                                .status(invoice.getStatus() != null ? invoice.getStatus().name() : "PENDING")
                                 .paymentMethod(invoice.getPaymentMethod())
                                 .notes(invoice.getNotes())
                                 .createdAt(invoice.getCreatedAt())

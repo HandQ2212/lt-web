@@ -66,6 +66,8 @@ public class Invoice extends BaseEntity {
      * Get remaining balance.
      */
     public BigDecimal getRemainingBalance() {
-        return totalAmount.subtract(paidAmount);
+        BigDecimal total = totalAmount != null ? totalAmount : BigDecimal.ZERO;
+        BigDecimal paid = paidAmount != null ? paidAmount : BigDecimal.ZERO;
+        return total.subtract(paid);
     }
 }
