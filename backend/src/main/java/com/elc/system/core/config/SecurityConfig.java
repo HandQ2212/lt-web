@@ -34,6 +34,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/forgot-password").permitAll()
                         .requestMatchers("/api/auth/reset-password").permitAll()
 
+                        // Payment gateway callbacks (called by VNPay/MoMo servers)
+                        .requestMatchers("/api/payment/vnpay/ipn").permitAll()
+                        .requestMatchers("/api/payment/vnpay/return").permitAll()
+                        .requestMatchers("/api/payment/momo/ipn").permitAll()
+
                         // All other API endpoints require authentication
                         .requestMatchers("/api/**").authenticated()
 

@@ -5,8 +5,8 @@ spring:
     active: local
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    username: postgres
+    password: 123456
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -39,6 +39,24 @@ app:
 
 server:
   port: 8080
+
+payroll:
+  default-rate-per-session: ${PAYROLL_RATE:300000}
+
+payment:
+  vnpay:
+    tmn-code: ${VNPAY_TMN_CODE:DEMO_TMN}
+    hash-secret: ${VNPAY_HASH_SECRET:DEMO_SECRET}
+    pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+    return-url: ${VNPAY_RETURN_URL:http://localhost:3000/payment/result}
+    ipn-url: ${VNPAY_IPN_URL:http://localhost:8080/api/payment/vnpay/ipn}
+  momo:
+    partner-code: ${MOMO_PARTNER_CODE:MOMO_DEMO}
+    access-key: ${MOMO_ACCESS_KEY:DEMO_KEY}
+    secret-key: ${MOMO_SECRET_KEY:DEMO_SECRET}
+    pay-url: ${MOMO_PAY_URL:https://test-payment.momo.vn/v2/gateway/api/create}
+    return-url: ${MOMO_RETURN_URL:http://localhost:3000/payment/result}
+    ipn-url: ${MOMO_IPN_URL:http://localhost:8080/api/payment/momo/ipn}
 
 logging:
   level:

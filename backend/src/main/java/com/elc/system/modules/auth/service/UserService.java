@@ -27,6 +27,11 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    public User getUserById(java.util.UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+    }
+
     @Transactional
     public void updateProfile(ProfileUpdateRequest request) {
         User user = getCurrentUser();

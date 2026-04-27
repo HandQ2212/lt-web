@@ -1,6 +1,8 @@
 package com.elc.system.core.exception;
 
-import com.elc.system.modules.auth.exception.*;
+import com.elc.system.modules.auth.exception.InvalidCredentialsException;
+import com.elc.system.modules.auth.exception.InvalidTokenException;
+import com.elc.system.modules.auth.exception.UserAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -58,6 +60,17 @@ public class GlobalExceptionHandler {
                 .timestamp(ZonedDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(404)
+                .message(ex.getMessage())
+                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

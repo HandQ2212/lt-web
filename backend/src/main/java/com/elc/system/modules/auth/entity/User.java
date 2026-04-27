@@ -22,7 +22,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@lombok.experimental.SuperBuilder
 public class User extends BaseEntity implements UserDetails {
 
     @Column(nullable = false, unique = true)
