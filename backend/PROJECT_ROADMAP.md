@@ -47,9 +47,9 @@ Tập trung vào quản lý tài nguyên và khách hàng tiềm năng.
 
 ### Milestone 2: Center Resources (Tuần 3)
 - **[SM-001] Quản lý Chi nhánh & Khóa học - Nhánh feature/BTL-11**
-    - [ ] API quản lý danh sách Chi nhánh (CRUD Branch).
-    - [ ] API quản lý danh mục Khóa học (CRUD Course) và cấp độ (Level).
-    - [ ] Logic kiểm tra xóa chi nhánh (Không cho xóa nếu còn lớp đang hoạt động).
+    - [x] API quản lý danh sách Chi nhánh (CRUD Branch).
+    - [x] API quản lý danh mục Khóa học (CRUD Course) và cấp độ (Level).
+    - [x] Logic kiểm tra xóa chi nhánh (Không cho xóa nếu còn lớp đang hoạt động).
 - **[SM-002] Quản lý Phòng học (Rooms) - Nhánh feature/BTL-12**
     - [ ] API CRUD Room (Tên phòng, Sức chứa, Loại phòng).
     - [ ] Logic kiểm tra tình trạng sử dụng phòng học theo thời gian thực.
