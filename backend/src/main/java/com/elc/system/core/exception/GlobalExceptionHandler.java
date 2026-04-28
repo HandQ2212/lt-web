@@ -2,6 +2,7 @@ package com.elc.system.core.exception;
 
 import com.elc.system.modules.auth.exception.*;
 import jakarta.validation.ConstraintViolationException;
+import com.elc.system.modules.room.exception.RoomException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,6 +19,17 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(RoomException.class)
+    public ResponseEntity<ErrorResponse> handleRoomException(RoomException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(ex.getStatus())
+                .message(ex.getMessage())
+                .error(HttpStatus.valueOf(ex.getStatus()).getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex) {
