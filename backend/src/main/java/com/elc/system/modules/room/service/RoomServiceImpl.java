@@ -66,7 +66,13 @@ public class RoomServiceImpl implements RoomService {
         if (!roomRepository.existsById(id)) {
             throw new RoomNotFoundException("Room not found with id: " + id);
         }
-        // TODO: Check if room has active schedules before deleting
+        
+        // Check if room has future schedules before deleting
+        boolean hasFutureSchedules = !roomScheduleRepository.findOverlappingSchedules(id, LocalDateTime.now(), LocalDateTime.now().plusYears(10)).isEmpty();
+        if (hasFutureSchedules) {
+            throw new RoomConflictException("Cannot delete room with active or future schedules. Please cancel them first.");
+        }
+
         roomRepository.deleteById(id);
         log.info("Deleted room with id: {}", id);
     }

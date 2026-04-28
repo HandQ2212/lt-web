@@ -40,12 +40,12 @@ public class NotificationService {
     @Transactional
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found with id: " + notificationId));
 
         // Security: Ensure user only marks their own notification
         User currentUser = userService.getCurrentUser();
         if (!notification.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new IllegalArgumentException("Access denied: You do not have permission to mark this notification as read");
         }
 
         notification.setRead(true);
