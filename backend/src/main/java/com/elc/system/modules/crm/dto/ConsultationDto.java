@@ -5,7 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -16,11 +17,17 @@ public class ConsultationDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ConsultationRequest {
+        @NotNull(message = "Lead ID is required")
         private UUID leadId;
+
         private UUID consultantId;
+        
         private ZonedDateTime consultationDate;
+
+        @NotBlank(message = "Notes are required")
         private String notes;
-        private LocalDate followUpDate;
+
+        private java.time.LocalDate followUpDate;
     }
 
     @Data
@@ -35,7 +42,7 @@ public class ConsultationDto {
         private String consultantName;
         private ZonedDateTime consultationDate;
         private String notes;
-        private LocalDate followUpDate;
+        private java.time.LocalDate followUpDate;
         private ZonedDateTime createdAt;
         private ZonedDateTime updatedAt;
     }

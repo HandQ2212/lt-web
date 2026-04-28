@@ -28,8 +28,9 @@ public class Attendance extends BaseEntity {
     @Column(name = "attendance_date")
     private LocalDate attendanceDate = LocalDate.now();
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private boolean present = true;
+    private AttendanceStatus status = AttendanceStatus.PRESENT;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

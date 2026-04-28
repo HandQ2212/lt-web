@@ -1,12 +1,14 @@
 package com.elc.system.modules.lms.dto;
 
 import com.elc.system.modules.lms.entity.ClassStatus;
+import com.elc.system.modules.sms.dto.ClassScheduleDto.ScheduleResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public class ClassDto {
@@ -46,5 +48,6 @@ public class ClassDto {
         private LocalDate startDate;
         private LocalDate endDate;
         private Integer maxStudents;
+        private List<ScheduleResponse> schedules;
     }
 }
