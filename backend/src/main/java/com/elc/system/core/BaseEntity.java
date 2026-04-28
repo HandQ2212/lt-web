@@ -1,4 +1,4 @@
-package com.elc.system.core;
+﻿package com.elc.system.core;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;

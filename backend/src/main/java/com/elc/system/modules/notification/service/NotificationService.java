@@ -26,8 +26,7 @@ public class NotificationService {
 
     public Page<NotificationResponse> getMyNotifications(Pageable pageable) {
         User user = userService.getCurrentUser();
-        return notificationRepository
-                .findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
                 .map(this::mapToResponse);
     }
 
@@ -54,6 +53,13 @@ public class NotificationService {
     }
 
     @Transactional
+    public void markAllAsRead() {
+        User user = userService.getCurrentUser();
+        notificationRepository.markAllAsRead(user.getId());
+        log.info("All notifications marked as read for user: {}", user.getEmail());
+    }
+
+    @Transactional
     public void createNotification(User user, String title, String message, NotificationType type) {
         Notification notification = Notification.builder()
                 .user(user)
@@ -72,7 +78,7 @@ public class NotificationService {
                 .title(notification.getTitle())
                 .message(notification.getMessage())
                 .isRead(notification.isRead())
-                .type(notification.getType().name())
+                .type(notification.getType() != null ? notification.getType().name() : null)
                 .createdAt(notification.getCreatedAt())
                 .build();
     }

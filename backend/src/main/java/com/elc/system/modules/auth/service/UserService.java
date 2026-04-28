@@ -1,7 +1,8 @@
 package com.elc.system.modules.auth.service;
 
-import com.elc.system.modules.auth.dto.AuthDto.ChangePasswordRequest;
-import com.elc.system.modules.auth.dto.AuthDto.ProfileUpdateRequest;
+import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
+import com.elc.system.modules.auth.dto.UserDto.ChangePasswordRequest;
+import com.elc.system.modules.auth.dto.UserDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,15 +21,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public User getCurrentUser() {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    public UserResponse getCurrentUserResponse() {
+        return mapToUserResponse(getCurrentUser());
+    }
+
     @Transactional
-    public void updateProfile(ProfileUpdateRequest request) {
+    public UserResponse updateProfile(ProfileUpdateRequest request) {
         User user = getCurrentUser();
 
         user.setFullName(request.getFullName());
@@ -40,6 +43,7 @@ public class UserService {
 
         userRepository.save(user);
         log.info("Profile updated for user: {}", user.getEmail());
+        return mapToUserResponse(user);
     }
 
     @Transactional
@@ -56,5 +60,14 @@ public class UserService {
         userRepository.save(user);
 
         log.info("Password changed for user: {}", user.getEmail());
+    }
+
+    private UserResponse mapToUserResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .build();
     }
 }
