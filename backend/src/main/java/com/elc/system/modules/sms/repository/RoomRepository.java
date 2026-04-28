@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
-@Repository
+@Repository("smsRoomRepository")
 public interface RoomRepository extends JpaRepository<Room, UUID> {
     List<Room> findByBranchId(UUID branchId);
 }

@@ -4,7 +4,7 @@ import com.elc.system.modules.analytics.dto.AcademicAnalyticsDto;
 import com.elc.system.modules.analytics.dto.BranchAnalyticsDto;
 import com.elc.system.modules.analytics.dto.DashboardDto;
 import com.elc.system.modules.analytics.dto.RevenueAnalyticsDto;
-import com.elc.system.modules.crm.repository.LeadRepository;
+import com.elc.system.modules.lead.repository.LeadRepository;
 import com.elc.system.modules.finance.entity.Invoice;
 import com.elc.system.modules.finance.entity.Payment;
 import com.elc.system.modules.finance.repository.InvoiceRepository;

@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@RestController
-@RequestMapping("/api/rooms")
+@RestController("smsRoomController")
+@RequestMapping("/api/sms/rooms")
 @RequiredArgsConstructor
 public class RoomController {
 

@@ -8,7 +8,7 @@ import lombok.*;
  * Entity representing a classroom in a branch.
  * Mapped to public.rooms table.
  */
-@Entity
+@Entity(name = "SmsRoom")
 @Table(name = "rooms", schema = "public")
 @Getter
 @Setter
