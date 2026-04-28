@@ -38,8 +38,20 @@ Managing center infrastructure, courses, and class schedules.
 | Method | Endpoint | Description | Role Access |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/branches` | List all center branches | PUBLIC |
+| `GET` | `/api/branches/{id}` | Get branch details by ID | PUBLIC |
+| `POST` | `/api/branches` | Create a new branch | MANAGER |
+| `PUT` | `/api/branches/{id}` | Update branch information | MANAGER |
+| `DELETE` | `/api/branches/{id}` | Delete branch (blocked if branch still has active classes) | MANAGER |
 | `GET` | `/api/courses` | List courses (filtering by level/status) | PUBLIC |
+| `GET` | `/api/courses/{id}` | Get course details by ID | PUBLIC |
 | `POST` | `/api/courses` | Create new course training program | MANAGER |
+| `PUT` | `/api/courses/{id}` | Update course information | MANAGER |
+| `DELETE` | `/api/courses/{id}` | Delete course | MANAGER |
+| `GET` | `/api/levels` | List all course levels | PUBLIC |
+| `GET` | `/api/levels/{id}` | Get level details by ID | PUBLIC |
+| `POST` | `/api/levels` | Create a new course level | MANAGER |
+| `PUT` | `/api/levels/{id}` | Update level information | MANAGER |
+| `DELETE` | `/api/levels/{id}` | Delete level (blocked if level is used by courses) | MANAGER |
 | `GET` | `/api/rooms` | List classrooms and status | MANAGER |
 | `GET` | `/api/classes` | List active/upcoming classes | AUTHENTICATED |
 | `POST` | `/api/classes` | Open a new class session | MANAGER |

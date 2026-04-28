@@ -3,6 +3,7 @@ package com.elc.system.core.config;
 import com.elc.system.core.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -35,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/forgot-password").permitAll()
                         .requestMatchers("/api/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/branches/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/levels/**").permitAll()
 
                         // All other API endpoints require authentication
                         .requestMatchers("/api/**").authenticated()
