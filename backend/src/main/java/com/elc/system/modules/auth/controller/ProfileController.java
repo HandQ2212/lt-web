@@ -1,8 +1,8 @@
 package com.elc.system.modules.auth.controller;
 
-import com.elc.system.modules.auth.dto.AuthDto.ChangePasswordRequest;
-import com.elc.system.modules.auth.dto.AuthDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
+import com.elc.system.modules.auth.dto.UserDto.ChangePasswordRequest;
+import com.elc.system.modules.auth.dto.UserDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.service.UserService;
 import jakarta.validation.Valid;
@@ -20,25 +20,19 @@ public class ProfileController {
 
     @GetMapping
     public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(UserResponse.builder()
-                .id(currentUser.getId())
-                .email(currentUser.getEmail())
-                .fullName(currentUser.getFullName())
-                .role(currentUser.getRole())
-                .build());
+        return ResponseEntity.ok(userService.getCurrentUserResponse());
     }
 
     @PutMapping
-    public ResponseEntity<String> updateProfile(
+    public ResponseEntity<UserResponse> updateProfile(
             @Valid @RequestBody ProfileUpdateRequest request) {
-        userService.updateProfile(request);
-        return ResponseEntity.ok("Profile updated successfully");
+        return ResponseEntity.ok(userService.updateProfile(request));
     }
 
     @PutMapping("/password")
-    public ResponseEntity<String> changePassword(
+    public ResponseEntity<Void> changePassword(
             @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
-        return ResponseEntity.ok("Password changed successfully");
+        return ResponseEntity.ok().build();
     }
 }
