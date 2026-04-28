@@ -65,7 +65,7 @@ public class AnalyticsService {
 
         List<com.elc.system.modules.lms.entity.Attendance> allAttendance = attendanceRepository.findAll();
         double avgAttendance = allAttendance.isEmpty() ? 0.0 : 
-                (double) allAttendance.stream().filter(com.elc.system.modules.lms.entity.Attendance::isPresent).count() / allAttendance.size();
+                (double) allAttendance.stream().filter(a -> a.getStatus() == com.elc.system.modules.lms.entity.AttendanceStatus.PRESENT).count() / allAttendance.size();
 
         return DashboardDto.builder()
                 .totalStudents(totalStudents)

@@ -1,8 +1,7 @@
 package com.elc.system.modules.lms.service;
 
 import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.lms.dto.AssignmentDto.AssignmentRequest;
-import com.elc.system.modules.lms.dto.AssignmentDto.AssignmentResponse;
+import com.elc.system.modules.lms.dto.AssignmentDto.*;
 import com.elc.system.modules.lms.entity.Assignment;
 import com.elc.system.modules.lms.entity.Clazz;
 import com.elc.system.modules.lms.repository.AssignmentRepository;

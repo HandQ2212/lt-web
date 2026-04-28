@@ -1,8 +1,7 @@
 package com.elc.system.modules.lms.controller;
 
 import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.lms.dto.AssignmentDto.AssignmentRequest;
-import com.elc.system.modules.lms.dto.AssignmentDto.AssignmentResponse;
+import com.elc.system.modules.lms.dto.AssignmentDto.*;
 import com.elc.system.modules.lms.service.AssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

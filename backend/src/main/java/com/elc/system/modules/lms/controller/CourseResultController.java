@@ -1,7 +1,6 @@
 package com.elc.system.modules.lms.controller;
 
-import com.elc.system.modules.lms.dto.CourseResultDto.CourseResultRequest;
-import com.elc.system.modules.lms.dto.CourseResultDto.CourseResultResponse;
+import com.elc.system.modules.lms.dto.CourseResultDto.*;
 import com.elc.system.modules.lms.service.CourseResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,6 @@
 package com.elc.system.modules.lms.controller;
 
-import com.elc.system.modules.lms.dto.EnrollmentDto.EnrollmentRequest;
-import com.elc.system.modules.lms.dto.EnrollmentDto.EnrollmentResponse;
+import com.elc.system.modules.lms.dto.EnrollmentDto.*;
 import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import com.elc.system.modules.lms.service.EnrollmentService;
 import jakarta.validation.Valid;

@@ -2,8 +2,7 @@ package com.elc.system.modules.lms.service;
 
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.repository.UserRepository;
-import com.elc.system.modules.lms.dto.EnrollmentDto.EnrollmentRequest;
-import com.elc.system.modules.lms.dto.EnrollmentDto.EnrollmentResponse;
+import com.elc.system.modules.lms.dto.EnrollmentDto.*;
 import com.elc.system.modules.lms.entity.ClassStatus;
 import com.elc.system.modules.lms.entity.Clazz;
 import com.elc.system.modules.lms.entity.Enrollment;

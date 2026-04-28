@@ -1,9 +1,7 @@
 package com.elc.system.modules.lms.controller;
 
 import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.lms.dto.SubmissionDto.GradeRequest;
-import com.elc.system.modules.lms.dto.SubmissionDto.SubmissionRequest;
-import com.elc.system.modules.lms.dto.SubmissionDto.SubmissionResponse;
+import com.elc.system.modules.lms.dto.SubmissionDto.*;
 import com.elc.system.modules.lms.service.SubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
