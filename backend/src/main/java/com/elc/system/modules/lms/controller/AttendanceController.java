@@ -1,7 +1,6 @@
 package com.elc.system.modules.lms.controller;
 
-import com.elc.system.modules.lms.dto.AttendanceDto.AttendanceRequest;
-import com.elc.system.modules.lms.dto.AttendanceDto.AttendanceResponse;
+import com.elc.system.modules.lms.dto.AttendanceDto.*;
 import com.elc.system.modules.lms.service.AttendanceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -55,7 +55,7 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "branch_id")
     private UUID branchId;
 
-    @Column(name = "refresh_token")
+    @Column(name = "refresh_token", unique = true)
     private String refreshToken;
 
     @Override
@@ -87,9 +87,6 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return status == UserStatus.ACTIVE;
     }
-
-    @Column(unique = true)
-    private String refreshToken;
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     @Builder.Default

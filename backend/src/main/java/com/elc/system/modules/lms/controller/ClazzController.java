@@ -1,7 +1,6 @@
 package com.elc.system.modules.lms.controller;
 
-import com.elc.system.modules.lms.dto.ClassDto.ClassRequest;
-import com.elc.system.modules.lms.dto.ClassDto.ClassResponse;
+import com.elc.system.modules.lms.dto.ClassDto.*;
 import com.elc.system.modules.lms.entity.ClassStatus;
 import com.elc.system.modules.lms.service.ClazzService;
 import com.elc.system.modules.sms.dto.ClassScheduleDto.*;
