@@ -42,6 +42,9 @@ public class LeadService {
                 .fullName(request.getFullName())
                 .email(normalizeBlankToNull(request.getEmail()))
                 .phone(request.getPhone())
+                .dateOfBirth(request.getDateOfBirth())
+                .gender(request.getGender())
+                .address(request.getAddress())
                 .preferredLevel(request.getPreferredLevel())
                 .assessmentScore(request.getAssessmentScore())
                 .status(request.getStatus() != null ? request.getStatus() : LeadStatus.NEW)
@@ -54,7 +57,7 @@ public class LeadService {
         log.info("Lead created: {}", lead.getId());
         return mapToResponse(lead);
     }
-
+ 
     public Page<LeadResponse> getLeads(LeadStatus status,
                                        LeadSource source,
                                        LocalDate fromDate,
@@ -82,6 +85,9 @@ public class LeadService {
         lead.setFullName(request.getFullName());
         lead.setEmail(normalizeBlankToNull(request.getEmail()));
         lead.setPhone(request.getPhone());
+        lead.setDateOfBirth(request.getDateOfBirth());
+        lead.setGender(request.getGender());
+        lead.setAddress(request.getAddress());
         lead.setPreferredLevel(request.getPreferredLevel());
         lead.setAssessmentScore(request.getAssessmentScore());
         lead.setStatus(request.getStatus() != null ? request.getStatus() : lead.getStatus());
@@ -93,7 +99,7 @@ public class LeadService {
         log.info("Lead updated: {}", lead.getId());
         return mapToResponse(lead);
     }
-
+ 
     @Transactional
     public LeadResponse updateLeadStatus(UUID id, UpdateLeadStatusRequest request) {
         if (request.getStatus() == null) {
@@ -133,6 +139,9 @@ public class LeadService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(lead.getFullName())
                 .phone(lead.getPhone())
+                .dateOfBirth(lead.getDateOfBirth())
+                .gender(lead.getGender())
+                .address(lead.getAddress())
                 .role(UserRole.STUDENT)
                 .status(UserStatus.ACTIVE)
                 .branchId(lead.getBranchId())
@@ -168,6 +177,9 @@ public class LeadService {
                 .fullName(lead.getFullName())
                 .email(lead.getEmail())
                 .phone(lead.getPhone())
+                .dateOfBirth(lead.getDateOfBirth())
+                .gender(lead.getGender())
+                .address(lead.getAddress())
                 .preferredLevel(lead.getPreferredLevel())
                 .assessmentScore(lead.getAssessmentScore())
                 .status(lead.getStatus())

@@ -71,4 +71,12 @@ public class RoomController {
     public ResponseEntity<RoomScheduleResponse> bookRoom(@PathVariable UUID id, @Valid @RequestBody RoomScheduleRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(roomService.bookRoom(id, request));
     }
+
+    @GetMapping("/{id}/schedules")
+    public ResponseEntity<List<RoomScheduleResponse>> getSchedules(
+            @PathVariable UUID id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+        return ResponseEntity.ok(roomService.getRoomSchedules(id, startTime, endTime));
+    }
 }

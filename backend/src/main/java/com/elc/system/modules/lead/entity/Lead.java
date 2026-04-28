@@ -31,7 +31,16 @@ public class Lead extends BaseEntity {
 
     @Column(name = "phone", nullable = false)
     private String phone;
-
+ 
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+ 
+    @Column(name = "gender")
+    private String gender;
+ 
+    @Column(name = "address")
+    private String address;
+ 
     @Column(name = "preferred_level")
     private String preferredLevel;
 

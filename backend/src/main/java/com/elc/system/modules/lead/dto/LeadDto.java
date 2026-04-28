@@ -35,7 +35,13 @@ public class LeadDto {
         @NotBlank(message = "Phone is required")
         @Pattern(regexp = "^(0|\\+84)[0-9]{9,10}$", message = "Phone format is invalid")
         private String phone;
-
+ 
+        private java.time.LocalDate dateOfBirth;
+ 
+        private String gender;
+ 
+        private String address;
+ 
         @Size(max = 50, message = "Preferred level must be at most 50 characters")
         private String preferredLevel;
 
@@ -68,6 +74,12 @@ public class LeadDto {
         @NotBlank(message = "Phone is required")
         @Pattern(regexp = "^(0|\\+84)[0-9]{9,10}$", message = "Phone format is invalid")
         private String phone;
+
+        private java.time.LocalDate dateOfBirth;
+
+        private String gender;
+
+        private String address;
 
         @Size(max = 50, message = "Preferred level must be at most 50 characters")
         private String preferredLevel;
@@ -119,6 +131,9 @@ public class LeadDto {
         private String fullName;
         private String email;
         private String phone;
+        private java.time.LocalDate dateOfBirth;
+        private String gender;
+        private String address;
         private String preferredLevel;
         private Integer assessmentScore;
         private LeadStatus status;

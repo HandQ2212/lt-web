@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 import java.util.UUID;
 
 @Entity
-@Table(name = "rooms")
+@Table(name = "rooms", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor

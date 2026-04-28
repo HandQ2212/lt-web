@@ -22,4 +22,6 @@ public interface RoomService {
     String getRoomCurrentStatus(UUID roomId);
     
     RoomScheduleResponse bookRoom(UUID roomId, RoomScheduleRequest request);
+
+    List<RoomScheduleResponse> getRoomSchedules(UUID roomId, LocalDateTime start, LocalDateTime end);
 }

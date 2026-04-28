@@ -9,10 +9,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface ConsultationRepository extends JpaRepository<Consultation, UUID> {
+
+    List<Consultation> findByLeadIdOrderByConsultationDateDesc(UUID leadId);
+
+    List<Consultation> findByConsultantIdAndNextReminderAtBetweenOrderByNextReminderAtAsc(
+            UUID consultantId, ZonedDateTime start, ZonedDateTime end);
 
     @Query("""
             SELECT c

@@ -120,4 +120,14 @@ public class RoomServiceImpl implements RoomService {
         log.info("Booked room {} from {} to {}", room.getName(), request.getStartTime(), request.getEndTime());
         return roomMapper.toResponse(schedule);
     }
+
+    @Override
+    public List<RoomScheduleResponse> getRoomSchedules(UUID roomId, LocalDateTime start, LocalDateTime end) {
+        if (!roomRepository.existsById(roomId)) {
+            throw new RoomNotFoundException("Room not found with id: " + roomId);
+        }
+        return roomScheduleRepository.findOverlappingSchedules(roomId, start, end).stream()
+                .map(roomMapper::toResponse)
+                .collect(Collectors.toList());
+    }
 }
