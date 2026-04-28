@@ -39,6 +39,9 @@ public class Invoice extends BaseEntity {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "final_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal finalAmount;
+
     @Column(name = "paid_amount", precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO;

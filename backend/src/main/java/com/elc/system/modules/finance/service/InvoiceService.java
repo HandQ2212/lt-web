@@ -36,7 +36,8 @@ public class InvoiceService {
         public InvoiceResponse generateInvoiceForEnrollment(UUID studentId, UUID enrollmentId,
                         BigDecimal coursePrice, BigDecimal discount) {
                 BigDecimal discountAmount = discount != null ? discount : BigDecimal.ZERO;
-                BigDecimal totalAmount = coursePrice.subtract(discountAmount);
+                BigDecimal totalAmount = coursePrice;
+                BigDecimal finalAmount = totalAmount.subtract(discountAmount);
 
                 Invoice invoice = Invoice.builder()
                                 .student(User.builder().build())
@@ -44,6 +45,7 @@ public class InvoiceService {
                                 .amount(coursePrice)
                                 .discountAmount(discountAmount)
                                 .totalAmount(totalAmount)
+                                .finalAmount(finalAmount)
                                 .paidAmount(BigDecimal.ZERO)
                                 .dueDate(LocalDate.now().plusDays(30))
                                 .status(InvoiceStatus.PENDING)
@@ -70,7 +72,8 @@ public class InvoiceService {
                 BigDecimal discountAmount = request.getDiscountAmount() != null
                                 ? request.getDiscountAmount()
                                 : BigDecimal.ZERO;
-                BigDecimal totalAmount = request.getAmount().subtract(discountAmount);
+                BigDecimal totalAmount = request.getAmount();
+                BigDecimal finalAmount = totalAmount.subtract(discountAmount);
 
                 Invoice invoice = Invoice.builder()
                                 .student(student)
@@ -78,6 +81,7 @@ public class InvoiceService {
                                 .amount(request.getAmount())
                                 .discountAmount(discountAmount)
                                 .totalAmount(totalAmount)
+                                .finalAmount(finalAmount)
                                 .paidAmount(BigDecimal.ZERO)
                                 .dueDate(request.getDueDate())
                                 .status(InvoiceStatus.PENDING)
@@ -194,6 +198,7 @@ public class InvoiceService {
                                 .amount(invoice.getAmount())
                                 .discountAmount(invoice.getDiscountAmount())
                                 .totalAmount(invoice.getTotalAmount())
+                                .finalAmount(invoice.getFinalAmount())
                                 .paidAmount(invoice.getPaidAmount())
                                 .remainingBalance(invoice.getRemainingBalance())
                                 .dueDate(invoice.getDueDate())

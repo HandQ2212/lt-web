@@ -42,6 +42,7 @@ public class PayrollService {
     /**
      * Calculate payroll for a specific teacher for a given month.
      */
+    @Transactional(readOnly = true)
     public PayrollResponse calculatePayroll(UUID teacherId, int month, int year) {
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
@@ -92,6 +93,7 @@ public class PayrollService {
     /**
      * Calculate payroll summary for all teachers in a month.
      */
+    @Transactional(readOnly = true)
     public PayrollSummary calculateMonthlyPayroll(int month, int year) {
         List<User> teachers = userRepository.findActiveByRole(UserRole.TEACHER);
 

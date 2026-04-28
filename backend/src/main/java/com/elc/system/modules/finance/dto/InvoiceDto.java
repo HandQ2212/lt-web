@@ -22,6 +22,7 @@ public class InvoiceDto {
         private BigDecimal amount;
         private BigDecimal discountAmount;
         private BigDecimal totalAmount;
+        private BigDecimal finalAmount;
         private BigDecimal paidAmount;
         private BigDecimal remainingBalance;
         private LocalDate dueDate;
