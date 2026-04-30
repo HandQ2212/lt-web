@@ -6,6 +6,7 @@ import com.elc.system.modules.notification.dto.NotificationDto.NotificationRespo
 import com.elc.system.modules.notification.dto.NotificationDto.UnreadCountResponse;
 import com.elc.system.modules.notification.entity.Notification;
 import com.elc.system.modules.notification.entity.NotificationType;
+import com.elc.system.modules.notification.exception.NotificationNotFoundException;
 import com.elc.system.modules.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,7 @@ public class NotificationService {
     @Transactional
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found with id: " + notificationId));
+                .orElseThrow(() -> new NotificationNotFoundException("Notification not found with id: " + notificationId));
 
         // Security: Ensure user only marks their own notification
         User currentUser = userService.getCurrentUser();

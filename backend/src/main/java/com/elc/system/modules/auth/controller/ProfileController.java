@@ -1,10 +1,10 @@
 package com.elc.system.modules.auth.controller;
 
 import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
-import com.elc.system.modules.auth.dto.UserDto.ChangePasswordRequest;
-import com.elc.system.modules.auth.dto.UserDto.ProfileUpdateRequest;
+import com.elc.system.modules.auth.dto.ProfileDto.ChangePasswordRequest;
+import com.elc.system.modules.auth.dto.ProfileDto.ProfileUpdateRequest;
 import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.auth.service.UserService;
+import com.elc.system.modules.auth.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,23 +16,23 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ProfileController {
 
-    private final UserService userService;
+    private final ProfileService profileService;
 
     @GetMapping
     public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(userService.getCurrentUserResponse());
+        return ResponseEntity.ok(profileService.getCurrentUserResponse());
     }
 
     @PutMapping
     public ResponseEntity<UserResponse> updateProfile(
             @Valid @RequestBody ProfileUpdateRequest request) {
-        return ResponseEntity.ok(userService.updateProfile(request));
+        return ResponseEntity.ok(profileService.updateProfile(request));
     }
 
     @PutMapping("/password")
     public ResponseEntity<Void> changePassword(
             @Valid @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(request);
+        profileService.changePassword(request);
         return ResponseEntity.ok().build();
     }
 }

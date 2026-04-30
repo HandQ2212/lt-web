@@ -1,6 +1,7 @@
 package com.elc.system.core.exception;
 
 import com.elc.system.modules.auth.exception.*;
+import com.elc.system.modules.notification.exception.NotificationNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import com.elc.system.modules.room.exception.RoomException;
 import com.elc.system.modules.lms.exception.ClassDeletionException;
@@ -43,6 +44,17 @@ public class GlobalExceptionHandler {
                 .timestamp(ZonedDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotificationNotFound(NotificationNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(404)
+                .message(ex.getMessage())
+                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)

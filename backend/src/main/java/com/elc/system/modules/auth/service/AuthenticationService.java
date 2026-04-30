@@ -48,7 +48,7 @@ public class AuthenticationService {
                 .dateOfBirth(request.getDateOfBirth())
                 .gender(request.getGender())
                 .address(request.getAddress())
-                .role(request.getRole() != null ? request.getRole() : UserRole.LEAD)
+                .role(UserRole.LEAD)  // Security: Always LEAD for self-registration, Manager can change later
                 .status(UserStatus.ACTIVE)
                 .branchId(request.getBranchId())
                 .build();

@@ -10,11 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Collection;
 
 @RestController
 @RequestMapping("/api/announcements")
@@ -29,16 +27,6 @@ public class AnnouncementController {
             @Valid @RequestBody CreateAnnouncementRequest request,
             Principal principal
     ) {
-        // Debug: Log user authorities
-        System.out.println("=== DEBUG CREATE ANNOUNCEMENT ===");
-        System.out.println("Principal: " + principal.getName());
-        System.out.println("Authorities: ");
-        if (principal instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken token) {
-            Collection<GrantedAuthority> authorities = (Collection<GrantedAuthority>) token.getAuthorities();
-            authorities.forEach(auth -> System.out.println("  - " + auth.getAuthority()));
-        }
-        System.out.println("==================================");
-
         return ResponseEntity.ok(announcementService.createAnnouncement(request));
     }
 
