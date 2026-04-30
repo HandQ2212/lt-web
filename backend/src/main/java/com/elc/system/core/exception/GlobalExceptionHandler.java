@@ -8,6 +8,7 @@ import com.elc.system.modules.lms.exception.ClassDeletionException;
 import com.elc.system.modules.lms.exception.InvalidClassStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -114,7 +115,29 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
- 
+
+    @ExceptionHandler(InsufficientPermissionException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientPermission(InsufficientPermissionException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(403)
+                .message(ex.getMessage())
+                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(403)
+                .message("Access denied: You do not have permission to access this resource")
+                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
         // Many service layer errors are thrown as RuntimeException (e.g., "User not found")
