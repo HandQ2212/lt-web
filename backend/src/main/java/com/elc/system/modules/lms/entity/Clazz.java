@@ -4,7 +4,7 @@ import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.sms.entity.Branch;
 import com.elc.system.modules.sms.entity.Course;
-import com.elc.system.modules.sms.entity.Room;
+import com.elc.system.modules.room.entity.Room;
 import jakarta.persistence.*;
 import lombok.*;
 
