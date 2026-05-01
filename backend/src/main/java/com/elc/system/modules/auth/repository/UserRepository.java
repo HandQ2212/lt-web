@@ -2,6 +2,8 @@ package com.elc.system.modules.auth.repository;
 
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.entity.UserRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,4 +27,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT u FROM User u WHERE u.role = :role AND u.status = 'ACTIVE'")
     List<User> findActiveByRole(@Param("role") UserRole role);
+
+    // For Admin User Management - Pagination support with optional role filter
+    @Query("SELECT u FROM User u WHERE (:role IS NULL OR u.role = :role)")
+    Page<User> findByRoleOptional(@Param("role") UserRole role, Pageable pageable);
 }

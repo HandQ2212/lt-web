@@ -6,6 +6,7 @@ import com.elc.system.modules.notification.dto.NotificationDto.NotificationRespo
 import com.elc.system.modules.notification.dto.NotificationDto.UnreadCountResponse;
 import com.elc.system.modules.notification.entity.Notification;
 import com.elc.system.modules.notification.entity.NotificationType;
+import com.elc.system.modules.notification.exception.NotificationNotFoundException;
 import com.elc.system.modules.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +27,7 @@ public class NotificationService {
 
     public Page<NotificationResponse> getMyNotifications(Pageable pageable) {
         User user = userService.getCurrentUser();
-        return notificationRepository
-                .findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
                 .map(this::mapToResponse);
     }
 
@@ -40,7 +40,7 @@ public class NotificationService {
     @Transactional
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found with id: " + notificationId));
+                .orElseThrow(() -> new NotificationNotFoundException("Notification not found with id: " + notificationId));
 
         // Security: Ensure user only marks their own notification
         User currentUser = userService.getCurrentUser();
@@ -51,6 +51,13 @@ public class NotificationService {
         notification.setRead(true);
         notificationRepository.save(notification);
         log.info("Notification {} marked as read by user {}", notificationId, currentUser.getEmail());
+    }
+
+    @Transactional
+    public void markAllAsRead() {
+        User user = userService.getCurrentUser();
+        notificationRepository.markAllAsRead(user.getId());
+        log.info("All notifications marked as read for user: {}", user.getEmail());
     }
 
     @Transactional
@@ -72,7 +79,7 @@ public class NotificationService {
                 .title(notification.getTitle())
                 .message(notification.getMessage())
                 .isRead(notification.isRead())
-                .type(notification.getType().name())
+                .type(notification.getType() != null ? notification.getType().name() : null)
                 .createdAt(notification.getCreatedAt())
                 .build();
     }

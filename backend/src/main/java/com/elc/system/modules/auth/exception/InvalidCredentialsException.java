@@ -9,4 +9,8 @@ public class InvalidCredentialsException extends AuthException {
     public InvalidCredentialsException() {
         super("Invalid email or password", 401);
     }
+
+    public InvalidCredentialsException(String message) {
+        super(message, 401);
+    }
 }

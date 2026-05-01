@@ -31,9 +31,15 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getUnreadCount());
     }
 
-    @PatchMapping("/{id}/read")
+    @PutMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable UUID id) {
         notificationService.markAsRead(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllAsRead() {
+        notificationService.markAllAsRead();
         return ResponseEntity.noContent().build();
     }
 }

@@ -23,7 +23,7 @@ public class Room extends BaseEntity {
     private Integer capacity;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private RoomType type;
 
     private String description;

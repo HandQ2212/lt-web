@@ -13,6 +13,11 @@ public class AuthException extends RuntimeException {
         this.status = status;
     }
 
+    public AuthException(String message, int status, Throwable cause) {
+        super(message, cause);
+        this.status = status;
+    }
+
     public int getStatus() {
         return status;
     }
