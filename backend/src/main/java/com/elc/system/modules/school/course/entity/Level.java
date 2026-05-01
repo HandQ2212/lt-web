@@ -10,13 +10,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import lombok.experimental.SuperBuilder;
+
 @Entity
 @Table(name = "levels", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Level extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 50)
