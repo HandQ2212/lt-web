@@ -42,6 +42,25 @@ public class CourseService {
         return mapToResponse(courseRepository.save(course));
     }
 
+    @Transactional
+    public CourseResponse updateCourse(UUID id, CourseRequest request) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        course.setName(request.getName());
+        course.setDescription(request.getDescription());
+        course.setLevel(request.getLevel());
+        course.setBasePrice(request.getBasePrice());
+        return mapToResponse(courseRepository.save(course));
+    }
+
+    @Transactional
+    public void deleteCourse(UUID id) {
+        if (!courseRepository.existsById(id)) {
+            throw new RuntimeException("Course not found");
+        }
+        courseRepository.deleteById(id);
+    }
+
     private CourseResponse mapToResponse(Course course) {
         return CourseResponse.builder()
                 .id(course.getId())

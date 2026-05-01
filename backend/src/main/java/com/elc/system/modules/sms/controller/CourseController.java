@@ -6,6 +6,7 @@ import com.elc.system.modules.sms.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,7 +30,24 @@ public class CourseController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('MANAGER')")
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
         return ResponseEntity.ok(courseService.createCourse(request));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER')")
+    public ResponseEntity<CourseResponse> updateCourse(
+            @PathVariable UUID id,
+            @Valid @RequestBody CourseRequest request
+    ) {
+        return ResponseEntity.ok(courseService.updateCourse(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER')")
+    public ResponseEntity<Void> deleteCourse(@PathVariable UUID id) {
+        courseService.deleteCourse(id);
+        return ResponseEntity.noContent().build();
     }
 }

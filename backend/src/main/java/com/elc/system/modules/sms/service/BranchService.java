@@ -45,6 +45,43 @@ public class BranchService {
         return mapToResponse(branchRepository.save(branch));
     }
 
+    public BranchResponse getBranchById(UUID id) {
+        return mapToResponse(branchRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Branch not found")));
+    }
+
+    @Transactional
+    public BranchResponse updateBranch(UUID id, BranchRequest request) {
+        Branch branch = branchRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Branch not found"));
+        
+        branch.setName(request.getName());
+        branch.setAddress(request.getAddress());
+        branch.setPhone(request.getPhone());
+        
+        if (request.getManagerId() != null) {
+            User manager = userRepository.findById(request.getManagerId())
+                    .orElseThrow(() -> new RuntimeException("Manager not found"));
+            branch.setManager(manager);
+        } else {
+            branch.setManager(null);
+        }
+
+        return mapToResponse(branchRepository.save(branch));
+    }
+
+    @Transactional
+    public void deleteBranch(UUID id) {
+        Branch branch = branchRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Branch not found"));
+        
+        try {
+            branchRepository.delete(branch);
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot delete branch because it is referenced by other records");
+        }
+    }
+
     private BranchResponse mapToResponse(Branch branch) {
         return BranchResponse.builder()
                 .id(branch.getId())
