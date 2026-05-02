@@ -39,6 +39,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/levels/**").permitAll()
 
+                        // Allow error endpoint so Spring can return proper HTTP status codes instead of 403
+                        .requestMatchers("/error").permitAll()
+
                         // All other API endpoints require authentication
                         .requestMatchers("/api/**").authenticated()
 
