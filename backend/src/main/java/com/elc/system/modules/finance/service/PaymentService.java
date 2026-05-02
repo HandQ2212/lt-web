@@ -24,6 +24,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
 
+    @Transactional(readOnly = true)
     public List<PaymentResponse> getPaymentsByInvoice(UUID invoiceId) {
         return paymentRepository.findByInvoiceId(invoiceId).stream()
                 .map(this::mapToResponse)

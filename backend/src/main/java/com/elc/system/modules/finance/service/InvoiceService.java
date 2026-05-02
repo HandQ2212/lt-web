@@ -21,7 +21,9 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final com.elc.system.modules.finance.repository.ExpenseRepository expenseRepository;
 
+    @Transactional(readOnly = true)
     public List<InvoiceResponse> getAllInvoices() {
         return invoiceRepository.findAll().stream()
                 .map(this::mapToResponse)
@@ -51,6 +53,36 @@ public class InvoiceService {
                 .orElseThrow(() -> new RuntimeException("Invoice not found"));
         invoice.setStatus(status);
         invoiceRepository.save(invoice);
+    }
+
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> getDebtInvoices() {
+        return invoiceRepository.findDebtInvoices().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public InvoiceResponse processRefund(UUID id, com.elc.system.modules.finance.dto.InvoiceDto.RefundRequest request) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+
+        if (invoice.getStatus() == InvoiceStatus.REFUNDED) {
+            throw new RuntimeException("Invoice is already refunded");
+        }
+
+        invoice.setStatus(InvoiceStatus.REFUNDED);
+        invoiceRepository.save(invoice);
+
+        com.elc.system.modules.finance.entity.Expense expense = com.elc.system.modules.finance.entity.Expense.builder()
+                .category("Refund")
+                .amount(request.getAmount())
+                .expenseDate(java.time.LocalDate.now())
+                .notes("Refund for Invoice ID: " + id + ". Reason: " + request.getReason())
+                .build();
+        expenseRepository.save(expense);
+
+        return mapToResponse(invoice);
     }
 
     private InvoiceResponse mapToResponse(Invoice invoice) {

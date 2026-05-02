@@ -12,4 +12,5 @@ public interface ClazzRepository extends JpaRepository<Clazz, UUID> {
     List<Clazz> findByBranchId(UUID branchId);
     List<Clazz> findByTeacherId(UUID teacherId);
     List<Clazz> findByCourseId(UUID courseId);
+    long countByBranchIdAndStatus(UUID branchId, com.elc.system.modules.lms.entity.ClassStatus status);
 }

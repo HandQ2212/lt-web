@@ -34,4 +34,16 @@ public class InvoiceController {
         invoiceService.updateStatus(id, status);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/debt")
+    public ResponseEntity<List<InvoiceResponse>> getDebtInvoices() {
+        return ResponseEntity.ok(invoiceService.getDebtInvoices());
+    }
+
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<InvoiceResponse> processRefund(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.elc.system.modules.finance.dto.InvoiceDto.RefundRequest request) {
+        return ResponseEntity.ok(invoiceService.processRefund(id, request));
+    }
 }

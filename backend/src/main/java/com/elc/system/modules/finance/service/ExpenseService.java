@@ -18,6 +18,7 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<ExpenseResponse> getAllExpenses() {
         return expenseRepository.findAll().stream()
                 .map(this::mapToResponse)

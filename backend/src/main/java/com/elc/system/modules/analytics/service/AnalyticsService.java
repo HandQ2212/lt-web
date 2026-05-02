@@ -45,6 +45,7 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public DashboardDto getDashboardOverview() {
         long totalStudents = enrollmentRepository.count();
         long totalLeads = leadRepository.count();
@@ -53,19 +54,14 @@ public class AnalyticsService {
                 .filter(u -> u.getRole() == com.elc.system.modules.auth.entity.UserRole.TEACHER)
                 .count();
 
-        BigDecimal totalRevenue = paymentRepository.findAll().stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalInvoiced = invoiceRepository.findAll().stream()
-                .map(Invoice::getFinalAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalRevenue = paymentRepository.getTotalRevenue();
+        BigDecimal totalInvoiced = invoiceRepository.getTotalInvoicedAmount();
 
         BigDecimal outstandingBalance = totalInvoiced.subtract(totalRevenue);
 
-        List<com.elc.system.modules.lms.entity.Attendance> allAttendance = attendanceRepository.findAll();
-        double avgAttendance = allAttendance.isEmpty() ? 0.0 : 
-                (double) allAttendance.stream().filter(a -> a.getStatus() == com.elc.system.modules.lms.entity.AttendanceStatus.PRESENT).count() / allAttendance.size();
+        long presentCount = attendanceRepository.countByStatus(com.elc.system.modules.lms.entity.AttendanceStatus.PRESENT);
+        long totalAttendance = attendanceRepository.countTotal();
+        double avgAttendance = totalAttendance == 0 ? 0.0 : (double) presentCount / totalAttendance;
 
         return DashboardDto.builder()
                 .totalStudents(totalStudents)
@@ -78,62 +74,45 @@ public class AnalyticsService {
                 .build();
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public AcademicAnalyticsDto getAcademicReport() {
-        List<com.elc.system.modules.lms.entity.CourseResult> allResults = courseResultRepository.findAll();
+        Double avgMidterm = courseResultRepository.getAverageMidtermScore();
+        Double avgFinal = courseResultRepository.getAverageFinalScore();
 
-        double avgMidterm = allResults.stream()
-                .filter(r -> r.getMidtermScore() != null)
-                .mapToDouble(r -> r.getMidtermScore().doubleValue())
-                .average().orElse(0.0);
+        Map<String, Long> gradeDist = new java.util.HashMap<>();
+        for (Object[] row : courseResultRepository.getGradeDistribution()) {
+            gradeDist.put((String) row[0], ((Number) row[1]).longValue());
+        }
 
-        double avgFinal = allResults.stream()
-                .filter(r -> r.getFinalScore() != null)
-                .mapToDouble(r -> r.getFinalScore().doubleValue())
-                .average().orElse(0.0);
+        long totalPass = courseResultRepository.countPass();
+        long totalCompleted = courseResultRepository.countTotalGraded();
 
-        Map<String, Long> gradeDist = allResults.stream()
-                .filter(r -> r.getFinalGrade() != null)
-                .collect(Collectors.groupingBy(com.elc.system.modules.lms.entity.CourseResult::getFinalGrade, Collectors.counting()));
-
-        long totalPass = allResults.stream()
-                .filter(r -> r.getFinalGrade() != null && !r.getFinalGrade().equalsIgnoreCase("F"))
-                .count();
-
-        double passRate = allResults.isEmpty() ? 0.0 : (double) totalPass / allResults.size();
+        double passRate = totalCompleted == 0 ? 0.0 : (double) totalPass / totalCompleted;
 
         return AcademicAnalyticsDto.builder()
-                .averageMidtermScore(avgMidterm)
-                .averageFinalScore(avgFinal)
-                .totalCompletedEnrollments(allResults.size())
+                .averageMidtermScore(avgMidterm != null ? avgMidterm : 0.0)
+                .averageFinalScore(avgFinal != null ? avgFinal : 0.0)
+                .totalCompletedEnrollments((int) totalCompleted)
                 .gradeDistribution(gradeDist)
                 .passRate(passRate)
                 .build();
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public RevenueAnalyticsDto getRevenueReport() {
-        List<Payment> allPayments = paymentRepository.findAll();
-        List<Invoice> allInvoices = invoiceRepository.findAll();
+        BigDecimal totalRevenue = paymentRepository.getTotalRevenue();
+        BigDecimal totalInvoiced = invoiceRepository.getTotalInvoicedAmount();
+        BigDecimal pendingRevenue = totalInvoiced.subtract(totalRevenue);
 
-        BigDecimal totalRevenue = allPayments.stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, BigDecimal> revenueByMonth = new java.util.HashMap<>();
+        for (Object[] row : paymentRepository.getRevenueByMonth()) {
+            revenueByMonth.put((String) row[0], (BigDecimal) row[1]);
+        }
 
-        BigDecimal pendingRevenue = allInvoices.stream()
-                .filter(i -> i.getStatus() != com.elc.system.modules.finance.entity.InvoiceStatus.PAID)
-                .map(i -> i.getFinalAmount().subtract(getPaidAmount(i, allPayments)))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        Map<String, BigDecimal> revenueByMonth = allPayments.stream()
-                .collect(Collectors.groupingBy(
-                        p -> p.getPaymentDate().getYear() + "-" + String.format("%02d", p.getPaymentDate().getMonthValue()),
-                        Collectors.mapping(Payment::getAmount, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
-                ));
-
-        Map<com.elc.system.modules.finance.entity.PaymentMethod, BigDecimal> revenueByMethod = allPayments.stream()
-                .collect(Collectors.groupingBy(
-                        Payment::getPaymentMethod,
-                        Collectors.mapping(Payment::getAmount, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
-                ));
+        Map<com.elc.system.modules.finance.entity.PaymentMethod, BigDecimal> revenueByMethod = new java.util.HashMap<>();
+        for (Object[] row : paymentRepository.getRevenueByMethod()) {
+            revenueByMethod.put((com.elc.system.modules.finance.entity.PaymentMethod) row[0], (BigDecimal) row[1]);
+        }
 
         return RevenueAnalyticsDto.builder()
                 .totalRevenue(totalRevenue)
@@ -143,29 +122,15 @@ public class AnalyticsService {
                 .build();
     }
 
-    private BigDecimal getPaidAmount(Invoice invoice, List<Payment> payments) {
-        return payments.stream()
-                .filter(p -> p.getInvoice().getId().equals(invoice.getId()))
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
     private BranchAnalyticsDto calculateBranchMetrics(Branch branch) {
         UUID branchId = branch.getId();
 
         long totalLeads = leadRepository.count(); // Simplified: assuming all leads are branch-agnostic for now or adding filter if needed
-        long totalStudents = enrollmentRepository.findAll().stream()
-                .filter(e -> e.getClazz().getBranch().getId().equals(branchId))
-                .count();
+        long totalStudents = enrollmentRepository.countByClazzBranchId(branchId);
 
-        long activeClasses = clazzRepository.findByBranchId(branchId).stream()
-                .filter(c -> c.getStatus() == ClassStatus.ONGOING)
-                .count();
+        long activeClasses = clazzRepository.countByBranchIdAndStatus(branchId, ClassStatus.ONGOING);
 
-        BigDecimal totalRevenue = paymentRepository.findAll().stream()
-                .filter(p -> p.getInvoice().getEnrollment().getClazz().getBranch().getId().equals(branchId))
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalRevenue = paymentRepository.getTotalRevenueByBranchId(branchId);
 
         double conversionRate = totalLeads > 0 ? (double) totalStudents / totalLeads : 0;
 

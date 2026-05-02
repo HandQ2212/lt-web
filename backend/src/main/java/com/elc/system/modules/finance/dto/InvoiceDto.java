@@ -42,4 +42,14 @@ public class InvoiceDto {
         private InvoiceStatus status;
         private ZonedDateTime createdAt;
     }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class RefundRequest {
+        @jakarta.validation.constraints.NotNull(message = "Refund amount is required")
+        private BigDecimal amount;
+        private String reason;
+    }
 }
