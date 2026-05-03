@@ -34,3 +34,9 @@ build/
 
 ### Local Configuration ###
 src/main/resources/application-local.yml
+
+*.postman_collection.json
+*.postman_environment.json
+
+# Ngoại lệ cho file này
+!ELC_Dev1_API_Collection.postman_collection.json

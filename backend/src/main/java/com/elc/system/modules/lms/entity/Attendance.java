@@ -1,40 +1,37 @@
 package com.elc.system.modules.lms.entity;
 
 import com.elc.system.core.BaseEntity;
-import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.sms.entity.Clazz;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
+/**
+ * Entity representing an attendance record for a student in a class on a specific date.
+ * Mapped to public.attendance table.
+ */
 @Entity
-@Table(name = "attendance", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"class_id", "student_id", "session_date"})
+@Table(name = "attendance", schema = "public", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"enrollment_id", "attendance_date"})
 })
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Attendance extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
-    private Clazz clazz;
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private Enrollment enrollment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id")
-    private User student;
-
-    @Column(name = "session_date", nullable = false)
-    private LocalDate sessionDate;
+    @Column(name = "attendance_date")
+    private LocalDate attendanceDate = LocalDate.now();
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private AttendanceStatus status = AttendanceStatus.PRESENT;
 
+    @Column(columnDefinition = "TEXT")
     private String notes;
 }

@@ -1,23 +1,21 @@
 package com.elc.system.modules.lms.entity;
 
+import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.math.BigDecimal;
 import java.time.ZonedDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "submissions")
 @Getter
 @Setter
-public class Submission {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Submission extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignment_id")
@@ -27,27 +25,25 @@ public class Submission {
     @JoinColumn(name = "student_id")
     private User student;
 
-    @Column(name = "submission_date")
-    private ZonedDateTime submissionDate = ZonedDateTime.now();
+    private ZonedDateTime submissionDate;
 
-    @Column(name = "file_url")
     private String fileUrl;
 
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    private BigDecimal grade;
+    private Double grade;
 
+    @Column(columnDefinition = "TEXT")
     private String feedback;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
-    @Column(name = "updated_at")
-    private ZonedDateTime updatedAt = ZonedDateTime.now();
-    
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = ZonedDateTime.now();
-    }
+    @Column(name = "is_late")
+    private Boolean isLate = false;
+
+    @Column(name = "late_minutes")
+    private Long lateMinutes = 0L;
 }

@@ -1,21 +1,22 @@
 package com.elc.system.modules.sms.entity;
 
 import com.elc.system.core.BaseEntity;
+import com.elc.system.modules.auth.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-import java.util.UUID;
-
+/**
+ * Entity representing a school branch.
+ * Mapped to public.branches table.
+ */
 @Entity
-@Table(name = "branches")
+@Table(name = "branches", schema = "public")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Branch extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
 
     @Column(nullable = false)
     private String name;
@@ -23,4 +24,8 @@ public class Branch extends BaseEntity {
     private String address;
 
     private String phone;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_id")
+    private User manager;
 }

@@ -1,24 +1,22 @@
 package com.elc.system.modules.finance.entity;
 
+import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "expenses")
 @Getter
 @Setter
-public class Expense {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Expense extends BaseEntity {
 
     @Column(nullable = false)
     private String category;
@@ -26,12 +24,10 @@ public class Expense {
     @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column(name = "expense_date")
-    private LocalDate expenseDate = LocalDate.now();
+    private LocalDate expenseDate;
 
     private String vendor;
 
-    @Column(name = "receipt_url")
     private String receiptUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,12 +35,4 @@ public class Expense {
     private User approvedBy;
 
     private String notes;
-
-    @Column(name = "updated_at")
-    private ZonedDateTime updatedAt = ZonedDateTime.now();
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = ZonedDateTime.now();
-    }
 }

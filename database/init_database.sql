@@ -14,10 +14,10 @@ DO $$ BEGIN
     CREATE TYPE user_status AS ENUM ('ACTIVE', 'INACTIVE', 'DEACTIVATED');
     CREATE TYPE course_level AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
     CREATE TYPE course_status AS ENUM ('ACTIVE', 'INACTIVE', 'UPCOMING');
-    CREATE TYPE class_status AS ENUM ('ACCEPTING', 'FULL', 'CLOSED');
+    CREATE TYPE class_status AS ENUM ('UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED');
     CREATE TYPE enrollment_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'ACTIVE', 'COMPLETED', 'DROPPED');
     CREATE TYPE assignment_type AS ENUM ('FILE_SUBMISSION', 'QUIZ', 'ESSAY');
-    CREATE TYPE submission_status AS ENUM ('SUBMITTED', 'GRADED');
+    CREATE TYPE submission_status AS ENUM ('SUBMITTED', 'GRADED', 'RETURNED');
     CREATE TYPE transaction_type AS ENUM ('COURSE_FEE', 'SALARY', 'EXPENSE');
     CREATE TYPE transaction_method AS ENUM ('QR', 'TRANSFER', 'CASH', 'ONLINE');
     CREATE TYPE transaction_status AS ENUM ('PENDING', 'CONFIRMED', 'FAILED', 'REFUNDED');
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS public.classes (
     name TEXT NOT NULL,
     max_students INTEGER NOT NULL,
     current_students INTEGER DEFAULT 0,
-    status class_status DEFAULT 'ACCEPTING',
+    status class_status DEFAULT 'UPCOMING',
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     meeting_url TEXT, -- For Online/Hybrid support
@@ -129,13 +129,12 @@ CREATE TABLE IF NOT EXISTS public.enrollments (
 -- 3.8 Attendance
 CREATE TABLE IF NOT EXISTS public.attendance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
-    student_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    session_date DATE NOT NULL,
+    enrollment_id UUID REFERENCES public.enrollments(id) ON DELETE CASCADE,
+    attendance_date DATE NOT NULL,
     status attendance_status DEFAULT 'PRESENT',
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(class_id, student_id, session_date)
+    UNIQUE(enrollment_id, attendance_date)
 );
 
 -- 3.9 Assignments
@@ -163,6 +162,9 @@ CREATE TABLE IF NOT EXISTS public.submissions (
     grade DECIMAL(5, 2),
     feedback TEXT,
     status submission_status DEFAULT 'SUBMITTED',
+    is_late BOOLEAN DEFAULT FALSE,
+    late_minutes BIGINT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -253,10 +255,26 @@ CREATE TABLE IF NOT EXISTS public.expenses (
 CREATE TABLE IF NOT EXISTS public.announcements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
-    content TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    scope TEXT NOT NULL,
     target_role user_role,
-    created_by UUID REFERENCES public.users(id),
+    target_class_id UUID REFERENCES public.classes(id),
+    created_by_id UUID REFERENCES public.users(id),
+    expires_at TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT TRUE,
+    delivered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.17b Password Reset Tokens
+CREATE TABLE IF NOT EXISTS public.password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -297,6 +315,7 @@ CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW
 CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_announcements_updated_at BEFORE UPDATE ON announcements FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_password_reset_tokens_updated_at BEFORE UPDATE ON password_reset_tokens FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 -- 4.2 Update Class Student Count
 CREATE OR REPLACE FUNCTION update_class_student_count()
@@ -356,3 +375,22 @@ VALUES
 ('SUMMER2024', 'PERCENTAGE', 20.00, 1000000, '2024-08-31'),
 ('ELCNEW500', 'FIXED_AMOUNT', 500000.00, 3000000, '2024-12-31')
 ON CONFLICT DO NOTHING;
+
+
+-- 1. Thêm refresh_token column vào bảng users                                                                                           
+  ALTER TABLE public.users                                                                                                                 
+  ADD COLUMN IF NOT EXISTS refresh_token VARCHAR(255);                                                                                     
+                                                                                                                                           
+  -- 2. Tạo index cho email (tăng tốc độ login)                                                                                            
+  CREATE INDEX IF NOT EXISTS idx_users_email                                                                                               
+  ON public.users(email);
+                                                                                                                                           
+  -- 3. Tạo index cho refresh_token (tăng tốc độ refresh token validation)
+  CREATE INDEX IF NOT EXISTS idx_users_refresh_token
+  ON public.users(refresh_token);                
+
+  -- 4. Verify changes - Kiểm tra kết quả
+  SELECT column_name, data_type, is_nullable
+  FROM information_schema.columns
+  WHERE table_name = 'users'
+  AND column_name IN ('email', 'password_hash', 'refresh_token');

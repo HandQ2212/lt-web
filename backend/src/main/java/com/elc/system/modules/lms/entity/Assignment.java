@@ -2,25 +2,20 @@ package com.elc.system.modules.lms.entity;
 
 import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
-import com.elc.system.modules.sms.entity.Clazz;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "assignments")
 @Getter
 @Setter
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Assignment extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id")
@@ -29,22 +24,22 @@ public class Assignment extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "due_date", nullable = false)
+    @Column(nullable = false)
     private ZonedDateTime dueDate;
 
-    @Enumerated(EnumType.STRING)
-    private AssignmentType type = AssignmentType.FILE_SUBMISSION;
+    @Column(columnDefinition = "TEXT")
+    private String fileUrl;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private String attachments = "[]";
+    @Column(length = 500)
+    private String externalLink;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
 
-    @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
 }

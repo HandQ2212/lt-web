@@ -47,9 +47,9 @@ Tập trung vào quản lý tài nguyên và khách hàng tiềm năng.
 
 ### Milestone 2: Center Resources (Tuần 3)
 - **[SM-001] Quản lý Chi nhánh & Khóa học - Nhánh feature/BTL-11**
-    - [ ] API quản lý danh sách Chi nhánh (CRUD Branch).
-    - [ ] API quản lý danh mục Khóa học (CRUD Course) và cấp độ (Level).
-    - [ ] Logic kiểm tra xóa chi nhánh (Không cho xóa nếu còn lớp đang hoạt động).
+    - [x] API quản lý danh sách Chi nhánh (CRUD Branch).
+    - [x] API quản lý danh mục Khóa học (CRUD Course) và cấp độ (Level).
+    - [x] Logic kiểm tra xóa chi nhánh (Không cho xóa nếu còn lớp đang hoạt động).
 - **[SM-002] Quản lý Phòng học (Rooms) - Nhánh feature/BTL-12**
     - [ ] API CRUD Room (Tên phòng, Sức chứa, Loại phòng).
     - [ ] Logic kiểm tra tình trạng sử dụng phòng học theo thời gian thực.
@@ -60,15 +60,15 @@ Tập trung vào quản lý tài nguyên và khách hàng tiềm năng.
 ## 🎓 DEV 3: Nghiệp vụ Học thuật (LMS)
 Tập trung vào quản lý Lớp học, Học viên và kết quả học tập.
 
-### Milestone 1: Class & Enrollment (Tuần 1-2)
-- **[LM-001] Quản lý Lớp học (Classes) - Nhánh feature/BTL-13**
-    - [ ] Implement CRUD Clazz cho từng khóa học.
-    - [ ] API Thiết lập lịch học cố định cho lớp (Class Schedule).
-    - [ ] API quản lý trạng thái lớp (Chờ mở, Đang học, Kết thúc).
-- **[LM-002] Đăng ký & Ghi danh (Enrollment) - Nhánh feature/BTL-14**
-    - [ ] Xử lý logic ghi danh học viên vào lớp (Kiểm tra sỉ số tối đa).
-    - [ ] API lấy danh sách học viên trong một lớp cụ thể.
-    - [ ] API lịch sử học tập của một học viên.
+### Milestone 1: Class & Enrollment (Tuần 1-2) ✅ **HOÀN THÀNH**
+- **[LM-001] Quản lý Lớp học (Classes) - Nhánh feature/BTL-13** ✅
+    - [x] Implement CRUD Clazz cho từng khóa học.
+    - [x] API Thiết lập lịch học cố định cho lớp (Class Schedule).
+    - [x] API quản lý trạng thái lớp (Chờ mở, Đang học, Kết thúc).
+- **[LM-002] Đăng ký & Ghi danh (Enrollment) - Nhánh feature/BTL-14** ✅
+    - [x] Xử lý logic ghi danh học viên vào lớp (Kiểm tra sỉ số tối đa).
+    - [x] API lấy danh sách học viên trong một lớp cụ thể.
+    - [x] API lịch sử học tập của một học viên.
 
 ### Milestone 2: Attendance & Assessments (Tuần 3)
 - **[LM-003] Quản lý Điểm danh (Attendance) - Nhánh feature/BTL-15**
