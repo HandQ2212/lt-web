@@ -143,6 +143,16 @@ export const classApi = {
   update: (id: string, data: any) => api.put(`/classes/${id}`, data),
   checkConflict: (data: any) => api.post('/classes/check-conflict', data),
   getSchedule: (id: string) => api.get(`/classes/${id}/schedule`),
+  delete: (id: string) => api.delete(`/classes/${id}`),
+  updateStatus: (id: string, status: string) => api.patch(`/classes/${id}/status`, { status }),
+  addSchedule: (classId: string, schedule: any) => api.post(`/classes/${classId}/schedule`, schedule),
+};
+
+export const enrollmentApi = {
+  getByClass: (classId: string) => api.get(`/enrollments/class/${classId}`),
+  getByStudent: (studentId: string) => api.get(`/enrollments/student/${studentId}`),
+  create: (data: any) => api.post('/enrollments', data),
+  updateStatus: (id: string, status: string) => api.patch(`/enrollments/${id}/status`, { status }),
 };
 
 export const leadApi = {
@@ -213,7 +223,7 @@ export const assignmentApi = {
 };
 
 export const submissionApi = {
-  submit: (data: any) => api.post('/submissions/submit', data),
+  submit: (data: any) => api.post('/submissions', data),
   grade: (id: string, score: number, feedback: string) =>
     api.put(`/submissions/${id}/grade`, { score, feedback }),
   getByAssignment: (assignmentId: string) =>
@@ -229,17 +239,24 @@ export const invoiceApi = {
   getAll: (params?: any) => api.get('/invoices', { params }),
   getDebt: () => api.get('/invoices/debt'),
   refund: (id: string) => api.post(`/invoices/${id}/refund`),
+  create: (data: any) => api.post('/invoices', data),
+  updateStatus: (id: string, status: string) => api.patch(`/invoices/${id}/status`, { status }),
 };
 
 export const notificationApi = {
   getAll: () => api.get('/notifications'),
   getUnreadCount: () => api.get('/notifications/unread-count'),
   markAsRead: (id: string) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch('/notifications/read-all'),
+};
+
+export const analyticsApi = {
+  getBranchPerformance: () => api.get('/analytics/branch-performance'),
+  getRevenue: (params?: any) => api.get('/analytics/revenue', { params }),
+  getAcademic: () => api.get('/analytics/academic'),
+  getDashboard: () => api.get('/analytics/dashboard'),
 };
 
 export const reportsApi = {
-  getRevenue: (params?: any) => api.get('/reports/revenue', { params }),
-  getExpenses: (params?: any) => api.get('/reports/expenses', { params }),
-  getProfitLoss: (params?: any) => api.get('/reports/profit-loss', { params }),
-  getTopCourses: () => api.get('/reports/top-courses'),
+  getAll: (params?: any) => api.get('/reports', { params }),
 };
