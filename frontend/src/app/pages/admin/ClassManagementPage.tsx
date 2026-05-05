@@ -133,6 +133,41 @@ export default function ClassManagementPage() {
     }
   };
 
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    try {
+      await classApi.updateStatus(id, newStatus);
+      setSnackbar({ open: true, message: 'Cập nhật trạng thái thành công', severity: 'success' });
+      await fetchClasses();
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Không thể cập nhật trạng thái',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleAddSchedule = async (id: string) => {
+    try {
+      // For now, show a simple alert - in production, would open a dialog
+      const dayOfWeek = window.prompt('Ngày trong tuần (e.g., MONDAY):');
+      const startTime = window.prompt('Giờ bắt đầu (e.g., 18:00):');
+      const endTime = window.prompt('Giờ kết thúc (e.g., 20:00):');
+
+      if (dayOfWeek && startTime && endTime) {
+        await classApi.addSchedule(id, { dayOfWeek, startTime, endTime });
+        setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
+        await fetchClasses();
+      }
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Không thể thêm lịch học',
+        severity: 'error',
+      });
+    }
+  };
+
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'ACCEPTING':
@@ -206,9 +241,35 @@ export default function ClassManagementPage() {
                     <Chip label={cls.status || 'UNKNOWN'} color={getStatusColor(cls.status)} size="small" />
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" color="error" onClick={() => void handleDelete(cls.id)}>
-                      <DeleteIcon />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      {cls.status && cls.status !== 'COMPLETED' && cls.status !== 'CANCELLED' && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            const nextStatus =
+                              cls.status === 'ACCEPTING'
+                                ? 'UPCOMING'
+                                : cls.status === 'UPCOMING'
+                                  ? 'ONGOING'
+                                  : 'COMPLETED';
+                            void handleUpdateStatus(cls.id, nextStatus);
+                          }}
+                        >
+                          {cls.status === 'ACCEPTING'
+                            ? 'Tiếp theo'
+                            : cls.status === 'UPCOMING'
+                              ? 'Bắt đầu'
+                              : 'Hoàn thành'}
+                        </Button>
+                      )}
+                      <Button size="small" variant="outlined" onClick={() => void handleAddSchedule(cls.id)}>
+                        Thêm lịch
+                      </Button>
+                      <IconButton size="small" color="error" onClick={() => void handleDelete(cls.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
