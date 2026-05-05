@@ -94,13 +94,13 @@
     },
     {
       "key": "email",
-      "value": "accountant@elc.edu.vn",
+      "value": "accountant@gmail.com",
       "type": "string",
       "enabled": true
     },
     {
       "key": "password",
-      "value": "AccountantPassword123",
+      "value": "accountant",
       "type": "string",
       "enabled": true
     }

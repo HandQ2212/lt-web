@@ -94,13 +94,13 @@
     },
     {
       "key": "email",
-      "value": "teacher@elc.edu.vn",
+      "value": "teacher@gmail.com",
       "type": "string",
       "enabled": true
     },
     {
       "key": "password",
-      "value": "TeacherPassword123",
+      "value": "teacher",
       "type": "string",
       "enabled": true
     }

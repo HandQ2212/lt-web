@@ -50,9 +50,4 @@ Xem xét các lỗi sau:
 - Course Management/Delete Course:
 {
     "status": 400,
-    "message": "Parameter 'id' should be of type 'UUID'",
-    "error": "Bad Request",
-    "timestamp": "2026-05-05T17:36:25.9982234+07:00"
-}
-
-- 
+    
