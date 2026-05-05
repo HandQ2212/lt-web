@@ -1,10 +1,11 @@
+import { useEffect } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Badge, Menu, MenuItem, Avatar, Box } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { logout } from '../../../store/slices/authSlice';
-import { authApi } from '../../../services/api';
+import { authApi, notificationApi } from '../../../services/api';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -16,13 +17,60 @@ export default function DashboardHeader() {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notifAnchorEl, setNotifAnchorEl] = useState<null | HTMLElement>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    void fetchNotifications();
+    // Polling interval: refresh every 30 seconds
+    const interval = setInterval(() => {
+      void fetchNotifications();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const countRes = await notificationApi.getUnreadCount();
+      if (countRes?.data?.count) {
+        setUnreadCount(countRes.data.count);
+      }
+
+      const allNotifs = await notificationApi.getAll();
+      if (allNotifs?.data && Array.isArray(allNotifs.data)) {
+        setNotifications(allNotifs.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
+  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setNotifAnchorEl(event.currentTarget);
+  };
+
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationMenuClose = () => {
+    setNotifAnchorEl(null);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      setUnreadCount(0);
+      handleNotificationMenuClose();
+      void fetchNotifications();
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
   };
 
   const handleLogout = async () => {
@@ -56,8 +104,8 @@ export default function DashboardHeader() {
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton color="inherit">
-            <Badge badgeContent={3} color="error">
+          <IconButton onClick={handleNotificationMenuOpen} color="inherit">
+            <Badge badgeContent={unreadCount} color="error">
               <NotificationsIcon />
             </Badge>
           </IconButton>
@@ -68,6 +116,44 @@ export default function DashboardHeader() {
             </Avatar>
           </IconButton>
         </Box>
+
+        <Menu
+          anchorEl={notifAnchorEl}
+          open={Boolean(notifAnchorEl)}
+          onClose={handleNotificationMenuClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              style: {
+                maxHeight: '400px',
+                width: '300px',
+              },
+            },
+          }}
+        >
+          {notifications.length === 0 ? (
+            <MenuItem disabled>Không có thông báo</MenuItem>
+          ) : (
+            <>
+              {notifications.slice(0, 5).map((notif, index) => (
+                <MenuItem key={index} onClick={handleNotificationMenuClose} sx={{ whiteSpace: 'normal' }}>
+                  <Box>
+                    <Typography variant="body2">{notif.message || notif.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(notif.createdAt).toLocaleDateString('vi-VN')}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+              {unreadCount > 0 && (
+                <MenuItem onClick={handleMarkAllAsRead} sx={{ textAlign: 'center', fontWeight: 600 }}>
+                  Đánh dấu tất cả đã đọc
+                </MenuItem>
+              )}
+            </>
+          )}
+        </Menu>
 
         <Menu
           anchorEl={anchorEl}

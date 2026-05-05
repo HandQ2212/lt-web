@@ -1,4 +1,5 @@
-import { Box, Typography, Grid, Card, CardContent, Paper } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Typography, Grid, Card, CardContent, Paper, CircularProgress, Alert } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
@@ -6,8 +7,9 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { invoiceApi, analyticsApi } from '../../../services/api';
 
-const monthlyData = [
+const defaultMonthlyData = [
   { month: 'T1', revenue: 45000000, expense: 32000000 },
   { month: 'T2', revenue: 52000000, expense: 35000000 },
   { month: 'T3', revenue: 48000000, expense: 33000000 },
@@ -15,7 +17,7 @@ const monthlyData = [
   { month: 'T5', revenue: 55000000, expense: 36000000 },
 ];
 
-const expenseBreakdown = [
+const defaultExpenseBreakdown = [
   { name: 'Lương giáo viên', value: 24000000 },
   { name: 'Thuê mặt bằng', value: 8000000 },
   { name: 'Điện nước', value: 2000000 },
@@ -24,11 +26,64 @@ const expenseBreakdown = [
 
 const COLORS = ['#1976d2', '#4caf50', '#ff9800', '#f44336'];
 
+interface FinanceData {
+  currentMonthRevenue?: number;
+  currentMonthExpense?: number;
+  profit?: number;
+  outstandingDebt?: number;
+  monthlyData?: any[];
+  expenseBreakdown?: any[];
+}
+
 export default function FinanceDashboard() {
-  const currentMonthRevenue = 55000000;
-  const currentMonthExpense = 36000000;
-  const profit = currentMonthRevenue - currentMonthExpense;
-  const outstandingDebt = 12500000;
+  const [financeData, setFinanceData] = useState<FinanceData>({
+    currentMonthRevenue: 55000000,
+    currentMonthExpense: 36000000,
+    profit: 19000000,
+    outstandingDebt: 12500000,
+    monthlyData: defaultMonthlyData,
+    expenseBreakdown: defaultExpenseBreakdown,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchFinanceData();
+  }, []);
+
+  const fetchFinanceData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch invoice data for outstanding debt
+      const debtResponse = await invoiceApi.getDebt();
+      
+      if (debtResponse) {
+        setFinanceData((prev) => ({
+          ...prev,
+          outstandingDebt: debtResponse.data?.totalDebt || prev.outstandingDebt,
+        }));
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch finance data:', err);
+      setError('Không thể tải dữ liệu tài chính');
+      // Keep using default data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom fontWeight={700}>
+          Dashboard Tài chính
+        </Typography>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -46,7 +101,7 @@ export default function FinanceDashboard() {
                     Doanh thu tháng
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    {currentMonthRevenue.toLocaleString('vi-VN')}đ
+                    {loading ? '...' : (financeData.currentMonthRevenue || 55000000).toLocaleString('vi-VN')}đ
                   </Typography>
                 </Box>
                 <TrendingUpIcon sx={{ fontSize: 40, color: 'success.main' }} />
@@ -64,7 +119,7 @@ export default function FinanceDashboard() {
                     Chi phí tháng
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    {currentMonthExpense.toLocaleString('vi-VN')}đ
+                    {loading ? '...' : (financeData.currentMonthExpense || 36000000).toLocaleString('vi-VN')}đ
                   </Typography>
                 </Box>
                 <TrendingDownIcon sx={{ fontSize: 40, color: 'error.main' }} />
@@ -82,7 +137,7 @@ export default function FinanceDashboard() {
                     Lợi nhuận
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    {profit.toLocaleString('vi-VN')}đ
+                    {loading ? '...' : (financeData.profit || 19000000).toLocaleString('vi-VN')}đ
                   </Typography>
                 </Box>
                 <AccountBalanceIcon sx={{ fontSize: 40, color: 'primary.main' }} />
@@ -100,7 +155,7 @@ export default function FinanceDashboard() {
                     Công nợ
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    {outstandingDebt.toLocaleString('vi-VN')}đ
+                    {loading ? '...' : (financeData.outstandingDebt || 12500000).toLocaleString('vi-VN')}đ
                   </Typography>
                 </Box>
                 <WarningIcon sx={{ fontSize: 40, color: 'warning.main' }} />
@@ -116,17 +171,23 @@ export default function FinanceDashboard() {
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Doanh thu & Chi phí 5 tháng gần đây
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="revenue" fill="#4caf50" name="Doanh thu" />
-                <Bar dataKey="expense" fill="#f44336" name="Chi phí" />
-              </BarChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={financeData.monthlyData || defaultMonthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="revenue" fill="#4caf50" name="Doanh thu" />
+                  <Bar dataKey="expense" fill="#f44336" name="Chi phí" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Paper>
         </Grid>
 
@@ -135,25 +196,31 @@ export default function FinanceDashboard() {
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Phân bổ chi phí
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={expenseBreakdown}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {expenseBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={financeData.expenseBreakdown || defaultExpenseBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {(financeData.expenseBreakdown || defaultExpenseBreakdown).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </Paper>
         </Grid>
       </Grid>

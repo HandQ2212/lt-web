@@ -1,4 +1,5 @@
-import { Grid, Card, CardContent, Typography, Box, Paper } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Grid, Card, CardContent, Typography, Box, Paper, CircularProgress, Alert } from '@mui/material';
 import {
   People as PeopleIcon,
   School as SchoolIcon,
@@ -6,8 +7,9 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { analyticsApi } from '../../../services/api';
 
-const revenueData = [
+const defaultRevenueData = [
   { month: 'T1', revenue: 45000000 },
   { month: 'T2', revenue: 52000000 },
   { month: 'T3', revenue: 48000000 },
@@ -16,7 +18,7 @@ const revenueData = [
   { month: 'T6', revenue: 67000000 },
 ];
 
-const enrollmentData = [
+const defaultEnrollmentData = [
   { level: 'Sơ cấp', count: 120 },
   { level: 'Trung cấp', count: 98 },
   { level: 'Nâng cao', count: 65 },
@@ -28,7 +30,65 @@ const alerts = [
   { id: 3, type: 'info', message: 'Lớp IELTS Advanced sắp đầy (14/15 học viên)' },
 ];
 
+interface DashboardData {
+  totalRevenue?: number;
+  newEnrollments?: number;
+  totalClasses?: number;
+  classFullRate?: number;
+  revenueData?: any[];
+  academicData?: any[];
+}
+
 export default function AdminDashboard() {
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    totalRevenue: 67000000,
+    newEnrollments: 42,
+    totalClasses: 28,
+    classFullRate: 85,
+    revenueData: defaultRevenueData,
+    academicData: defaultEnrollmentData,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch analytics data - could combine multiple API calls
+      const dashboard = await analyticsApi.getDashboard();
+      
+      if (dashboard) {
+        setDashboardData((prev) => ({
+          ...prev,
+          ...dashboard,
+        }));
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch dashboard data:', err);
+      setError('Không thể tải dữ liệu dashboard');
+      // Keep using default data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom fontWeight={700}>
+          Dashboard Quản lý
+        </Typography>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700}>
@@ -45,7 +105,7 @@ export default function AdminDashboard() {
                     Doanh thu tháng
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    67,000,000đ
+                    {loading ? '...' : `${(dashboardData.totalRevenue || 67000000).toLocaleString('vi-VN')}đ`}
                   </Typography>
                 </Box>
                 <TrendingUpIcon sx={{ fontSize: 40, color: 'success.main' }} />
@@ -63,7 +123,7 @@ export default function AdminDashboard() {
                     Học viên mới
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    42
+                    {loading ? '...' : dashboardData.newEnrollments || 42}
                   </Typography>
                 </Box>
                 <PeopleIcon sx={{ fontSize: 40, color: 'primary.main' }} />
@@ -81,7 +141,7 @@ export default function AdminDashboard() {
                     Tổng số lớp
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    28
+                    {loading ? '...' : dashboardData.totalClasses || 28}
                   </Typography>
                 </Box>
                 <SchoolIcon sx={{ fontSize: 40, color: 'info.main' }} />
@@ -99,7 +159,7 @@ export default function AdminDashboard() {
                     Tỷ lệ lớp đầy
                   </Typography>
                   <Typography variant="h5" fontWeight={700}>
-                    85%
+                    {loading ? '...' : `${dashboardData.classFullRate || 85}%`}
                   </Typography>
                 </Box>
                 <TrendingUpIcon sx={{ fontSize: 40, color: 'warning.main' }} />
@@ -115,15 +175,21 @@ export default function AdminDashboard() {
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Doanh thu 6 tháng gần đây
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="revenue" stroke="#1976d2" fill="#1976d2" fillOpacity={0.6} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={dashboardData.revenueData || defaultRevenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="revenue" stroke="#1976d2" fill="#1976d2" fillOpacity={0.6} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </Paper>
         </Grid>
 
@@ -132,15 +198,21 @@ export default function AdminDashboard() {
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Học viên theo trình độ
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={enrollmentData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="level" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#4caf50" />
-              </BarChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dashboardData.academicData || defaultEnrollmentData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="level" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#4caf50" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Paper>
         </Grid>
 
