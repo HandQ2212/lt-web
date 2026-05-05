@@ -137,8 +137,7 @@ public class AuthenticationService {
             // MOCK EMAIL DELIVERY - Log to console
             log.info("==============================================");
             log.info("PASSWORD RESET TOKEN for {}: {}", email, resetToken);
-            log.info("Reset link: http://localhost:8080/api/auth/reset-password?token={}", resetToken);
-            log.info("Token expires at: {}", token.getExpiresAt());
+            log.info("Reset link: http://26.150.15.154:8080/api/auth/reset-password?token={}", resetToken);            log.info("Token expires at: {}", token.getExpiresAt());
             log.info("==============================================");
             // TODO: Integrate email service in future milestone
         });

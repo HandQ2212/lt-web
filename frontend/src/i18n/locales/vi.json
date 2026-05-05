@@ -1,0 +1,116 @@
+{
+  "common": {
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "register": "Đăng ký",
+    "submit": "Gửi",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "add": "Thêm",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "export": "Xuất",
+    "import": "Nhập",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước",
+    "close": "Đóng",
+    "confirm": "Xác nhận",
+    "loading": "Đang tải...",
+    "noData": "Không có dữ liệu",
+    "success": "Thành công",
+    "error": "Lỗi",
+    "warning": "Cảnh báo"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "courses": "Khóa học",
+    "teachers": "Giảng viên",
+    "about": "Giới thiệu",
+    "contact": "Liên hệ",
+    "dashboard": "Bảng điều khiển",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mật khẩu",
+    "rememberMe": "Ghi nhớ đăng nhập",
+    "forgotPassword": "Quên mật khẩu?",
+    "noAccount": "Chưa có tài khoản?",
+    "haveAccount": "Đã có tài khoản?",
+    "loginSuccess": "Đăng nhập thành công",
+    "loginError": "Đăng nhập thất bại",
+    "registerSuccess": "Đăng ký thành công",
+    "registerError": "Đăng ký thất bại"
+  },
+  "course": {
+    "title": "Khóa học",
+    "name": "Tên khóa học",
+    "level": "Trình độ",
+    "price": "Học phí",
+    "duration": "Thời lượng",
+    "description": "Mô tả",
+    "beginner": "Sơ cấp",
+    "intermediate": "Trung cấp",
+    "advanced": "Nâng cao",
+    "enroll": "Đăng ký học"
+  },
+  "class": {
+    "title": "Lớp học",
+    "name": "Tên lớp",
+    "schedule": "Lịch học",
+    "teacher": "Giáo viên",
+    "room": "Phòng học",
+    "status": "Trạng thái",
+    "accepting": "Đang nhận",
+    "full": "Đầy",
+    "closed": "Đã đóng"
+  },
+  "student": {
+    "title": "Học viên",
+    "name": "Họ tên",
+    "email": "Email",
+    "phone": "Số điện thoại",
+    "status": "Trạng thái",
+    "enrolledAt": "Ngày đăng ký"
+  },
+  "teacher": {
+    "title": "Giảng viên",
+    "name": "Họ tên",
+    "specialty": "Chuyên môn",
+    "rating": "Đánh giá"
+  },
+  "attendance": {
+    "title": "Điểm danh",
+    "present": "Có mặt",
+    "absent": "Vắng mặt",
+    "late": "Muộn"
+  },
+  "assignment": {
+    "title": "Bài tập",
+    "name": "Tên bài tập",
+    "deadline": "Hạn nộp",
+    "submit": "Nộp bài",
+    "grade": "Chấm điểm"
+  },
+  "finance": {
+    "title": "Tài chính",
+    "revenue": "Doanh thu",
+    "expense": "Chi phí",
+    "invoice": "Hóa đơn",
+    "payment": "Thanh toán",
+    "debt": "Công nợ",
+    "paid": "Đã thanh toán",
+    "pending": "Chờ thanh toán",
+    "overdue": "Quá hạn"
+  },
+  "dashboard": {
+    "welcome": "Chào mừng",
+    "overview": "Tổng quan",
+    "statistics": "Thống kê",
+    "recentActivities": "Hoạt động gần đây"
+  }
+}
