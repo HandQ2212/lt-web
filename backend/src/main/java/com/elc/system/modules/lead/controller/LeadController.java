@@ -1,8 +1,10 @@
 package com.elc.system.modules.lead.controller;
 
+import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.lead.dto.LeadDto.ConvertLeadRequest;
 import com.elc.system.modules.lead.dto.LeadDto.CreateLeadRequest;
 import com.elc.system.modules.lead.dto.LeadDto.LeadConversionResponse;
+import com.elc.system.modules.lead.dto.LeadDto.LeadInterestRequest;
 import com.elc.system.modules.lead.dto.LeadDto.LeadResponse;
 import com.elc.system.modules.lead.dto.LeadDto.UpdateLeadStatusRequest;
 import com.elc.system.modules.lead.entity.LeadSource;
@@ -17,6 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,6 +54,21 @@ public class LeadController {
             @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(leadService.getLeads(status, source, fromDate, toDate, pageable));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('LEAD')")
+    public ResponseEntity<LeadResponse> getCurrentLead(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(leadService.getCurrentLead(currentUser));
+    }
+
+    @PostMapping("/me/interests")
+    @PreAuthorize("hasRole('LEAD')")
+    public ResponseEntity<LeadResponse> addCurrentLeadInterests(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody LeadInterestRequest request
+    ) {
+        return ResponseEntity.ok(leadService.addCurrentLeadInterests(currentUser, request));
     }
 
     @PutMapping("/{id}/status")

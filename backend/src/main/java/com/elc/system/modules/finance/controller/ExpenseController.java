@@ -7,6 +7,7 @@ import com.elc.system.modules.finance.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/expenses")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER')")
 public class ExpenseController {
 
     private final ExpenseService expenseService;

@@ -40,12 +40,14 @@ public class ClazzService {
     private final ClassScheduleRepository classScheduleRepository;
     private final EnrollmentRepository enrollmentRepository;
 
+    @Transactional(readOnly = true)
     public List<ClassResponse> getAllClasses() {
         return clazzRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public ClassResponse getClassById(UUID id) {
         return clazzRepository.findById(id)
                 .map(this::mapToResponse)
@@ -220,6 +222,7 @@ public class ClazzService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<ScheduleResponse> getClassSchedules(UUID classId) {
         return classScheduleRepository.findByClazzId(classId).stream()
                 .map(this::mapToScheduleResponse)
@@ -255,6 +258,7 @@ public class ClazzService {
         return mapToScheduleResponse(classScheduleRepository.save(schedule));
     }
 
+    @Transactional(readOnly = true)
     public ConflictCheckResponse checkConflict(ConflictCheckRequest request) {
         // This is a simplified conflict check logic
         // In a real system, you would query existing schedules that overlap
@@ -269,17 +273,46 @@ public class ClazzService {
                 .map(this::mapToScheduleResponse)
                 .collect(Collectors.toList());
 
+        Course course = null;
+        Room room = null;
+        User teacher = null;
+        Branch branch = null;
+
+        try {
+            course = clazz.getCourse();
+        } catch (RuntimeException ignored) {
+            // Keep the class visible even if imported data points to a missing course.
+        }
+
+        try {
+            room = clazz.getRoom();
+        } catch (RuntimeException ignored) {
+            // Optional relation.
+        }
+
+        try {
+            teacher = clazz.getTeacher();
+        } catch (RuntimeException ignored) {
+            // Optional relation.
+        }
+
+        try {
+            branch = clazz.getBranch();
+        } catch (RuntimeException ignored) {
+            // Optional relation.
+        }
+
         return ClassResponse.builder()
                 .id(clazz.getId())
                 .name(clazz.getName())
-                .courseId(clazz.getCourse().getId())
-                .courseName(clazz.getCourse().getName())
-                .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
-                .roomName(clazz.getRoom() != null ? clazz.getRoom().getName() : null)
-                .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
-                .teacherName(clazz.getTeacher() != null ? clazz.getTeacher().getFullName() : null)
-                .branchId(clazz.getBranch() != null ? clazz.getBranch().getId() : null)
-                .branchName(clazz.getBranch() != null ? clazz.getBranch().getName() : null)
+                .courseId(course != null ? safeId(course::getId) : null)
+                .courseName(course != null ? safeString(course::getName) : null)
+                .roomId(room != null ? safeId(room::getId) : null)
+                .roomName(room != null ? safeString(room::getName) : null)
+                .teacherId(teacher != null ? safeId(teacher::getId) : null)
+                .teacherName(teacher != null ? safeString(teacher::getFullName) : null)
+                .branchId(branch != null ? safeId(branch::getId) : null)
+                .branchName(branch != null ? safeString(branch::getName) : null)
                 .status(clazz.getStatus())
                 .startDate(clazz.getStartDate())
                 .endDate(clazz.getEndDate())
@@ -291,10 +324,31 @@ public class ClazzService {
     private ScheduleResponse mapToScheduleResponse(ClassSchedule schedule) {
         return ScheduleResponse.builder()
                 .id(schedule.getId())
-                .classId(schedule.getClazz().getId())
+                .classId(safeId(() -> schedule.getClazz() != null ? schedule.getClazz().getId() : null))
                 .dayOfWeek(schedule.getDayOfWeek())
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
                 .build();
+    }
+
+    private UUID safeId(SupplierWithRuntimeException<UUID> supplier) {
+        try {
+            return supplier.get();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private String safeString(SupplierWithRuntimeException<String> supplier) {
+        try {
+            return supplier.get();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    @FunctionalInterface
+    private interface SupplierWithRuntimeException<T> {
+        T get();
     }
 }

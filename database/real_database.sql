@@ -4,14 +4,19 @@
 CREATE TABLE public.announcements (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   title character varying NOT NULL,
-  content text NOT NULL,
+  message text NOT NULL,
   target_role character varying,
-  created_by uuid,
+  created_by_id uuid NOT NULL,
   is_active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  delivered_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  target_class_id uuid,
+  type character varying NOT NULL CHECK (type::text = ANY (ARRAY['URGENT'::character varying::text, 'INFO'::character varying::text, 'PROMO'::character varying::text])),
+  scope character varying NOT NULL CHECK (scope::text = ANY (ARRAY['CENTER'::character varying::text, 'ROLE'::character varying::text, 'CLASS'::character varying::text, 'FINANCE'::character varying::text])),
   CONSTRAINT announcements_pkey PRIMARY KEY (id),
-  CONSTRAINT announcements_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
+  CONSTRAINT announcements_created_by_fkey FOREIGN KEY (created_by_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.assignments (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -25,6 +30,8 @@ CREATE TABLE public.assignments (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   is_active boolean,
+  external_link character varying,
+  file_url text,
   CONSTRAINT assignments_pkey PRIMARY KEY (id),
   CONSTRAINT assignments_class_id_fkey FOREIGN KEY (class_id) REFERENCES public.classes(id),
   CONSTRAINT assignments_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
@@ -100,6 +107,9 @@ CREATE TABLE public.consultations (
   created_at timestamp with time zone,
   updated_at timestamp with time zone,
   follow_up_date date,
+  next_reminder_at timestamp with time zone,
+  reminder_note character varying,
+  reminder_sent_at timestamp with time zone,
   CONSTRAINT consultations_pkey PRIMARY KEY (id),
   CONSTRAINT consultations_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
   CONSTRAINT consultations_consultant_id_fkey FOREIGN KEY (consultant_id) REFERENCES public.users(id)
@@ -130,7 +140,9 @@ CREATE TABLE public.courses (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   is_active boolean,
-  CONSTRAINT courses_pkey PRIMARY KEY (id)
+  level_id uuid,
+  CONSTRAINT courses_pkey PRIMARY KEY (id),
+  CONSTRAINT fk5h26i8gulbtggcwuqqkwh0yw1 FOREIGN KEY (level_id) REFERENCES public.levels(id)
 );
 CREATE TABLE public.enrollments (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -145,6 +157,15 @@ CREATE TABLE public.enrollments (
   CONSTRAINT enrollments_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.users(id),
   CONSTRAINT enrollments_class_id_fkey FOREIGN KEY (class_id) REFERENCES public.classes(id)
 );
+CREATE TABLE public.expense_categories (
+  id uuid NOT NULL,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  is_active boolean,
+  description character varying,
+  name character varying NOT NULL UNIQUE,
+  CONSTRAINT expense_categories_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.expenses (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   category character varying NOT NULL,
@@ -155,7 +176,12 @@ CREATE TABLE public.expenses (
   approved_by uuid,
   notes character varying,
   updated_at timestamp with time zone DEFAULT now(),
+  created_at timestamp with time zone,
+  branch_id uuid,
+  status character varying CHECK (status::text = ANY (ARRAY['DRAFT'::character varying, 'PENDING_APPROVAL'::character varying, 'APPROVED'::character varying, 'REJECTED'::character varying]::text[])),
+  category_id uuid,
   CONSTRAINT expenses_pkey PRIMARY KEY (id),
+  CONSTRAINT fkg7aulw52en8nct0mjq8uut03q FOREIGN KEY (category_id) REFERENCES public.expense_categories(id),
   CONSTRAINT expenses_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id)
 );
 CREATE TABLE public.invoices (
@@ -170,9 +196,24 @@ CREATE TABLE public.invoices (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   final_amount numeric NOT NULL,
+  notes character varying,
+  paid_amount numeric,
+  payment_method character varying,
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.users(id),
   CONSTRAINT invoices_enrollment_id_fkey FOREIGN KEY (enrollment_id) REFERENCES public.enrollments(id)
+);
+CREATE TABLE public.lead_interests (
+  id uuid NOT NULL,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  notes character varying,
+  status character varying NOT NULL CHECK (status::text = ANY (ARRAY['NEW'::character varying, 'CONTACTED'::character varying, 'INTERESTED'::character varying, 'CONVERTED'::character varying, 'ENROLLED'::character varying, 'REJECTED'::character varying]::text[])),
+  course_id uuid NOT NULL,
+  lead_id uuid NOT NULL,
+  CONSTRAINT lead_interests_pkey PRIMARY KEY (id),
+  CONSTRAINT fkau3oen9hkxljjybe6qdeu0riu FOREIGN KEY (course_id) REFERENCES public.courses(id),
+  CONSTRAINT fkoxedbng4vdxmwssxth9ygvuo1 FOREIGN KEY (lead_id) REFERENCES public.leads(id)
 );
 CREATE TABLE public.leads (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -187,8 +228,23 @@ CREATE TABLE public.leads (
   notes character varying,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  address character varying,
+  date_of_birth date,
+  gender character varying,
+  user_id uuid,
   CONSTRAINT leads_pkey PRIMARY KEY (id),
   CONSTRAINT leads_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branches(id)
+);
+CREATE TABLE public.levels (
+  id uuid NOT NULL,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  is_active boolean,
+  code character varying NOT NULL UNIQUE,
+  description character varying,
+  display_order integer,
+  name character varying NOT NULL,
+  CONSTRAINT levels_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.notifications (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -198,8 +254,19 @@ CREATE TABLE public.notifications (
   is_read boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone,
+  type character varying CHECK (type::text = ANY (ARRAY['PERSONAL'::character varying, 'ANNOUNCEMENT'::character varying, 'SYSTEM'::character varying]::text[])),
   CONSTRAINT notifications_pkey PRIMARY KEY (id),
   CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.password_reset_tokens (
+  id uuid NOT NULL,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  expires_at timestamp with time zone NOT NULL,
+  token character varying NOT NULL UNIQUE,
+  used_at timestamp with time zone,
+  user_id uuid NOT NULL,
+  CONSTRAINT password_reset_tokens_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.payments (
   id uuid NOT NULL,
@@ -228,6 +295,18 @@ CREATE TABLE public.promotions (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT promotions_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.room_schedules (
+  id uuid NOT NULL,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  class_id uuid,
+  end_time timestamp without time zone NOT NULL,
+  purpose character varying,
+  start_time timestamp without time zone NOT NULL,
+  room_id uuid NOT NULL,
+  CONSTRAINT room_schedules_pkey PRIMARY KEY (id),
+  CONSTRAINT fkl0fj6n9kh38cf3xkmll8ld6wh FOREIGN KEY (room_id) REFERENCES public.rooms(id)
+);
 CREATE TABLE public.rooms (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   branch_id uuid,
@@ -238,8 +317,24 @@ CREATE TABLE public.rooms (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   room_type character varying,
+  description character varying,
+  type character varying CHECK (type::text = ANY (ARRAY['THEORY'::character varying, 'PRACTICE'::character varying, 'LAB'::character varying, 'MEETING'::character varying, 'OTHER'::character varying]::text[])),
   CONSTRAINT rooms_pkey PRIMARY KEY (id),
   CONSTRAINT rooms_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branches(id)
+);
+CREATE TABLE public.staff_adjustments (
+  id uuid NOT NULL,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  amount numeric NOT NULL,
+  effective_date date,
+  reason character varying NOT NULL,
+  type character varying NOT NULL CHECK (type::text = ANY (ARRAY['BONUS'::character varying, 'PENALTY'::character varying]::text[])),
+  approved_by uuid,
+  user_id uuid NOT NULL,
+  CONSTRAINT staff_adjustments_pkey PRIMARY KEY (id),
+  CONSTRAINT fkra1ggmxka1l9sy6emfr5yxk2n FOREIGN KEY (approved_by) REFERENCES public.users(id),
+  CONSTRAINT fkasqiwdfh92iw00t037o1d1r31 FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.submissions (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -248,10 +343,13 @@ CREATE TABLE public.submissions (
   submission_date timestamp with time zone DEFAULT now(),
   file_url character varying,
   content text,
-  grade numeric,
+  grade double precision,
   feedback character varying,
   status character varying DEFAULT 'SUBMITTED'::submission_status,
   updated_at timestamp with time zone DEFAULT now(),
+  created_at timestamp with time zone,
+  is_late boolean,
+  late_minutes bigint,
   CONSTRAINT submissions_pkey PRIMARY KEY (id),
   CONSTRAINT submissions_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.assignments(id),
   CONSTRAINT submissions_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.users(id)
@@ -268,6 +366,7 @@ CREATE TABLE public.transactions (
   status character varying DEFAULT 'PENDING'::transaction_status,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  external_ref character varying,
   CONSTRAINT transactions_pkey PRIMARY KEY (id),
   CONSTRAINT transactions_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id),
   CONSTRAINT transactions_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.users(id),

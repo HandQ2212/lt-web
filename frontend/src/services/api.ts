@@ -2,14 +2,14 @@ import axios from 'axios';
 
 const API_BASE_URL = (import.meta.env as any).VITE_API_BASE_URL || 'http://localhost:8080/api';
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
+export type UserRole = 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
 
 export interface AppUser {
   id: string;
   email: string;
   name: string;
   role: UserRole;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED';
   phone?: string;
 }
 
@@ -27,7 +27,7 @@ type BackendUser = {
   fullName?: string;
   name?: string;
   role: UserRole;
-  status?: 'ACTIVE' | 'INACTIVE';
+  status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED';
   phone?: string;
 };
 
@@ -133,6 +133,20 @@ export const courseApi = {
   delete: (id: string) => api.delete(`/courses/${id}`),
 };
 
+export const branchApi = {
+  getAll: async () => {
+    const response = await api.get('/branches');
+    return response.data as any[];
+  },
+};
+
+export const roomApi = {
+  getAll: async () => {
+    const response = await api.get('/rooms');
+    return response.data as any[];
+  },
+};
+
 export const classApi = {
   getAll: async () => {
     const response = await api.get('/classes');
@@ -144,7 +158,8 @@ export const classApi = {
   checkConflict: (data: any) => api.post('/classes/check-conflict', data),
   getSchedule: (id: string) => api.get(`/classes/${id}/schedule`),
   delete: (id: string) => api.delete(`/classes/${id}`),
-  updateStatus: (id: string, status: string) => api.patch(`/classes/${id}/status`, { status }),
+  updateStatus: (id: string, status: string) =>
+    api.patch(`/classes/${id}/status`, null, { params: { status } }),
   addSchedule: (classId: string, schedule: any) => api.post(`/classes/${classId}/schedule`, schedule),
 };
 
@@ -152,7 +167,14 @@ export const enrollmentApi = {
   getByClass: (classId: string) => api.get(`/enrollments/class/${classId}`),
   getByStudent: (studentId: string) => api.get(`/enrollments/student/${studentId}`),
   create: (data: any) => api.post('/enrollments', data),
-  updateStatus: (id: string, status: string) => api.patch(`/enrollments/${id}/status`, { status }),
+  updateStatus: (id: string, status: string) =>
+    api.patch(`/enrollments/${id}/status`, null, { params: { status } }),
+  transferClass: (id: string, targetClassId: string) =>
+    api.patch(`/enrollments/${id}/class`, { targetClassId }),
+};
+
+export const resultApi = {
+  getByEnrollment: (enrollmentId: string) => api.get(`/results/enrollment/${enrollmentId}`),
 };
 
 export const leadApi = {
@@ -160,9 +182,17 @@ export const leadApi = {
     const response = await api.get('/leads', { params });
     return response.data as PageResponse<any>;
   },
+  getMine: async () => {
+    const response = await api.get('/leads/me');
+    return response.data;
+  },
   create: (data: any) => api.post('/leads', data),
+  addMyInterests: async (payload: { courseIds: string[]; notes?: string }) => {
+    const response = await api.post('/leads/me/interests', payload);
+    return response.data;
+  },
   updateStatus: (id: string, status: string) => api.put(`/leads/${id}/status`, { status }),
-  convert: (id: string, payload: { email: string; password: string }) =>
+  convert: (id: string, payload: { email?: string; password?: string; classId: string }) =>
     api.post(`/leads/${id}/convert`, payload),
 };
 
@@ -187,12 +217,16 @@ export const userApi = {
   },
   update: async (
     id: string,
-    payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' }
+    payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED' }
   ) => {
     const response = await api.put(`/users/${id}`, payload);
     return normalizeUser(response.data);
   },
   deactivate: (id: string) => api.delete(`/users/${id}`),
+  getTeachers: async () => {
+    const response = await api.get('/users/teachers');
+    return (response.data as BackendUser[]).map(normalizeUser);
+  },
 };
 
 export const profileApi = {
@@ -223,9 +257,9 @@ export const assignmentApi = {
 };
 
 export const submissionApi = {
-  submit: (data: any) => api.post('/submissions', data),
+  submit: (data: any) => api.post('/submissions/submit', data),
   grade: (id: string, score: number, feedback: string) =>
-    api.put(`/submissions/${id}/grade`, { score, feedback }),
+    api.put(`/submissions/${id}/grade`, { grade: score, feedback }),
   getByAssignment: (assignmentId: string) =>
     api.get(`/submissions/assignment/${assignmentId}`),
 };
@@ -238,13 +272,44 @@ export const transactionApi = {
 export const invoiceApi = {
   getAll: (params?: any) => api.get('/invoices', { params }),
   getDebt: () => api.get('/invoices/debt'),
-  refund: (id: string) => api.post(`/invoices/${id}/refund`),
+  refund: (id: string, payload: { amount: number; reason?: string }) =>
+    api.post(`/invoices/${id}/refund`, payload),
   create: (data: any) => api.post('/invoices', data),
-  updateStatus: (id: string, status: string) => api.patch(`/invoices/${id}/status`, { status }),
+  updateStatus: (id: string, status: string) =>
+    api.patch(`/invoices/${id}/status`, null, { params: { status } }),
+};
+
+export const paymentApi = {
+  create: (payload: {
+    invoiceId: string;
+    amount: number;
+    paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'CREDIT_CARD' | 'MOMO' | 'VN_PAY';
+    paymentDate?: string;
+    transactionId?: string;
+    notes?: string;
+  }) => api.post('/payments', payload),
+};
+
+export const expenseApi = {
+  getAll: (params?: any) => api.get('/expenses', { params }),
+  create: (payload: {
+    category: string;
+    amount: number;
+    expenseDate?: string;
+    vendor?: string;
+    receiptUrl?: string;
+    notes?: string;
+  }) => api.post('/expenses', payload),
 };
 
 export const notificationApi = {
-  getAll: () => api.get('/notifications'),
+  getAll: async () => {
+    const response = await api.get('/notifications');
+    return {
+      ...response,
+      data: Array.isArray(response.data) ? response.data : response.data?.content || [],
+    };
+  },
   getUnreadCount: () => api.get('/notifications/unread-count'),
   markAsRead: (id: string) => api.put(`/notifications/${id}/read`),
   markAllAsRead: () => api.patch('/notifications/read-all'),
@@ -254,9 +319,17 @@ export const analyticsApi = {
   getBranchPerformance: () => api.get('/analytics/branch-performance'),
   getRevenue: (params?: any) => api.get('/analytics/revenue', { params }),
   getAcademic: () => api.get('/analytics/academic'),
-  getDashboard: () => api.get('/analytics/dashboard'),
+  getDashboard: async () => {
+    const response = await api.get('/analytics/dashboard');
+    return response.data;
+  },
 };
 
 export const reportsApi = {
-  getAll: (params?: any) => api.get('/reports', { params }),
+  getRevenue: () => api.get('/reports/revenue'),
+  getExpenses: () => api.get('/reports/expenses'),
+  getProfitLoss: () => api.get('/reports/profit-loss'),
+  getConversion: () => api.get('/reports/conversion'),
+  getTopCourses: () => api.get('/reports/top-courses'),
+  getChurnRate: () => api.get('/reports/churn-rate'),
 };

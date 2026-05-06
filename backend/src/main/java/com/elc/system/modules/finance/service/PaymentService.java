@@ -1,5 +1,7 @@
 package com.elc.system.modules.finance.service;
 
+import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.finance.dto.PaymentDto.PaymentRequest;
 import com.elc.system.modules.finance.dto.PaymentDto.PaymentResponse;
 import com.elc.system.modules.finance.entity.Invoice;
@@ -8,6 +10,7 @@ import com.elc.system.modules.finance.entity.Payment;
 import com.elc.system.modules.finance.repository.InvoiceRepository;
 import com.elc.system.modules.finance.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +28,25 @@ public class PaymentService {
     private final InvoiceRepository invoiceRepository;
 
     @Transactional(readOnly = true)
+    public List<PaymentResponse> getAllPayments() {
+        return paymentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<PaymentResponse> getPaymentsByInvoice(UUID invoiceId) {
+        return paymentRepository.findByInvoiceId(invoiceId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getPaymentsByInvoice(UUID invoiceId, User user) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+        assertCanAccessInvoice(invoice, user);
+
         return paymentRepository.findByInvoiceId(invoiceId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -51,6 +72,40 @@ public class PaymentService {
         updateInvoiceStatus(invoice);
 
         return mapToResponse(savedPayment);
+    }
+
+    @Transactional
+    public PaymentResponse createPayment(PaymentRequest request, User user) {
+        Invoice invoice = invoiceRepository.findById(request.getInvoiceId())
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+        assertCanAccessInvoice(invoice, user);
+
+        Payment payment = Payment.builder()
+                .invoice(invoice)
+                .amount(request.getAmount())
+                .paymentDate(request.getPaymentDate() != null ? request.getPaymentDate() : ZonedDateTime.now())
+                .paymentMethod(request.getPaymentMethod())
+                .transactionId(request.getTransactionId())
+                .notes(request.getNotes())
+                .build();
+
+        Payment savedPayment = paymentRepository.save(payment);
+        updateInvoiceStatus(invoice);
+
+        return mapToResponse(savedPayment);
+    }
+
+    private void assertCanAccessInvoice(Invoice invoice, User user) {
+        if (user.getRole() == UserRole.MANAGER || user.getRole() == UserRole.ACCOUNTANT) {
+            return;
+        }
+
+        if (user.getRole() == UserRole.STUDENT
+                && invoice.getEnrollment().getStudent().getId().equals(user.getId())) {
+            return;
+        }
+
+        throw new AccessDeniedException("You do not have permission to access this invoice");
     }
 
     private void updateInvoiceStatus(Invoice invoice) {

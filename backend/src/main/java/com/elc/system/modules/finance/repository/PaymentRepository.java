@@ -14,6 +14,9 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p")
     java.math.BigDecimal getTotalRevenue();
 
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.invoice.id = :invoiceId")
+    java.math.BigDecimal getTotalPaidByInvoiceId(@org.springframework.data.repository.query.Param("invoiceId") UUID invoiceId);
+
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.invoice.enrollment.clazz.branch.id = :branchId")
     java.math.BigDecimal getTotalRevenueByBranchId(@org.springframework.data.repository.query.Param("branchId") UUID branchId);
 

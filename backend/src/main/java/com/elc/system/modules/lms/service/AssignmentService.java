@@ -21,6 +21,7 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final ClazzRepository clazzRepository;
 
+    @Transactional(readOnly = true)
     public List<AssignmentResponse> getAssignmentsByClass(UUID classId) {
         return assignmentRepository.findByClazzId(classId).stream()
                 .map(this::mapToResponse)
@@ -46,17 +47,20 @@ public class AssignmentService {
     }
 
     private AssignmentResponse mapToResponse(Assignment assignment) {
+        Clazz clazz = assignment.getClazz();
+        User createdBy = assignment.getCreatedBy();
+
         return AssignmentResponse.builder()
                 .id(assignment.getId())
-                .classId(assignment.getClazz().getId())
-                .className(assignment.getClazz().getName())
+                .classId(clazz != null ? clazz.getId() : null)
+                .className(clazz != null ? clazz.getName() : null)
                 .title(assignment.getTitle())
                 .description(assignment.getDescription())
                 .dueDate(assignment.getDueDate())
                 .fileUrl(assignment.getFileUrl())
                 .externalLink(assignment.getExternalLink())
-                .createdById(assignment.getCreatedBy().getId())
-                .createdByName(assignment.getCreatedBy().getFullName())
+                .createdById(createdBy != null ? createdBy.getId() : null)
+                .createdByName(createdBy != null ? createdBy.getFullName() : null)
                 .createdAt(assignment.getCreatedAt())
                 .build();
     }

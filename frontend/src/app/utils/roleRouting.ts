@@ -2,7 +2,6 @@ import { User } from '../../types';
 
 export function getDefaultRouteByRole(role?: User['role']): string {
   switch (role) {
-    case 'ADMIN':
     case 'MANAGER':
       return '/admin/dashboard';
     case 'TEACHER':
@@ -10,7 +9,7 @@ export function getDefaultRouteByRole(role?: User['role']): string {
     case 'STUDENT':
       return '/student/courses';
     case 'ACCOUNTANT':
-      return '/finance/dashboard';
+      return '/finance/debts';
     case 'LEAD':
       return '/profile';
     default:

@@ -23,7 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { classApi } from '../../../services/api';
+import { branchApi, classApi, courseApi, roomApi, userApi } from '../../../services/api';
 
 type ClassItem = {
   id: string;
@@ -60,9 +60,15 @@ const defaultForm: ClassForm = {
 
 export default function ClassManagementPage() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [scheduleDialog, setScheduleDialog] = useState<{ open: boolean; classId: string }>({ open: false, classId: '' });
+  const [scheduleForm, setScheduleForm] = useState({ dayOfWeek: 'MONDAY', startTime: '18:00', endTime: '20:00' });
   const [form, setForm] = useState<ClassForm>(defaultForm);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -72,6 +78,7 @@ export default function ClassManagementPage() {
 
   useEffect(() => {
     void fetchClasses();
+    void fetchOptions();
   }, []);
 
   const fetchClasses = async () => {
@@ -87,6 +94,27 @@ export default function ClassManagementPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOptions = async () => {
+    try {
+      const [courseList, roomList, branchList, userPage] = await Promise.all([
+        courseApi.getAll(),
+        roomApi.getAll(),
+        branchApi.getAll(),
+        userApi.getAll({ size: 200, sort: 'fullName,asc' }),
+      ]);
+      setCourses(courseList || []);
+      setRooms(roomList || []);
+      setBranches(branchList || []);
+      setTeachers((userPage.content || []).filter((user: any) => user.role === 'TEACHER'));
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Không thể tải dữ liệu tạo lớp',
+        severity: 'error',
+      });
     }
   };
 
@@ -149,16 +177,10 @@ export default function ClassManagementPage() {
 
   const handleAddSchedule = async (id: string) => {
     try {
-      // For now, show a simple alert - in production, would open a dialog
-      const dayOfWeek = window.prompt('Ngày trong tuần (e.g., MONDAY):');
-      const startTime = window.prompt('Giờ bắt đầu (e.g., 18:00):');
-      const endTime = window.prompt('Giờ kết thúc (e.g., 20:00):');
-
-      if (dayOfWeek && startTime && endTime) {
-        await classApi.addSchedule(id, { dayOfWeek, startTime, endTime });
-        setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
-        await fetchClasses();
-      }
+      await classApi.addSchedule(id, scheduleForm);
+      setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
+      setScheduleDialog({ open: false, classId: '' });
+      await fetchClasses();
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -263,7 +285,7 @@ export default function ClassManagementPage() {
                               : 'Hoàn thành'}
                         </Button>
                       )}
-                      <Button size="small" variant="outlined" onClick={() => void handleAddSchedule(cls.id)}>
+                      <Button size="small" variant="outlined" onClick={() => setScheduleDialog({ open: true, classId: cls.id })}>
                         Thêm lịch
                       </Button>
                       <IconButton size="small" color="error" onClick={() => void handleDelete(cls.id)}>
@@ -288,34 +310,18 @@ export default function ClassManagementPage() {
             value={form.name}
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
           />
-          <TextField
-            fullWidth
-            label="Course ID"
-            margin="normal"
-            value={form.courseId}
-            onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            label="Teacher ID"
-            margin="normal"
-            value={form.teacherId}
-            onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            label="Room ID"
-            margin="normal"
-            value={form.roomId}
-            onChange={(e) => setForm((prev) => ({ ...prev, roomId: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            label="Branch ID"
-            margin="normal"
-            value={form.branchId}
-            onChange={(e) => setForm((prev) => ({ ...prev, branchId: e.target.value }))}
-          />
+          <TextField fullWidth select label="Khóa học" margin="normal" value={form.courseId} onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}>
+            {courses.map((course) => <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>)}
+          </TextField>
+          <TextField fullWidth select label="Giáo viên" margin="normal" value={form.teacherId} onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}>
+            {teachers.map((teacher) => <MenuItem value={teacher.id} key={teacher.id}>{teacher.name || teacher.email}</MenuItem>)}
+          </TextField>
+          <TextField fullWidth select label="Phòng học" margin="normal" value={form.roomId} onChange={(e) => setForm((prev) => ({ ...prev, roomId: e.target.value }))}>
+            {rooms.map((room) => <MenuItem value={room.id} key={room.id}>{room.name} ({room.capacity || '-'} chỗ)</MenuItem>)}
+          </TextField>
+          <TextField fullWidth select label="Chi nhánh" margin="normal" value={form.branchId} onChange={(e) => setForm((prev) => ({ ...prev, branchId: e.target.value }))}>
+            {branches.map((branch) => <MenuItem value={branch.id} key={branch.id}>{branch.name}</MenuItem>)}
+          </TextField>
           <TextField
             fullWidth
             type="date"
@@ -359,6 +365,52 @@ export default function ClassManagementPage() {
           <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
           <Button variant="contained" disabled={submitting} onClick={() => void handleCreate()}>
             {submitting ? 'Đang tạo...' : 'Tạo lớp'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={scheduleDialog.open} onClose={() => setScheduleDialog({ open: false, classId: '' })} maxWidth="xs" fullWidth>
+        <DialogTitle>Thêm lịch học</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            select
+            label="Ngày trong tuần"
+            margin="normal"
+            value={scheduleForm.dayOfWeek}
+            onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
+          >
+            <MenuItem value="MONDAY">Thứ Hai</MenuItem>
+            <MenuItem value="TUESDAY">Thứ Ba</MenuItem>
+            <MenuItem value="WEDNESDAY">Thứ Tư</MenuItem>
+            <MenuItem value="THURSDAY">Thứ Năm</MenuItem>
+            <MenuItem value="FRIDAY">Thứ Sáu</MenuItem>
+            <MenuItem value="SATURDAY">Thứ Bảy</MenuItem>
+            <MenuItem value="SUNDAY">Chủ Nhật</MenuItem>
+          </TextField>
+          <TextField
+            fullWidth
+            type="time"
+            label="Giờ bắt đầu"
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+            value={scheduleForm.startTime}
+            onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
+          />
+          <TextField
+            fullWidth
+            type="time"
+            label="Giờ kết thúc"
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+            value={scheduleForm.endTime}
+            onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setScheduleDialog({ open: false, classId: '' })}>Hủy</Button>
+          <Button variant="contained" onClick={() => void handleAddSchedule(scheduleDialog.classId)}>
+            Thêm lịch
           </Button>
         </DialogActions>
       </Dialog>

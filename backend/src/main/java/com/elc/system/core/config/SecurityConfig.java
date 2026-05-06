@@ -43,7 +43,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 3. Cho phép tất cả các request OPTIONS (Preflight) đi qua
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
+                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                        
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
@@ -72,17 +73,17 @@ public class SecurityConfig {
         
         // Cho phép các Origin (Frontend) được phép truy cập
         // Bạn có thể thêm port 3000 hoặc các port khác nếu cần
-        configuration.setAllowedOrigins(List.of(
-            "http://localhost:5173", 
-            "http://localhost:3000", 
-            "http://26.150.15.154:3000",
-            "http://26.150.15.154:8080"
-        ));        
+        configuration.setAllowedOriginPatterns(List.of(
+            "https://elc.handq2212.site",
+            "http://localhost:*",
+            "http://26.150.15.154:*"
+        ));
         // Cho phép các phương thức HTTP
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         
         // Cho phép các Header cần thiết
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         
         // Cho phép gửi Credentials (Cookies, Auth Headers)
         configuration.setAllowCredentials(true);

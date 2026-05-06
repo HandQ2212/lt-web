@@ -30,7 +30,7 @@ type UserForm = {
   email: string;
   phone: string;
   role: UserRole;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED';
   password: string;
 };
 
@@ -152,8 +152,6 @@ export default function UserManagementPage() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'ADMIN':
-        return 'error';
       case 'MANAGER':
         return 'warning';
       case 'TEACHER':
@@ -271,7 +269,6 @@ export default function UserManagementPage() {
             value={form.role}
             onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
           >
-            <MenuItem value="ADMIN">Admin</MenuItem>
             <MenuItem value="MANAGER">Manager</MenuItem>
             <MenuItem value="TEACHER">Teacher</MenuItem>
             <MenuItem value="STUDENT">Student</MenuItem>
@@ -284,10 +281,13 @@ export default function UserManagementPage() {
             label="Trạng thái"
             margin="normal"
             value={form.status}
-            onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as 'ACTIVE' | 'INACTIVE' }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED' }))
+            }
           >
             <MenuItem value="ACTIVE">Hoạt động</MenuItem>
             <MenuItem value="INACTIVE">Không hoạt động</MenuItem>
+            <MenuItem value="DEACTIVATED">Đã vô hiệu hóa</MenuItem>
           </TextField>
         </DialogContent>
         <DialogActions>

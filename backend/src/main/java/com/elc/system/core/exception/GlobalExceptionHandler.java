@@ -1,6 +1,7 @@
 package com.elc.system.core.exception;
 
 import com.elc.system.modules.auth.exception.*;
+import com.elc.system.modules.lead.exception.LeadAlreadyExistsException;
 import com.elc.system.modules.notification.exception.NotificationNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import com.elc.system.modules.room.exception.RoomException;
@@ -114,6 +115,17 @@ public class GlobalExceptionHandler {
                 .timestamp(ZonedDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(LeadAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleLeadAlreadyExists(LeadAlreadyExistsException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(409)
+                .message(ex.getMessage())
+                .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .timestamp(ZonedDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(InsufficientPermissionException.class)

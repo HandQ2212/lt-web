@@ -12,6 +12,10 @@ import com.elc.system.modules.auth.exception.InvalidTokenException;
 import com.elc.system.modules.auth.exception.UserAlreadyExistsException;
 import com.elc.system.modules.auth.repository.PasswordResetTokenRepository;
 import com.elc.system.modules.auth.repository.UserRepository;
+import com.elc.system.modules.lead.entity.Lead;
+import com.elc.system.modules.lead.entity.LeadSource;
+import com.elc.system.modules.lead.entity.LeadStatus;
+import com.elc.system.modules.lead.repository.LeadRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +37,7 @@ public class AuthenticationService {
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final LeadRepository leadRepository;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -58,6 +63,7 @@ public class AuthenticationService {
         user.setRefreshToken(refreshToken);
 
         userRepository.save(user);
+        createLeadProfileIfPossible(user);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -134,11 +140,7 @@ public class AuthenticationService {
 
             passwordResetTokenRepository.save(token);
 
-            // MOCK EMAIL DELIVERY - Log to console
-            log.info("==============================================");
-            log.info("PASSWORD RESET TOKEN for {}: {}", email, resetToken);
-            log.info("Reset link: http://26.150.15.154:8080/api/auth/reset-password?token={}", resetToken);            log.info("Token expires at: {}", token.getExpiresAt());
-            log.info("==============================================");
+            log.info("Password reset token created for {} and expires at {}", email, token.getExpiresAt());
             // TODO: Integrate email service in future milestone
         });
     }
@@ -173,7 +175,41 @@ public class AuthenticationService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .dateOfBirth(user.getDateOfBirth())
+                .gender(user.getGender())
+                .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
+                .status(user.getStatus())
+                .branchId(user.getBranchId())
                 .build();
+    }
+
+    private void createLeadProfileIfPossible(User user) {
+        if (user.getPhone() == null || user.getPhone().isBlank()) {
+            return;
+        }
+
+        Lead lead = leadRepository.findByEmailIgnoreCase(user.getEmail())
+                .or(() -> leadRepository.findByPhone(user.getPhone()))
+                .orElseGet(Lead::new);
+
+        lead.setUserId(user.getId());
+        lead.setFullName(user.getFullName());
+        lead.setEmail(user.getEmail());
+        lead.setPhone(user.getPhone());
+        lead.setDateOfBirth(user.getDateOfBirth());
+        lead.setGender(user.getGender());
+        lead.setAddress(user.getAddress());
+        lead.setBranchId(user.getBranchId());
+        if (lead.getStatus() == null) {
+            lead.setStatus(LeadStatus.NEW);
+        }
+        if (lead.getSource() == null) {
+            lead.setSource(LeadSource.WEBSITE_FORM);
+        }
+
+        leadRepository.save(lead);
     }
 }

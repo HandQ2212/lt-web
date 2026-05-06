@@ -2,7 +2,6 @@ import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import SchoolIcon from '@mui/icons-material/School';
 import ClassIcon from '@mui/icons-material/Class';
@@ -10,7 +9,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PaymentIcon from '@mui/icons-material/Payment';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PersonIcon from '@mui/icons-material/Person';
-import SettingsIcon from '@mui/icons-material/Settings';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
 
@@ -24,11 +22,9 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['ADMIN', 'MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT'] },
-
-  { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['ADMIN', 'MANAGER'] },
-  { text: 'Quản lý lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['ADMIN', 'MANAGER'] },
-  { text: 'CRM & Leads', icon: <GroupsIcon />, path: '/admin/leads', roles: ['ADMIN', 'MANAGER'] },
+  { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
+  { text: 'Quản lý lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
+  { text: 'CRM & Leads', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER'] },
 
   { text: 'Lịch dạy', icon: <CalendarTodayIcon />, path: '/teacher/schedule', roles: ['TEACHER'] },
   { text: 'Lớp học của tôi', icon: <ClassIcon />, path: '/teacher/classes', roles: ['TEACHER'] },
@@ -39,9 +35,10 @@ const menuItems: MenuItem[] = [
   { text: 'Bảng điểm', icon: <BarChartIcon />, path: '/student/grades', roles: ['STUDENT'] },
   { text: 'Học phí', icon: <PaymentIcon />, path: '/student/payments', roles: ['STUDENT'] },
 
-  { text: 'Tài chính', icon: <PaymentIcon />, path: '/finance/dashboard', roles: ['ACCOUNTANT', 'ADMIN'] },
+  { text: 'Công nợ học viên', icon: <BarChartIcon />, path: '/finance/debts', roles: ['ACCOUNTANT'] },
+  { text: 'Thanh toán GV', icon: <PaymentIcon />, path: '/finance/teacher-payments', roles: ['ACCOUNTANT'] },
 
-  { text: 'Hồ sơ', icon: <PersonIcon />, path: '/profile', roles: ['ADMIN', 'MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT'] },
+  { text: 'Hồ sơ', icon: <PersonIcon />, path: '/profile', roles: ['MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT', 'LEAD'] },
 ];
 
 export default function DashboardSidebar() {
@@ -52,6 +49,10 @@ export default function DashboardSidebar() {
   const filteredMenuItems = menuItems.filter(item =>
     user && item.roles.includes(user.role)
   );
+
+  const isActive = (item: MenuItem) => {
+    return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+  };
 
   return (
     <Drawer
@@ -79,7 +80,7 @@ export default function DashboardSidebar() {
         {filteredMenuItems.map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton
-              selected={location.pathname === item.path}
+              selected={isActive(item)}
               onClick={() => navigate(item.path)}
               sx={{
                 '&.Mui-selected': {
@@ -88,7 +89,7 @@ export default function DashboardSidebar() {
                 },
               }}
             >
-              <ListItemIcon sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}>
+              <ListItemIcon sx={{ color: isActive(item) ? 'primary.main' : 'inherit' }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText primary={item.text} />

@@ -5,6 +5,7 @@ import com.elc.system.modules.lms.service.CourseResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -22,6 +23,7 @@ public class CourseResultController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER')")
     public ResponseEntity<CourseResultResponse> saveResult(@Valid @RequestBody CourseResultRequest request) {
         return ResponseEntity.ok(courseResultService.saveResult(request));
     }

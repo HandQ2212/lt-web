@@ -27,12 +27,14 @@ public class EnrollmentService {
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public List<EnrollmentResponse> getEnrollmentsByClass(UUID classId) {
         return enrollmentRepository.findByClazzId(classId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<EnrollmentResponse> getEnrollmentsByStudent(UUID studentId) {
         return enrollmentRepository.findByStudentId(studentId).stream()
                 .map(this::mapToResponse)
@@ -77,12 +79,43 @@ public class EnrollmentService {
         return mapToResponse(enrollmentRepository.save(enrollment));
     }
 
+    @Transactional
+    public EnrollmentResponse transferClass(UUID enrollmentId, TransferClassRequest request) {
+        if (request.getTargetClassId() == null) {
+            throw new RuntimeException("Target class is required");
+        }
+
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+        Clazz targetClass = clazzRepository.findById(request.getTargetClassId())
+                .orElseThrow(() -> new RuntimeException("Target class not found"));
+
+        if (enrollment.getClazz().getId().equals(targetClass.getId())) {
+            return mapToResponse(enrollment);
+        }
+
+        validateClassForEnrollment(targetClass);
+
+        UUID studentId = enrollment.getStudent().getId();
+        if (enrollmentRepository.existsByStudentIdAndClazzId(studentId, targetClass.getId())) {
+            throw new RuntimeException("Student is already enrolled in target class");
+        }
+
+        validateClassCapacity(targetClass);
+        enrollment.setClazz(targetClass);
+        enrollment.setStatus(EnrollmentStatus.ACTIVE);
+
+        return mapToResponse(enrollmentRepository.save(enrollment));
+    }
+
     private void validateClassForEnrollment(Clazz clazz) {
         // Check class status
-        if (clazz.getStatus() != ClassStatus.UPCOMING && clazz.getStatus() != ClassStatus.ONGOING) {
+        if (clazz.getStatus() != ClassStatus.ACCEPTING
+                && clazz.getStatus() != ClassStatus.UPCOMING
+                && clazz.getStatus() != ClassStatus.ONGOING) {
             throw new InvalidClassStatusException(
                     "Cannot enroll in class with status: " + clazz.getStatus() +
-                            ". Enrollment is only allowed for UPCOMING or ONGOING classes.");
+                            ". Enrollment is only allowed for ACCEPTING, UPCOMING or ONGOING classes.");
         }
 
         // Check if class has already ended
@@ -93,6 +126,16 @@ public class EnrollmentService {
         // Check if class is cancelled
         if (clazz.getStatus() == ClassStatus.CANCELLED) {
             throw new InvalidClassStatusException("Cannot enroll in cancelled class.");
+        }
+    }
+
+    private void validateClassCapacity(Clazz clazz) {
+        long currentEnrolled = enrollmentRepository.findByClazzId(clazz.getId()).stream()
+                .filter(e -> e.getStatus() == EnrollmentStatus.ACTIVE || e.getStatus() == EnrollmentStatus.PENDING)
+                .count();
+
+        if (currentEnrolled >= clazz.getMaxStudents()) {
+            throw new RuntimeException("Class is full. Current enrollment: " + currentEnrolled + ", Max capacity: " + clazz.getMaxStudents());
         }
     }
 

@@ -33,9 +33,7 @@ export default function DashboardHeader() {
   const fetchNotifications = async () => {
     try {
       const countRes = await notificationApi.getUnreadCount();
-      if (countRes?.data?.count) {
-        setUnreadCount(countRes.data.count);
-      }
+      setUnreadCount(Number(countRes?.data?.count || 0));
 
       const allNotifs = await notificationApi.getAll();
       if (allNotifs?.data && Array.isArray(allNotifs.data)) {

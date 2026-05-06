@@ -36,7 +36,7 @@ export interface Lead {
   name: string;
   email: string;
   phone: string;
-  status: 'NEW' | 'CONTACTED' | 'INTERESTED' | 'ENROLLED';
+  status: 'NEW' | 'CONTACTED' | 'INTERESTED' | 'CONVERTED' | 'ENROLLED' | 'REJECTED';
   consultations: Consultation[];
   createdAt?: string;
 }
@@ -54,7 +54,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
+  role: 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
   status: 'ACTIVE' | 'INACTIVE';
   avatar?: string;
   phone?: string;

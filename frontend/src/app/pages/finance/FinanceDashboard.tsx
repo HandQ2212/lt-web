@@ -60,9 +60,15 @@ export default function FinanceDashboard() {
       const debtResponse = await invoiceApi.getDebt();
       
       if (debtResponse) {
+        const debtInvoices = Array.isArray(debtResponse.data) ? debtResponse.data : [];
+        const outstandingDebt = debtInvoices.reduce(
+          (total: number, invoice: any) => total + Number(invoice.finalAmount ?? invoice.totalAmount ?? 0),
+          0
+        );
+
         setFinanceData((prev) => ({
           ...prev,
-          outstandingDebt: debtResponse.data?.totalDebt || prev.outstandingDebt,
+          outstandingDebt: outstandingDebt || prev.outstandingDebt,
         }));
       }
     } catch (err: any) {

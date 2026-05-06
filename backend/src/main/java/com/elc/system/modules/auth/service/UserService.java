@@ -16,7 +16,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,7 +33,14 @@ public class UserService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .dateOfBirth(user.getDateOfBirth())
+                .gender(user.getGender())
+                .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
+                .status(user.getStatus())
+                .branchId(user.getBranchId())
                 .build();
     }
 
@@ -54,6 +63,13 @@ public class UserService {
         log.info("Fetching all users with pagination");
         return userRepository.findAll(pageable)
                 .map(this::mapToUserResponse);
+    }
+
+    public List<UserResponse> getActiveTeachers() {
+        log.info("Fetching active teachers");
+        return userRepository.findActiveByRole(com.elc.system.modules.auth.entity.UserRole.TEACHER).stream()
+                .map(this::mapToUserResponse)
+                .collect(Collectors.toList());
     }
 
     /**

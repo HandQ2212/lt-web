@@ -25,19 +25,19 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<RoomResponse> createRoom(@Valid @RequestBody RoomRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(roomService.createRoom(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<RoomResponse> updateRoom(@PathVariable UUID id, @Valid @RequestBody RoomRequest request) {
         return ResponseEntity.ok(roomService.updateRoom(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deleteRoom(@PathVariable UUID id) {
         roomService.deleteRoom(id);
         return ResponseEntity.noContent().build();
@@ -67,7 +67,7 @@ public class RoomController {
     }
 
     @PostMapping("/{id}/schedules")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<RoomScheduleResponse> bookRoom(@PathVariable UUID id, @Valid @RequestBody RoomScheduleRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(roomService.bookRoom(id, request));
     }

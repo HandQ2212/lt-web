@@ -1,59 +1,87 @@
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, LinearProgress, Card, CardContent, Grid } from '@mui/material';
-import { TrendingUp as TrendingUpIcon, Assignment as AssignmentIcon } from '@mui/icons-material';
+import { useEffect, useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
+import {
+  Alert,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material';
+import { Assignment as AssignmentIcon, TrendingUp as TrendingUpIcon } from '@mui/icons-material';
+import { enrollmentApi, resultApi } from '../../../services/api';
+import { RootState } from '../../../store';
 
-const grades = [
-  {
-    id: '1',
-    assignment: 'Assignment 1: Reading Practice',
-    type: 'Homework',
-    score: 8.5,
-    maxScore: 10,
-    date: '2026-04-15',
-    feedback: 'Làm tốt! Cần cải thiện thêm kỹ năng skimming.',
-  },
-  {
-    id: '2',
-    assignment: 'Assignment 2: Writing Task 1',
-    type: 'Homework',
-    score: 7.0,
-    maxScore: 10,
-    date: '2026-04-22',
-    feedback: 'Bài viết cần rõ ràng hơn trong phần overview.',
-  },
-  {
-    id: '3',
-    assignment: 'Midterm Test',
-    type: 'Exam',
-    score: 8.0,
-    maxScore: 10,
-    date: '2026-04-29',
-    feedback: 'Kết quả khá tốt. Tiếp tục phát huy!',
-  },
-  {
-    id: '4',
-    assignment: 'Speaking Practice',
-    type: 'Oral',
-    score: 7.5,
-    maxScore: 10,
-    date: '2026-05-01',
-    feedback: 'Phát âm tốt, cần tự tin hơn khi trình bày.',
-  },
-];
-
-const getScoreColor = (score: number, maxScore: number) => {
-  const percentage = (score / maxScore) * 100;
-  if (percentage >= 80) return 'success';
-  if (percentage >= 60) return 'warning';
+const getScoreColor = (score: number) => {
+  if (score >= 8) return 'success';
+  if (score >= 6) return 'warning';
   return 'error';
 };
 
-const calculateAverage = () => {
-  const total = grades.reduce((sum, grade) => sum + (grade.score / grade.maxScore) * 10, 0);
-  return (total / grades.length).toFixed(1);
-};
-
 export default function GradebookPage() {
-  const averageScore = calculateAverage();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchResults();
+  }, [user?.id]);
+
+  const fetchResults = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const userId = user?.id || localStorage.getItem('userId') || '';
+      if (!userId) {
+        setResults([]);
+        return;
+      }
+
+      const enrollmentResponse = await enrollmentApi.getByStudent(userId);
+      const enrollments = Array.isArray(enrollmentResponse.data) ? enrollmentResponse.data : [];
+      const resultResponses = await Promise.all(
+        enrollments.map(async (enrollment: any) => {
+          try {
+            const response = await resultApi.getByEnrollment(enrollment.id);
+            return response.data;
+          } catch {
+            return {
+              enrollmentId: enrollment.id,
+              className: enrollment.className,
+              midtermScore: null,
+              finalScore: null,
+              finalGrade: 'Chưa có',
+              comments: '',
+            };
+          }
+        })
+      );
+      setResults(resultResponses);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Không thể tải bảng điểm');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const averageScore = useMemo(() => {
+    const scores = results
+      .flatMap((result) => [result.midtermScore, result.finalScore])
+      .map((score) => Number(score))
+      .filter((score) => Number.isFinite(score));
+    if (scores.length === 0) return '-';
+    return (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1);
+  }, [results]);
 
   return (
     <Box>
@@ -61,22 +89,18 @@ export default function GradebookPage() {
         Bảng điểm
       </Typography>
 
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
-                  Điểm trung bình
-                </Typography>
+                <Typography variant="h6" fontWeight={600}>Điểm trung bình</Typography>
                 <TrendingUpIcon color="primary" />
               </Box>
-              <Typography variant="h3" color="primary" fontWeight={700}>
-                {averageScore}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                / 10
-              </Typography>
+              <Typography variant="h3" color="primary" fontWeight={700}>{loading ? '...' : averageScore}</Typography>
+              <Typography variant="body2" color="text.secondary">/ 10</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -84,66 +108,55 @@ export default function GradebookPage() {
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
-                  Tổng số bài tập
-                </Typography>
+                <Typography variant="h6" fontWeight={600}>Khóa học đang theo dõi</Typography>
                 <AssignmentIcon color="success" />
               </Box>
-              <Typography variant="h3" color="success.main" fontWeight={700}>
-                {grades.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Đã hoàn thành
-              </Typography>
+              <Typography variant="h3" color="success.main" fontWeight={700}>{loading ? '...' : results.length}</Typography>
+              <Typography variant="body2" color="text.secondary">lớp/khóa học</Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Bài tập</TableCell>
-              <TableCell>Loại</TableCell>
-              <TableCell>Ngày nộp</TableCell>
-              <TableCell>Điểm</TableCell>
-              <TableCell>Nhận xét</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {grades.map((grade) => (
-              <TableRow key={grade.id}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={600}>
-                    {grade.assignment}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={grade.type}
-                    size="small"
-                    color={grade.type === 'Exam' ? 'error' : grade.type === 'Oral' ? 'info' : 'default'}
-                  />
-                </TableCell>
-                <TableCell>{grade.date}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={`${grade.score}/${grade.maxScore}`}
-                    color={getScoreColor(grade.score, grade.maxScore)}
-                    sx={{ fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {grade.feedback}
-                  </Typography>
-                </TableCell>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Lớp học</TableCell>
+                <TableCell>Giữa kỳ</TableCell>
+                <TableCell>Cuối kỳ</TableCell>
+                <TableCell>Xếp loại</TableCell>
+                <TableCell>Nhận xét</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {results.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5}>Chưa có dữ liệu điểm</TableCell>
+                </TableRow>
+              )}
+              {results.map((result) => (
+                <TableRow key={result.enrollmentId || result.id}>
+                  <TableCell><Typography variant="body2" fontWeight={600}>{result.className || '-'}</Typography></TableCell>
+                  <TableCell>
+                    {result.midtermScore != null ? <Chip label={result.midtermScore} color={getScoreColor(Number(result.midtermScore))} /> : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {result.finalScore != null ? <Chip label={result.finalScore} color={getScoreColor(Number(result.finalScore))} /> : '-'}
+                  </TableCell>
+                  <TableCell><Chip label={result.finalGrade || 'Chưa có'} size="small" /></TableCell>
+                  <TableCell><Typography variant="body2" color="text.secondary">{result.comments || '-'}</Typography></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
 }

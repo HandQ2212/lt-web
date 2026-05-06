@@ -4,6 +4,7 @@ import com.elc.system.modules.lead.entity.LeadSource;
 import com.elc.system.modules.lead.entity.LeadStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class LeadDto {
@@ -52,6 +54,8 @@ public class LeadDto {
         private LeadSource source;
 
         private UUID branchId;
+
+        private List<UUID> courseIds;
 
         @Size(max = 2000, message = "Notes must be at most 2000 characters")
         private String notes;
@@ -92,6 +96,8 @@ public class LeadDto {
 
         private UUID branchId;
 
+        private List<UUID> courseIds;
+
         @Size(max = 2000, message = "Notes must be at most 2000 characters")
         private String notes;
     }
@@ -116,9 +122,38 @@ public class LeadDto {
         @NotBlank(message = "Email is required to convert lead")
         private String email;
 
-        @NotBlank(message = "Password is required")
         @Size(min = 8, message = "Password must be at least 8 characters")
         private String password;
+
+        @NotNull(message = "Class is required to convert lead")
+        private UUID classId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class LeadInterestRequest {
+        @NotEmpty(message = "At least one course is required")
+        private List<UUID> courseIds;
+
+        @Size(max = 2000, message = "Notes must be at most 2000 characters")
+        private String notes;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class LeadInterestResponse {
+        private UUID id;
+        private UUID courseId;
+        private String courseName;
+        private LeadStatus status;
+        private String notes;
+        private ZonedDateTime createdAt;
     }
 
     @Getter
@@ -139,7 +174,9 @@ public class LeadDto {
         private LeadStatus status;
         private LeadSource source;
         private UUID branchId;
+        private UUID userId;
         private String notes;
+        private List<LeadInterestResponse> interests;
         private ZonedDateTime createdAt;
         private ZonedDateTime updatedAt;
     }
@@ -154,6 +191,8 @@ public class LeadDto {
         private LeadStatus leadStatus;
         private UUID studentId;
         private String studentEmail;
+        private UUID classId;
+        private UUID enrollmentId;
         private String message;
     }
 }

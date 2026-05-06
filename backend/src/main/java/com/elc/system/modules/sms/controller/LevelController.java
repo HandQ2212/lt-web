@@ -31,20 +31,20 @@ public class LevelController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LevelResponse> createLevel(@Valid @RequestBody LevelRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(levelService.createLevel(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LevelResponse> updateLevel(@PathVariable UUID id,
                                                      @Valid @RequestBody LevelRequest request) {
         return ResponseEntity.ok(levelService.updateLevel(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deleteLevel(@PathVariable UUID id) {
         levelService.deleteLevel(id);
         return ResponseEntity.noContent().build();

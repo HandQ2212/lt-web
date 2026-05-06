@@ -38,6 +38,8 @@ public class InvoiceDto {
         private BigDecimal totalAmount;
         private BigDecimal discountAmount;
         private BigDecimal finalAmount;
+        private BigDecimal paidAmount;
+        private BigDecimal outstandingAmount;
         private LocalDate dueDate;
         private InvoiceStatus status;
         private ZonedDateTime createdAt;

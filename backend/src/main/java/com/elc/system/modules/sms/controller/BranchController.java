@@ -30,13 +30,13 @@ public class BranchController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<BranchResponse> createBranch(@Valid @RequestBody BranchRequest request) {
         return ResponseEntity.ok(branchService.createBranch(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<BranchResponse> updateBranch(
             @PathVariable UUID id,
             @Valid @RequestBody BranchRequest request
@@ -45,7 +45,7 @@ public class BranchController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deleteBranch(@PathVariable UUID id) {
         branchService.deleteBranch(id);
         return ResponseEntity.noContent().build();

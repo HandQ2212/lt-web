@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, Grid, Card, CardContent, LinearProgress, Paper, Chip, CircularProgress, Alert } from '@mui/material';
 import { School as SchoolIcon, Event as EventIcon, Grade as GradeIcon } from '@mui/icons-material';
+import { useSelector } from 'react-redux';
 import { enrollmentApi } from '../../../services/api';
+import { RootState } from '../../../store';
 
 const defaultGrades = [
   { assignment: 'Assignment 1: Reading Practice', score: 8.5, maxScore: 10, date: '2026-04-15' },
@@ -33,6 +35,7 @@ interface StudentDashboardState {
 }
 
 export default function StudentDashboard() {
+  const user = useSelector((state: RootState) => state.auth.user);
   const [dashboardData, setDashboardData] = useState<StudentDashboardState>({
     currentCourse: {
       name: 'IELTS Preparation',
@@ -53,16 +56,14 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     void fetchEnrollmentData();
-  }, []);
+  }, [user?.id]);
 
   const fetchEnrollmentData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get current user's ID from context or localStorage
-      // For now, using placeholder - would need proper user context
-      const userId = localStorage.getItem('userId') || '';
+      const userId = user?.id || localStorage.getItem('userId') || '';
       
       if (userId) {
         const enrollments = await enrollmentApi.getByStudent(userId);

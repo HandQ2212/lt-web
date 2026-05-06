@@ -24,7 +24,7 @@ spring:
     hibernate:
       # Schema is managed by SQL migrations / init scripts, so avoid Hibernate auto-update on startup.
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -34,11 +34,12 @@ spring:
 
 app:
   jwt:
-    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     expiration: 86400000 # 24 hours in ms
     refresh-expiration: 604800000 # 7 days in ms
 
 server:
+  address: localhost
   port: 8080
 
 logging:

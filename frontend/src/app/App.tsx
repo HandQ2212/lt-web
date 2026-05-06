@@ -41,6 +41,8 @@ import GradebookPage from './pages/student/GradebookPage';
 import PaymentPage from './pages/student/PaymentPage';
 
 import FinanceDashboard from './pages/finance/FinanceDashboard';
+import StudentDebtPage from './pages/finance/StudentDebtPage';
+import TeacherPaymentsPage from './pages/finance/TeacherPaymentsPage';
 import { getDefaultRouteByRole } from './utils/roleRouting';
 
 const theme = createTheme({
@@ -120,7 +122,7 @@ function AppRoutes() {
                 <Route
                   path="/admin/dashboard"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
                       <AdminDashboard />
                     </ProtectedRoute>
                   }
@@ -128,7 +130,7 @@ function AppRoutes() {
                 <Route
                   path="/admin/users"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
                       <UserManagementPage />
                     </ProtectedRoute>
                   }
@@ -136,7 +138,7 @@ function AppRoutes() {
                 <Route
                   path="/admin/classes"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
                       <ClassManagementPage />
                     </ProtectedRoute>
                   }
@@ -144,7 +146,7 @@ function AppRoutes() {
                 <Route
                   path="/admin/leads"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
                       <LeadManagementPage />
                     </ProtectedRoute>
                   }
@@ -211,8 +213,24 @@ function AppRoutes() {
                 <Route
                   path="/finance/dashboard"
                   element={
-                    <ProtectedRoute allowedRoles={['ACCOUNTANT', 'ADMIN']}>
+                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
                       <FinanceDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/finance/debts"
+                  element={
+                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+                      <StudentDebtPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/finance/teacher-payments"
+                  element={
+                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+                      <TeacherPaymentsPage />
                     </ProtectedRoute>
                   }
                 />

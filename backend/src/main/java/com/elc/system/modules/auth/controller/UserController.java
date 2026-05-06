@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,7 +23,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('MANAGER')")
 public class UserController {
 
     private final UserService userService;
@@ -32,10 +32,17 @@ public class UserController {
      * GET /api/users?page=0&size=20&sort=fullName,asc
      */
     @GetMapping
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
+    }
+
+    @GetMapping("/teachers")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
+    public ResponseEntity<List<UserResponse>> getActiveTeachers() {
+        return ResponseEntity.ok(userService.getActiveTeachers());
     }
 
     /**
@@ -43,6 +50,7 @@ public class UserController {
      * GET /api/users/{id}
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
@@ -52,6 +60,7 @@ public class UserController {
      * POST /api/users
      */
     @PostMapping
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.ok(userService.createUser(request));
     }
@@ -61,6 +70,7 @@ public class UserController {
      * PUT /api/users/{id}
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateUserRequest request
@@ -73,6 +83,7 @@ public class UserController {
      * DELETE /api/users/{id}
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deactivateUser(@PathVariable UUID id) {
         userService.deactivateUser(id);
         return ResponseEntity.noContent().build();

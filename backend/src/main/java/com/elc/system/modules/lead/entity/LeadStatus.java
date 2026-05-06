@@ -4,6 +4,7 @@ public enum LeadStatus {
     NEW,
     CONTACTED,
     INTERESTED,
+    CONVERTED,
     ENROLLED,
     REJECTED
 }

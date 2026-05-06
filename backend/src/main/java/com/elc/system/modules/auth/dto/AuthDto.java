@@ -1,6 +1,7 @@
 package com.elc.system.modules.auth.dto;
 
 import com.elc.system.modules.auth.entity.UserRole;
+import com.elc.system.modules.auth.entity.UserStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -88,6 +89,13 @@ public class AuthDto {
         private UUID id;
         private String email;
         private String fullName;
+        private String phone;
+        private LocalDate dateOfBirth;
+        private String gender;
+        private String address;
+        private String avatarUrl;
         private UserRole role;
+        private UserStatus status;
+        private UUID branchId;
     }
 }

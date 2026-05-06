@@ -7,6 +7,7 @@ import com.elc.system.modules.sms.dto.ClassScheduleDto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,11 +31,13 @@ public class ClazzController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ClassResponse> createClass(@Valid @RequestBody ClassRequest request) {
         return ResponseEntity.ok(clazzService.createClass(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ClassResponse> updateClass(
             @PathVariable UUID id,
             @Valid @RequestBody ClassRequest request) {
@@ -42,12 +45,14 @@ public class ClazzController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deleteClass(@PathVariable UUID id) {
         clazzService.deleteClass(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ClassResponse> updateClassStatus(
             @PathVariable UUID id,
             @RequestParam ClassStatus status) {
@@ -60,6 +65,7 @@ public class ClazzController {
     }
 
     @PostMapping("/{id}/schedule")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ScheduleResponse> addSchedule(
             @PathVariable UUID id, 
             @Valid @RequestBody ScheduleRequest request) {
@@ -67,6 +73,7 @@ public class ClazzController {
     }
 
     @PostMapping("/check-conflict")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ConflictCheckResponse> checkConflict(
             @Valid @RequestBody ConflictCheckRequest request) {
         return ResponseEntity.ok(clazzService.checkConflict(request));

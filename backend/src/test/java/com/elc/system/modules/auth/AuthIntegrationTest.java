@@ -2,14 +2,16 @@ package com.elc.system.modules.auth;
 
 import com.elc.system.modules.auth.dto.AuthDto.*;
 import com.elc.system.modules.auth.dto.PasswordResetDto;
+import com.elc.system.modules.auth.repository.PasswordResetTokenRepository;
+import com.elc.system.modules.auth.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -22,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class AuthIntegrationTest {
 
     @Autowired
@@ -31,6 +34,18 @@ class AuthIntegrationTest {
     private ObjectMapper objectMapper;
 
 
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @AfterEach
+    void cleanDatabase() {
+        passwordResetTokenRepository.deleteAll();
+        userRepository.deleteAll();
+    }
 
     private String testEmail = "test@example.com";
     private String testPassword = "password123";
@@ -158,6 +173,8 @@ class AuthIntegrationTest {
         // Extract refresh token from response
         String refreshToken = objectMapper.readTree(loginResponse)
                 .get("refreshToken").asText();
+        String accessToken = objectMapper.readTree(loginResponse)
+                .get("accessToken").asText();
 
         // Logout
         LogoutRequest logoutRequest = LogoutRequest.builder()
@@ -165,6 +182,7 @@ class AuthIntegrationTest {
                 .build();
 
         mockMvc.perform(post("/api/auth/logout")
+                .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(logoutRequest)))
                 .andExpect(status().isOk());

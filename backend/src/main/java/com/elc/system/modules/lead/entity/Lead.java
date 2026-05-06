@@ -58,6 +58,9 @@ public class Lead extends BaseEntity {
     @Column(name = "branch_id")
     private UUID branchId;
 
+    @Column(name = "user_id")
+    private UUID userId;
+
     @Column(name = "notes")
     private String notes;
 }

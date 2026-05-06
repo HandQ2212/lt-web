@@ -1,34 +1,48 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Button, Card, CardContent, Grid, Alert, CircularProgress } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Grid,
+  Paper,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import { Payment as PaymentIcon, Warning as WarningIcon } from '@mui/icons-material';
-import { invoiceApi } from '../../../services/api';
+import { invoiceApi, paymentApi } from '../../../services/api';
 
-const defaultInvoices = [
-  {
-    id: '1',
-    courseName: 'IELTS Preparation',
-    amount: 4500000,
-    dueDate: '2026-06-01',
-    paidDate: '2026-05-20',
-    status: 'PAID',
-  },
-  {
-    id: '2',
-    courseName: 'IELTS Preparation - Tháng 2',
-    amount: 1500000,
-    dueDate: '2026-07-01',
-    paidDate: null,
-    status: 'PENDING',
-  },
-  {
-    id: '3',
-    courseName: 'IELTS Preparation - Tháng 3',
-    amount: 1500000,
-    dueDate: '2026-08-01',
-    paidDate: null,
-    status: 'PENDING',
-  },
-];
+type StudentInvoice = {
+  id: string;
+  courseName: string;
+  amount: number;
+  dueDate: string;
+  paidDate: string | null;
+  status: string;
+};
+
+const normalizeInvoice = (invoice: any): StudentInvoice => {
+  const rawStatus = invoice.status || 'PENDING';
+  const status = rawStatus === 'UNPAID' || rawStatus === 'PARTIAL' ? 'PENDING' : rawStatus;
+
+  return {
+    id: invoice.id,
+    courseName: invoice.courseName || invoice.className || 'Khóa học',
+    amount: Number(invoice.amount ?? invoice.finalAmount ?? invoice.totalAmount ?? 0),
+    dueDate: invoice.dueDate || '-',
+    paidDate: invoice.paidDate || (status === 'PAID' ? invoice.updatedAt || invoice.createdAt || null : null),
+    status,
+  };
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -56,10 +70,29 @@ const getStatusText = (status: string) => {
   }
 };
 
+const formatDate = (value: string | null) => {
+  if (!value || value === '-') {
+    return '-';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('vi-VN');
+};
+
 export default function PaymentPage() {
-  const [invoices, setInvoices] = useState(defaultInvoices);
+  const [invoices, setInvoices] = useState<StudentInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   useEffect(() => {
     void fetchInvoices();
@@ -70,14 +103,38 @@ export default function PaymentPage() {
       setLoading(true);
       setError(null);
       const response = await invoiceApi.getAll();
-      if (response?.data && Array.isArray(response.data)) {
-        setInvoices(response.data);
-      }
+      setInvoices(Array.isArray(response?.data) ? response.data.map(normalizeInvoice) : []);
     } catch (err: any) {
       console.error('Failed to fetch invoices:', err);
       setError('Không thể tải dữ liệu học phí');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePay = async (invoice: StudentInvoice) => {
+    try {
+      setPayingId(invoice.id);
+      await paymentApi.create({
+        invoiceId: invoice.id,
+        amount: invoice.amount,
+        paymentMethod: 'BANK_TRANSFER',
+        notes: 'Student clicked payment button in portal',
+      });
+
+      const today = new Date().toISOString();
+      setInvoices((prev) =>
+        prev.map((item) => (item.id === invoice.id ? { ...item, status: 'PAID', paidDate: today } : item))
+      );
+      setSnackbar({ open: true, message: 'Đã ghi nhận thanh toán', severity: 'success' });
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || 'Không ghi nhận được thanh toán',
+        severity: 'error',
+      });
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -154,6 +211,13 @@ export default function PaymentPage() {
               </TableRow>
             </TableHead>
             <TableBody>
+              {invoices.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    Chưa có hóa đơn học phí.
+                  </TableCell>
+                </TableRow>
+              )}
               {invoices.map((invoice) => (
                 <TableRow key={invoice.id}>
                   <TableCell>
@@ -166,15 +230,20 @@ export default function PaymentPage() {
                       {invoice.amount.toLocaleString('vi-VN')}đ
                     </Typography>
                   </TableCell>
-                  <TableCell>{invoice.dueDate}</TableCell>
-                  <TableCell>{invoice.paidDate || '-'}</TableCell>
+                  <TableCell>{formatDate(invoice.dueDate)}</TableCell>
+                  <TableCell>{formatDate(invoice.paidDate)}</TableCell>
                   <TableCell>
                     <Chip label={getStatusText(invoice.status)} color={getStatusColor(invoice.status)} size="small" />
                   </TableCell>
                   <TableCell align="right">
                     {invoice.status === 'PENDING' && (
-                      <Button variant="contained" size="small">
-                        Thanh toán
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => void handlePay(invoice)}
+                        disabled={payingId === invoice.id}
+                      >
+                        {payingId === invoice.id ? 'Đang ghi nhận...' : 'Thanh toán'}
                       </Button>
                     )}
                     {invoice.status === 'PAID' && (
@@ -189,6 +258,16 @@ export default function PaymentPage() {
           </Table>
         </TableContainer>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert severity={snackbar.severity} variant="filled">
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

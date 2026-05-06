@@ -1,17 +1,65 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
-import { Box, Typography, Paper, Grid, TextField, Button, Avatar, Divider, Snackbar, Alert } from '@mui/material';
-import { Save as SaveIcon, Edit as EditIcon } from '@mui/icons-material';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Divider,
+  FormControl,
+  Grid,
+  InputLabel,
+  ListItemText,
+  MenuItem,
+  OutlinedInput,
+  Paper,
+  Select,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
+import { Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material';
 import { RootState } from '../../../store';
-import { profileApi } from '../../../services/api';
+import { courseApi, leadApi, profileApi } from '../../../services/api';
 import { setCurrentUser } from '../../../store/slices/authSlice';
+
+type CourseOption = {
+  id: string;
+  name: string;
+  level?: string;
+};
+
+type LeadInterest = {
+  id: string;
+  courseId: string;
+  courseName: string;
+  status: string;
+  notes?: string;
+};
+
+type LeadProfile = {
+  id: string;
+  status: string;
+  interests?: LeadInterest[];
+};
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
+  const isLead = user?.role === 'LEAD';
+
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [leadProfile, setLeadProfile] = useState<LeadProfile | null>(null);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+  const [interestNotes, setInterestNotes] = useState('');
+  const [interestLoading, setInterestLoading] = useState(false);
+  const [interestSaving, setInterestSaving] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -28,8 +76,46 @@ export default function ProfilePage() {
     confirmPassword: '',
   });
 
+  useEffect(() => {
+    setFormData({
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!isLead) {
+      return;
+    }
+
+    setInterestLoading(true);
+    courseApi
+      .getAll()
+      .then((courseList) => {
+        setCourses(courseList);
+        return leadApi.getMine();
+      })
+      .then((lead) => {
+        setLeadProfile(lead);
+      })
+      .catch((error) => {
+        setSnackbar({
+          open: true,
+          message: error?.response?.data?.message || 'Không tải được danh sách khóa học quan tâm',
+          severity: 'error',
+        });
+      })
+      .finally(() => setInterestLoading(false));
+  }, [isLead]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleCourseSelect = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    setSelectedCourseIds(typeof value === 'string' ? value.split(',') : value);
   };
 
   const handleSave = async () => {
@@ -42,6 +128,9 @@ export default function ProfilePage() {
       dispatch(setCurrentUser(updated));
       setSnackbar({ open: true, message: 'Cập nhật thông tin thành công', severity: 'success' });
       setIsEditing(false);
+      if (isLead) {
+        leadApi.getMine().then(setLeadProfile).catch(() => undefined);
+      }
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -74,6 +163,36 @@ export default function ProfilePage() {
       });
     }
   };
+
+  const handleAddInterests = async () => {
+    if (selectedCourseIds.length === 0) {
+      setSnackbar({ open: true, message: 'Chọn ít nhất một khóa học', severity: 'error' });
+      return;
+    }
+
+    try {
+      setInterestSaving(true);
+      const updatedLead = await leadApi.addMyInterests({
+        courseIds: selectedCourseIds,
+        notes: interestNotes || undefined,
+      });
+      setLeadProfile(updatedLead);
+      setSelectedCourseIds([]);
+      setInterestNotes('');
+      setSnackbar({ open: true, message: 'Đã lưu khóa học quan tâm', severity: 'success' });
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Không lưu được khóa học quan tâm',
+        severity: 'error',
+      });
+    } finally {
+      setInterestSaving(false);
+    }
+  };
+
+  const interestedCourseIds = new Set((leadProfile?.interests || []).map((interest) => interest.courseId));
+  const availableCourses = courses.filter((course) => !interestedCourseIds.has(course.id));
 
   return (
     <Box>
@@ -133,15 +252,7 @@ export default function ProfilePage() {
                 />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                />
+                <TextField fullWidth label="Email" name="email" type="email" value={formData.email} disabled />
               </Grid>
               <Grid item xs={12}>
                 <TextField
@@ -157,7 +268,7 @@ export default function ProfilePage() {
 
             {isEditing && (
               <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}>
+                <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={saving}>
                   {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </Button>
                 <Button variant="outlined" onClick={() => setIsEditing(false)}>
@@ -204,6 +315,76 @@ export default function ProfilePage() {
               Đổi mật khẩu
             </Button>
           </Paper>
+
+          {isLead && (
+            <Paper sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                Khóa học quan tâm
+              </Typography>
+
+              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>
+                {interestLoading && <Typography color="text.secondary">Đang tải...</Typography>}
+                {!interestLoading && (leadProfile?.interests || []).length === 0 && (
+                  <Typography color="text.secondary">Bạn chưa chọn khóa học quan tâm.</Typography>
+                )}
+                {(leadProfile?.interests || []).map((interest) => (
+                  <Chip
+                    key={interest.id}
+                    label={`${interest.courseName || 'Khóa học'} - ${interest.status}`}
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <FormControl fullWidth disabled={interestLoading || availableCourses.length === 0}>
+                    <InputLabel id="interested-courses-label">Chọn khóa học</InputLabel>
+                    <Select
+                      labelId="interested-courses-label"
+                      multiple
+                      value={selectedCourseIds}
+                      onChange={handleCourseSelect}
+                      input={<OutlinedInput label="Chọn khóa học" />}
+                      renderValue={(selected) =>
+                        selected
+                          .map((courseId) => courses.find((course) => course.id === courseId)?.name)
+                          .filter(Boolean)
+                          .join(', ')
+                      }
+                    >
+                      {availableCourses.map((course) => (
+                        <MenuItem key={course.id} value={course.id}>
+                          <Checkbox checked={selectedCourseIds.includes(course.id)} />
+                          <ListItemText primary={course.name} secondary={course.level} />
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    label="Ghi chú nhu cầu học"
+                    value={interestNotes}
+                    onChange={(e) => setInterestNotes(e.target.value)}
+                  />
+                </Grid>
+              </Grid>
+
+              <Button
+                variant="contained"
+                sx={{ mt: 2 }}
+                onClick={() => void handleAddInterests()}
+                disabled={interestSaving || selectedCourseIds.length === 0}
+              >
+                {interestSaving ? 'Đang lưu...' : 'Thêm khóa quan tâm'}
+              </Button>
+            </Paper>
+          )}
         </Grid>
       </Grid>
 

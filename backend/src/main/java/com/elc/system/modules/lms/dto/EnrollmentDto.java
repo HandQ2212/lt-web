@@ -1,6 +1,7 @@
 package com.elc.system.modules.lms.dto;
 
 import com.elc.system.modules.lms.entity.EnrollmentStatus;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,15 @@ public class EnrollmentDto {
         private UUID classId;
         private LocalDate enrollmentDate;
         private EnrollmentStatus status;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TransferClassRequest {
+        @NotNull(message = "Target class is required")
+        private UUID targetClassId;
     }
 
     @Data

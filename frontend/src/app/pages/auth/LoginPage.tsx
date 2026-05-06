@@ -5,6 +5,7 @@ import { Box, Container, Paper, TextField, Button, Typography, Link, Checkbox, F
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../../../services/api';
 import { setCredentials } from '../../../store/slices/authSlice';
+import { getDefaultRouteByRole } from '../../utils/roleRouting';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -24,21 +25,9 @@ export default function LoginPage() {
     try {
       const { token, refreshToken, user } = await authApi.login(email, password);
 
-      if (rememberMe) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
+      dispatch(setCredentials({ user, token, refreshToken }));
 
-      dispatch(setCredentials({ user, token }));
-
-      const redirectMap: Record<string, string> = {
-        ADMIN: '/admin/users',
-        MANAGER: '/admin/users',
-        TEACHER: '/teacher/schedule',
-        STUDENT: '/student/courses',
-        ACCOUNTANT: '/finance/dashboard',
-      };
-
-      navigate(redirectMap[user.role] || '/dashboard');
+      navigate(getDefaultRouteByRole(user.role));
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.loginError'));
     } finally {

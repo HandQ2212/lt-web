@@ -6,6 +6,7 @@ import com.elc.system.modules.lms.service.SubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ public class SubmissionController {
     }
 
     @PostMapping("/submit")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<SubmissionResponse> submitWork(
             @Valid @RequestBody SubmissionRequest request,
             @AuthenticationPrincipal User student) {
@@ -32,6 +34,7 @@ public class SubmissionController {
     }
 
     @PutMapping("/{id}/grade")
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER')")
     public ResponseEntity<SubmissionResponse> gradeSubmission(
             @PathVariable UUID id,
             @Valid @RequestBody GradeRequest request) {

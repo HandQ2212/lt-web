@@ -30,13 +30,13 @@ public class CourseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
         return ResponseEntity.ok(courseService.createCourse(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<CourseResponse> updateCourse(
             @PathVariable UUID id,
             @Valid @RequestBody CourseRequest request
@@ -45,7 +45,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deleteCourse(@PathVariable UUID id) {
         courseService.deleteCourse(id);
         return ResponseEntity.noContent().build();

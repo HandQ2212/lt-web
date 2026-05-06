@@ -6,6 +6,7 @@ import com.elc.system.modules.lms.service.AssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ public class AssignmentController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER')")
     public ResponseEntity<AssignmentResponse> createAssignment(
             @Valid @RequestBody AssignmentRequest request,
             @AuthenticationPrincipal User teacher) {
