@@ -23,7 +23,6 @@ export default function DashboardHeader() {
 
   useEffect(() => {
     void fetchNotifications();
-    // Polling interval: refresh every 30 seconds
     const interval = setInterval(() => {
       void fetchNotifications();
     }, 30000);
@@ -78,7 +77,7 @@ export default function DashboardHeader() {
         await authApi.logout(refreshToken);
       }
     } catch {
-      // Force local logout even when backend token is expired.
+      // Force local logout
     } finally {
       dispatch(logout());
       navigate('/login');
@@ -98,7 +97,7 @@ export default function DashboardHeader() {
     >
       <Toolbar>
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-          Chào mừng, {user?.name}
+          Chào mừng, {user?.fullName}
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -109,8 +108,8 @@ export default function DashboardHeader() {
           </IconButton>
 
           <IconButton onClick={handleProfileMenuOpen} color="inherit">
-            <Avatar sx={{ width: 32, height: 32 }}>
-              {(user?.name?.charAt(0) || 'U').toUpperCase()}
+            <Avatar src={user?.avatarUrl} sx={{ width: 32, height: 32 }}>
+              {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
             </Avatar>
           </IconButton>
         </Box>

@@ -25,6 +25,12 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.getSubmissionsByAssignment(assignmentId));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<SubmissionResponse>> getMySubmissions(@AuthenticationPrincipal User student) {
+        return ResponseEntity.ok(submissionService.getSubmissionsByStudent(student.getId()));
+    }
+
     @PostMapping("/submit")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<SubmissionResponse> submitWork(

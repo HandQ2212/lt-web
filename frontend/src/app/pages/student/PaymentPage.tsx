@@ -17,9 +17,17 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Divider,
 } from '@mui/material';
-import { Payment as PaymentIcon, Warning as WarningIcon } from '@mui/icons-material';
+import { Payment as PaymentIcon, Warning as WarningIcon, LocalAtm as LocalAtmIcon, Info as InfoIcon } from '@mui/icons-material';
 import { invoiceApi, paymentApi } from '../../../services/api';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store';
 
 type StudentInvoice = {
   id: string;
@@ -93,6 +101,11 @@ export default function PaymentPage() {
     message: '',
     severity: 'success',
   });
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [currentInvoice, setCurrentInvoice] = useState<StudentInvoice | null>(null);
+  const [cashInstructionOpen, setCashInstructionOpen] = useState(false);
+
+  const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     void fetchInvoices();
@@ -115,26 +128,47 @@ export default function PaymentPage() {
   const handlePay = async (invoice: StudentInvoice) => {
     try {
       setPayingId(invoice.id);
-      await paymentApi.create({
+      
+      const response = await paymentApi.createPayosLink({ 
+        amount: invoice.amount, 
         invoiceId: invoice.id,
-        amount: invoice.amount,
-        paymentMethod: 'BANK_TRANSFER',
-        notes: 'Student clicked payment button in portal',
+        returnUrl: window.location.href,
+        cancelUrl: window.location.href
       });
-
-      const today = new Date().toISOString();
-      setInvoices((prev) =>
-        prev.map((item) => (item.id === invoice.id ? { ...item, status: 'PAID', paidDate: today } : item))
-      );
-      setSnackbar({ open: true, message: 'Đã ghi nhận thanh toán', severity: 'success' });
+      
+      if (response.data && response.data.checkoutUrl) {
+        window.open(response.data.checkoutUrl, '_blank');
+        setCurrentInvoice(invoice);
+        setConfirmDialogOpen(true);
+      }
     } catch (err: any) {
       setSnackbar({
         open: true,
-        message: err?.response?.data?.message || 'Không ghi nhận được thanh toán',
+        message: err?.response?.data?.message || 'Không thể tạo link thanh toán PayOS',
         severity: 'error',
       });
     } finally {
       setPayingId(null);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!currentInvoice) return;
+    try {
+      setConfirmDialogOpen(false);
+      setLoading(true);
+      
+      // Instead of creating a mock payment, we re-fetch invoices to see if the Webhook has updated the status
+      await fetchInvoices();
+      setSnackbar({ open: true, message: 'Đã cập nhật trạng thái thanh toán!', severity: 'success' });
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || 'Lỗi khi cập nhật dữ liệu',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -143,9 +177,20 @@ export default function PaymentPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
-        Học phí & Thanh toán
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" fontWeight={700}>
+          Học phí & Thanh toán
+        </Typography>
+        {user?.role === 'LEAD' && totalPending > 0 && (
+          <Button 
+            variant="outlined" 
+            startIcon={<LocalAtmIcon />} 
+            onClick={() => setCashInstructionOpen(true)}
+          >
+            Thanh toán tiền mặt
+          </Button>
+        )}
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -162,10 +207,10 @@ export default function PaymentPage() {
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
+                <Typography variant="h6" fontWeight={600} color="text.secondary">
                   Đã thanh toán
                 </Typography>
                 <PaymentIcon color="success" />
@@ -177,10 +222,10 @@ export default function PaymentPage() {
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
+                <Typography variant="h6" fontWeight={600} color="text.secondary">
                   Còn phải trả
                 </Typography>
                 <WarningIcon color="warning" />
@@ -198,57 +243,59 @@ export default function PaymentPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 1 }}>
           <Table>
-            <TableHead>
+            <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
-                <TableCell>Khóa học</TableCell>
-                <TableCell>Số tiền</TableCell>
-                <TableCell>Hạn thanh toán</TableCell>
-                <TableCell>Ngày thanh toán</TableCell>
-                <TableCell>Trạng thái</TableCell>
-                <TableCell align="right">Thao tác</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Thông tin hóa đơn</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Số tiền</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Hạn thanh toán</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Ngày thanh toán</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {invoices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Chưa có hóa đơn học phí.
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">Chưa có hóa đơn học phí.</Typography>
                   </TableCell>
                 </TableRow>
               )}
               {invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
+                <TableRow key={invoice.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>
                       {invoice.courseName}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" fontWeight={700} color="primary">
                       {invoice.amount.toLocaleString('vi-VN')}đ
                     </Typography>
                   </TableCell>
                   <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                   <TableCell>{formatDate(invoice.paidDate)}</TableCell>
                   <TableCell>
-                    <Chip label={getStatusText(invoice.status)} color={getStatusColor(invoice.status)} size="small" />
+                    <Chip label={getStatusText(invoice.status)} color={getStatusColor(invoice.status)} size="small" sx={{ fontWeight: 600 }} />
                   </TableCell>
                   <TableCell align="right">
                     {invoice.status === 'PENDING' && (
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => void handlePay(invoice)}
-                        disabled={payingId === invoice.id}
-                      >
-                        {payingId === invoice.id ? 'Đang ghi nhận...' : 'Thanh toán'}
-                      </Button>
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => void handlePay(invoice)}
+                          disabled={payingId === invoice.id}
+                        >
+                          Quét QR
+                        </Button>
+                      </Box>
                     )}
                     {invoice.status === 'PAID' && (
                       <Button variant="outlined" size="small">
-                        Xem hóa đơn
+                        Hóa đơn điện tử
                       </Button>
                     )}
                   </TableCell>
@@ -259,6 +306,34 @@ export default function PaymentPage() {
         </TableContainer>
       )}
 
+      {/* Dialog Hướng dẫn tiền mặt */}
+      <Dialog open={cashInstructionOpen} onClose={() => setCashInstructionOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <LocalAtmIcon color="primary" />
+          Hướng dẫn thanh toán tiền mặt
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ py: 1 }}>
+            <Typography variant="body1" gutterBottom>
+              Bạn có thể đến trực tiếp trung tâm để thực hiện đóng học phí bằng tiền mặt:
+            </Typography>
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2, border: '1px dashed grey.400' }}>
+              <Typography variant="subtitle2" color="primary">Địa chỉ trung tâm:</Typography>
+              <Typography variant="body1" fontWeight={600}>123 Đường ABC, Quận X, TP. Hồ Chí Minh</Typography>
+              
+              <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>Số điện thoại hỗ trợ (Kế toán):</Typography>
+              <Typography variant="body1" fontWeight={600}>0123.456.789</Typography>
+            </Box>
+            <Alert severity="info" icon={<InfoIcon />} sx={{ mt: 3 }}>
+              Sau khi nộp tiền mặt, vui lòng yêu cầu nhân viên kế toán cập nhật trạng thái hóa đơn trên hệ thống cho bạn.
+            </Alert>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCashInstructionOpen(false)} variant="contained">Đã hiểu</Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -268,6 +343,25 @@ export default function PaymentPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
+        <DialogTitle>Xác nhận thanh toán</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Hệ thống đã mở trang quét mã QR của PayOS trong một tab mới. 
+            <br/><br/>
+            Bạn đã quét mã và thực hiện (hoặc mô phỏng) chuyển khoản thành công chưa?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialogOpen(false)} color="inherit">
+            Chưa, tôi đã hủy
+          </Button>
+          <Button onClick={handleConfirmPayment} variant="contained" color="success">
+            Rồi, tôi đã chuyển
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

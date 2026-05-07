@@ -8,6 +8,8 @@ import com.elc.system.modules.lms.entity.Clazz;
 import com.elc.system.modules.lms.entity.Enrollment;
 import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import com.elc.system.modules.lms.exception.InvalidClassStatusException;
+import com.elc.system.modules.finance.entity.Invoice;
+import com.elc.system.modules.finance.entity.InvoiceStatus;
 import com.elc.system.modules.lms.repository.ClazzRepository;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final ClazzRepository clazzRepository;
     private final UserRepository userRepository;
+    private final com.elc.system.modules.finance.repository.InvoiceRepository invoiceRepository;
 
     @Transactional(readOnly = true)
     public List<EnrollmentResponse> getEnrollmentsByClass(UUID classId) {
@@ -143,17 +146,53 @@ public class EnrollmentService {
     public void updateStatus(UUID id, EnrollmentStatus status) {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+        
+        boolean wasNotActive = enrollment.getStatus() != EnrollmentStatus.ACTIVE;
+        
         enrollment.setStatus(status);
         enrollmentRepository.save(enrollment);
+
+        // Nếu chuyển sang ACTIVE (đã duyệt), tự động tạo hóa đơn
+        if (wasNotActive && status == EnrollmentStatus.ACTIVE) {
+            createInvoiceForEnrollment(enrollment);
+        }
+    }
+
+    private void createInvoiceForEnrollment(Enrollment enrollment) {
+        // Kiểm tra xem đã có hóa đơn chưa để tránh tạo trùng
+        if (!invoiceRepository.findByEnrollmentId(enrollment.getId()).isEmpty()) {
+            return;
+        }
+
+        java.math.BigDecimal amount = enrollment.getClazz().getCourse().getBasePrice();
+        if (amount == null) amount = java.math.BigDecimal.ZERO;
+
+        Invoice invoice = Invoice.builder()
+                .enrollment(enrollment)
+                .totalAmount(amount)
+                .discountAmount(java.math.BigDecimal.ZERO)
+                .finalAmount(amount)
+                .dueDate(LocalDate.now().plusDays(7)) 
+                .status(InvoiceStatus.UNPAID)
+                .build();
+        invoiceRepository.save(invoice);
     }
 
     private EnrollmentResponse mapToResponse(Enrollment enrollment) {
+        User teacher = enrollment.getClazz().getTeacher();
+        String teacherName = teacher != null ? teacher.getFullName() : "Đang cập nhật";
+        String teacherEmail = teacher != null ? teacher.getEmail() : null;
+        String teacherPhone = teacher != null ? teacher.getPhone() : null;
+                
         return EnrollmentResponse.builder()
                 .id(enrollment.getId())
                 .studentId(enrollment.getStudent().getId())
                 .studentName(enrollment.getStudent().getFullName())
                 .classId(enrollment.getClazz().getId())
                 .className(enrollment.getClazz().getName())
+                .teacherName(teacherName)
+                .teacherEmail(teacherEmail)
+                .teacherPhone(teacherPhone)
                 .enrollmentDate(enrollment.getEnrollmentDate())
                 .status(enrollment.getStatus())
                 .build();

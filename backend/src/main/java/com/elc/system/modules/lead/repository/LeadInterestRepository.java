@@ -12,4 +12,6 @@ public interface LeadInterestRepository extends JpaRepository<LeadInterest, UUID
     List<LeadInterest> findByLeadId(UUID leadId);
 
     boolean existsByLeadIdAndCourseId(UUID leadId, UUID courseId);
+
+    boolean existsByLeadIdAndClazzId(UUID leadId, UUID clazzId);
 }

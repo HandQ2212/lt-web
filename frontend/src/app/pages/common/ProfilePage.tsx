@@ -66,21 +66,29 @@ export default function ProfilePage() {
     severity: 'success',
   });
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    fullName: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    address: user?.address || '',
+    dateOfBirth: user?.dateOfBirth || '',
+    gender: user?.gender || '',
   });
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [newAvatarUrl, setNewAvatarUrl] = useState(user?.avatarUrl || '');
 
   useEffect(() => {
     setFormData({
-      name: user?.name || '',
+      fullName: user?.fullName || '',
       email: user?.email || '',
       phone: user?.phone || '',
+      address: user?.address || '',
+      dateOfBirth: user?.dateOfBirth || '',
+      gender: user?.gender || '',
     });
   }, [user]);
 
@@ -122,8 +130,11 @@ export default function ProfilePage() {
     try {
       setSaving(true);
       const updated = await profileApi.update({
-        fullName: formData.name,
+        fullName: formData.fullName,
         phone: formData.phone,
+        address: formData.address,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
       });
       dispatch(setCurrentUser(updated));
       setSnackbar({ open: true, message: 'Cập nhật thông tin thành công', severity: 'success' });
@@ -135,6 +146,27 @@ export default function ProfilePage() {
       setSnackbar({
         open: true,
         message: error?.response?.data?.message || 'Cập nhật thông tin thất bại',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarSave = async () => {
+    try {
+      setSaving(true);
+      const updated = await profileApi.update({
+        fullName: formData.fullName,
+        avatarUrl: newAvatarUrl,
+      });
+      dispatch(setCurrentUser(updated));
+      setSnackbar({ open: true, message: 'Cập nhật ảnh đại diện thành công', severity: 'success' });
+      setAvatarDialogOpen(false);
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Cập nhật ảnh thất bại',
         severity: 'error',
       });
     } finally {
@@ -204,6 +236,7 @@ export default function ProfilePage() {
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, textAlign: 'center' }}>
             <Avatar
+              src={user?.avatarUrl}
               sx={{
                 width: 120,
                 height: 120,
@@ -211,17 +244,23 @@ export default function ProfilePage() {
                 mb: 2,
                 bgcolor: 'primary.main',
                 fontSize: 48,
+                boxShadow: 3,
               }}
             >
-              {(user?.name?.charAt(0) || 'U').toUpperCase()}
+              {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
             </Avatar>
             <Typography variant="h6" fontWeight={600}>
-              {user?.name}
+              {user?.fullName}
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {user?.role}
             </Typography>
-            <Button variant="outlined" startIcon={<EditIcon />} sx={{ mt: 2 }}>
+            <Button 
+              variant="outlined" 
+              startIcon={<EditIcon />} 
+              sx={{ mt: 2, borderRadius: 2 }}
+              onClick={() => setAvatarDialogOpen(true)}
+            >
               Thay đổi ảnh
             </Button>
           </Paper>
@@ -245,8 +284,8 @@ export default function ProfilePage() {
                 <TextField
                   fullWidth
                   label="Họ tên"
-                  name="name"
-                  value={formData.name}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleChange}
                   disabled={!isEditing}
                 />
@@ -254,14 +293,55 @@ export default function ProfilePage() {
               <Grid item xs={12}>
                 <TextField fullWidth label="Email" name="email" type="email" value={formData.email} disabled />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Số điện thoại"
                   name="phone"
                   value={formData.phone}
-                  onChange={handleChange}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={!isEditing}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Ngày sinh"
+                  name="dateOfBirth"
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Giới tính"
+                  name="gender"
+                  select
+                  SelectProps={{ native: true }}
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  disabled={!isEditing}
+                >
+                  <option value="">Chọn giới tính</option>
+                  <option value="MALE">Nam</option>
+                  <option value="FEMALE">Nữ</option>
+                  <option value="OTHER">Khác</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Địa chỉ"
+                  name="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  disabled={!isEditing}
+                  multiline
+                  rows={2}
                 />
               </Grid>
             </Grid>
@@ -330,9 +410,20 @@ export default function ProfilePage() {
                 {(leadProfile?.interests || []).map((interest) => (
                   <Chip
                     key={interest.id}
-                    label={`${interest.courseName || 'Khóa học'} - ${interest.status}`}
-                    color="primary"
-                    variant="outlined"
+                    label={`${interest.courseName || 'Khóa học'} - ${
+                      interest.status === 'NEW' ? 'Đang chờ' : 
+                      interest.status === 'CONSULTING' ? 'Đang tư vấn' : 
+                      interest.status === 'AGREED' ? 'Đã đồng ý' : 
+                      interest.status === 'REJECTED' ? 'Đã từ chối' :
+                      interest.status === 'PAID' ? 'Đã nộp phí' : interest.status
+                    }`}
+                    color={
+                      interest.status === 'PAID' ? 'success' : 
+                      interest.status === 'REJECTED' ? 'error' : 
+                      interest.status === 'CONSULTING' ? 'warning' : 'primary'
+                    }
+                    variant="filled"
+                    sx={{ fontWeight: 600 }}
                   />
                 ))}
               </Stack>
@@ -387,6 +478,35 @@ export default function ProfilePage() {
           )}
         </Grid>
       </Grid>
+
+      <Dialog open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Thay đổi ảnh đại diện</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Dán đường dẫn (URL) ảnh của bạn vào bên dưới.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Image URL"
+            value={newAvatarUrl}
+            onChange={(e) => setNewAvatarUrl(e.target.value)}
+            margin="normal"
+            placeholder="https://example.com/image.jpg"
+          />
+          {newAvatarUrl && (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="caption" display="block" gutterBottom>Xem trước:</Typography>
+              <Avatar src={newAvatarUrl} sx={{ width: 100, height: 100, mx: 'auto' }} />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAvatarDialogOpen(false)}>Hủy</Button>
+          <Button variant="contained" onClick={() => void handleAvatarSave()} disabled={saving}>
+            {saving ? 'Đang lưu...' : 'Lưu ảnh'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}

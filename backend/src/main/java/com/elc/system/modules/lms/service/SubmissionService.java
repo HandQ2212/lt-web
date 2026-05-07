@@ -27,8 +27,16 @@ public class SubmissionService {
     private final AssignmentRepository assignmentRepository;
     private final NotificationService notificationService;
 
+    @Transactional(readOnly = true)
     public List<SubmissionResponse> getSubmissionsByAssignment(UUID assignmentId) {
         return submissionRepository.findByAssignmentId(assignmentId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<SubmissionResponse> getSubmissionsByStudent(UUID studentId) {
+        return submissionRepository.findByStudentId(studentId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

@@ -10,7 +10,9 @@ import java.util.UUID;
 
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
-    List<Enrollment> findByStudentId(UUID studentId);
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM Enrollment e JOIN FETCH e.clazz c LEFT JOIN FETCH c.teacher WHERE e.student.id = :studentId")
+    List<Enrollment> findByStudentId(@org.springframework.data.repository.query.Param("studentId") UUID studentId);
+
     List<Enrollment> findByClazzId(UUID classId);
     boolean existsByStudentIdAndClazzId(UUID studentId, UUID classId);
     Optional<Enrollment> findByStudentIdAndClazzId(UUID studentId, UUID classId);

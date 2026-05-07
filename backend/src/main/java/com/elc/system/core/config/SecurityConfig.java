@@ -43,14 +43,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 3. Cho phép tất cả các request OPTIONS (Preflight) đi qua
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                        
+
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/branches/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/levels/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payment/payos-webhook").permitAll()
                         
                         // Error endpoint
                         .requestMatchers("/error").permitAll()

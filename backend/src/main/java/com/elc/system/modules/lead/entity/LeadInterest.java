@@ -1,6 +1,7 @@
 package com.elc.system.modules.lead.entity;
 
 import com.elc.system.core.BaseEntity;
+import com.elc.system.modules.lms.entity.Clazz;
 import com.elc.system.modules.sms.entity.Course;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,8 +31,12 @@ public class LeadInterest extends BaseEntity {
     private Lead lead;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
+    @JoinColumn(name = "course_id")
     private Course course;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "clazz_id")
+    private Clazz clazz;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

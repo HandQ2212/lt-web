@@ -4,14 +4,11 @@ import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.auth.entity.UserStatus;
 import com.elc.system.modules.auth.repository.UserRepository;
-import com.elc.system.modules.lead.dto.LeadDto.ConvertLeadRequest;
-import com.elc.system.modules.lead.dto.LeadDto.CreateLeadRequest;
-import com.elc.system.modules.lead.dto.LeadDto.LeadConversionResponse;
-import com.elc.system.modules.lead.dto.LeadDto.LeadInterestRequest;
-import com.elc.system.modules.lead.dto.LeadDto.LeadInterestResponse;
-import com.elc.system.modules.lead.dto.LeadDto.LeadResponse;
-import com.elc.system.modules.lead.dto.LeadDto.UpdateLeadRequest;
-import com.elc.system.modules.lead.dto.LeadDto.UpdateLeadStatusRequest;
+import com.elc.system.modules.finance.entity.Invoice;
+import com.elc.system.modules.finance.entity.InvoiceStatus;
+import com.elc.system.modules.finance.repository.InvoiceRepository;
+import com.elc.system.modules.finance.repository.PaymentRepository;
+import com.elc.system.modules.lead.dto.LeadDto.*;
 import com.elc.system.modules.lead.entity.Lead;
 import com.elc.system.modules.lead.entity.LeadInterest;
 import com.elc.system.modules.lead.entity.LeadSource;
@@ -37,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -56,6 +54,8 @@ public class LeadService {
     private final CourseRepository courseRepository;
     private final ClazzRepository clazzRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -72,13 +72,182 @@ public class LeadService {
                         .source(request.getSource() != null ? request.getSource() : LeadSource.WEBSITE_FORM)
                         .build());
 
+        // Create user account immediately for manual leads
+        if (lead.getUserId() == null) {
+            User user = userRepository.findByEmailIgnoreCase(email)
+                    .orElseGet(() -> {
+                        User newUser = new User();
+                        newUser.setEmail(email);
+                        newUser.setFullName(request.getFullName());
+                        newUser.setPhone(phone);
+                        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+                        newUser.setRole(UserRole.LEAD);
+                        newUser.setStatus(UserStatus.ACTIVE);
+                        return userRepository.save(newUser);
+                    });
+            lead.setUserId(user.getId());
+        }
+
         applyLeadDetails(lead, request, email, phone);
         leadRepository.save(lead);
         addCourseInterests(lead, request.getCourseIds(), request.getNotes());
         log.info("Lead created: {}", lead.getId());
         return mapToResponse(lead);
     }
- 
+
+    @Transactional
+    public LeadResponse addMyInterests(User currentUser, LeadInterestRequest request) {
+        Lead lead = findOrCreateLeadForUser(currentUser);
+        addCourseInterests(lead, request.getCourseIds(), request.getNotes());
+        lead.setStatus(LeadStatus.INTERESTED);
+        leadRepository.save(lead);
+        return mapToResponse(lead);
+    }
+    
+    @Transactional
+    public LeadResponse expressInterestInClass(User currentUser, UUID classId, String notes) {
+        Lead lead = findOrCreateLeadForUser(currentUser);
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("Class not found"));
+
+        if (!leadInterestRepository.existsByLeadIdAndClazzId(lead.getId(), classId)) {
+            LeadInterest interest = LeadInterest.builder()
+                    .lead(lead)
+                    .clazz(clazz)
+                    .course(clazz.getCourse())
+                    .status(LeadStatus.INTERESTED)
+                    .notes(notes)
+                    .build();
+            leadInterestRepository.save(interest);
+        }
+
+        lead.setStatus(LeadStatus.INTERESTED);
+        leadRepository.save(lead);
+        return mapToResponse(lead);
+    }
+
+    @Transactional
+    public LeadResponse moveToConsulting(UUID leadId) {
+        Lead lead = findLeadOrThrow(leadId);
+        lead.setStatus(LeadStatus.CONSULTING);
+        return mapToResponse(leadRepository.save(lead));
+    }
+
+    @Transactional
+    public LeadResponse agreeToEnroll(UUID leadId, UUID classId) {
+        Lead lead = findLeadOrThrow(leadId);
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("Class not found"));
+
+        UUID userId = lead.getUserId();
+        User student;
+        
+        if (userId == null) {
+            // Trường hợp Lead được tạo thủ công, chưa có User
+            // Thử tìm User theo email trước
+            student = userRepository.findByEmailIgnoreCase(lead.getEmail())
+                    .orElseGet(() -> {
+                        // Nếu không thấy thì tạo mới User với role LEAD
+                        User newUser = new User();
+                        newUser.setEmail(lead.getEmail());
+                        newUser.setFullName(lead.getFullName());
+                        newUser.setPhone(lead.getPhone());
+                        // Mật khẩu mặc định là số điện thoại hoặc một chuỗi cố định
+                        newUser.setPassword(passwordEncoder.encode(lead.getPhone() != null ? lead.getPhone() : "123456"));
+                        newUser.setRole(UserRole.LEAD);
+                        newUser.setStatus(UserStatus.ACTIVE);
+                        return userRepository.save(newUser);
+                    });
+            lead.setUserId(student.getId());
+            leadRepository.save(lead);
+        } else {
+            student = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Linked user not found"));
+        }
+
+        // Create Enrollment as PENDING
+        if (!enrollmentRepository.existsByStudentIdAndClazzId(student.getId(), classId)) {
+            Enrollment enrollment = Enrollment.builder()
+                    .student(student)
+                    .clazz(clazz)
+                    .enrollmentDate(LocalDate.now())
+                    .status(EnrollmentStatus.PENDING)
+                    .build();
+            enrollmentRepository.save(enrollment);
+
+            // Create Invoice as UNPAID
+            BigDecimal amount = clazz.getCourse().getBasePrice();
+            Invoice invoice = Invoice.builder()
+                    .enrollment(enrollment)
+                    .amount(amount != null ? amount : BigDecimal.ZERO)
+                    .totalAmount(amount != null ? amount : BigDecimal.ZERO)
+                    .discountAmount(BigDecimal.ZERO)
+                    .finalAmount(amount != null ? amount : BigDecimal.ZERO)
+                    .dueDate(LocalDate.now().plusDays(7))
+                    .status(InvoiceStatus.UNPAID)
+                    .build();
+            invoiceRepository.save(invoice);
+        }
+
+        lead.setStatus(LeadStatus.AGREED);
+        return mapToResponse(leadRepository.save(lead));
+    }
+
+    @Transactional
+    public LeadResponse confirmCashPayment(UUID leadId) {
+        Lead lead = findLeadOrThrow(leadId);
+        
+        if (lead.getUserId() == null) {
+            throw new IllegalArgumentException("Lead does not have a linked user");
+        }
+
+        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(lead.getUserId());
+        if (enrollments.isEmpty()) {
+            throw new IllegalArgumentException("No enrollment found for this lead");
+        }
+        
+        Enrollment latest = enrollments.get(enrollments.size() - 1);
+        latest.setStatus(EnrollmentStatus.ACTIVE);
+        enrollmentRepository.save(latest);
+
+        List<Invoice> invoices = invoiceRepository.findByEnrollmentId(latest.getId());
+        if (invoices.isEmpty()) {
+            throw new IllegalArgumentException("No invoice found for the enrollment");
+        }
+
+        Invoice invoice = invoices.get(invoices.size() - 1);
+        
+        // Create Payment record for Cash payment
+        com.elc.system.modules.finance.entity.Payment payment = com.elc.system.modules.finance.entity.Payment.builder()
+                .invoice(invoice)
+                .amount(invoice.getFinalAmount())
+                .paymentDate(ZonedDateTime.now())
+                .paymentMethod(com.elc.system.modules.finance.entity.PaymentMethod.CASH)
+                .notes("Thu tiền mặt trực tiếp từ Lead Management")
+                .build();
+        paymentRepository.save(payment);
+
+        invoice.setStatus(InvoiceStatus.PAID);
+        invoiceRepository.save(invoice);
+
+        lead.setStatus(LeadStatus.PAID);
+        log.info("Cash payment confirmed for lead: {}. Invoice: {}, Enrollment: {}", leadId, invoice.getId(), latest.getId());
+        
+        return mapToResponse(leadRepository.save(lead));
+    }
+
+    @Transactional
+    public LeadResponse rejectLead(UUID leadId) {
+        Lead lead = findLeadOrThrow(leadId);
+        lead.setStatus(LeadStatus.NEW);
+        
+        // Xóa các mục đang quan tâm
+        List<LeadInterest> interests = leadInterestRepository.findByLeadId(leadId);
+        leadInterestRepository.deleteAll(interests);
+        
+        return mapToResponse(leadRepository.save(lead));
+    }
+
     @Transactional(readOnly = true)
     public Page<LeadResponse> getLeads(LeadStatus status,
                                        LeadSource source,
@@ -109,13 +278,6 @@ public class LeadService {
     }
 
     @Transactional
-    public LeadResponse addCurrentLeadInterests(User currentUser, LeadInterestRequest request) {
-        Lead lead = findOrCreateLeadForUser(currentUser);
-        addCourseInterests(lead, request.getCourseIds(), request.getNotes());
-        return mapToResponse(lead);
-    }
-
-    @Transactional
     public LeadResponse updateLead(UUID id, UpdateLeadRequest request) {
         Lead lead = findLeadOrThrow(id);
 
@@ -137,7 +299,7 @@ public class LeadService {
         log.info("Lead updated: {}", lead.getId());
         return mapToResponse(lead);
     }
- 
+
     @Transactional
     public LeadResponse updateLeadStatus(UUID id, UpdateLeadStatusRequest request) {
         if (request.getStatus() == null) {
@@ -153,55 +315,29 @@ public class LeadService {
     }
 
     @Transactional
-    public void deleteLead(UUID id) {
-        Lead lead = findLeadOrThrow(id);
-        leadRepository.delete(lead);
-        log.info("Lead deleted: {}", id);
-    }
-
-    @Transactional
-    public LeadConversionResponse convertLeadToStudent(UUID leadId, ConvertLeadRequest request) {
+    public LeadConversionResponse convertLeadToStudent(UUID leadId) {
         Lead lead = findLeadOrThrow(leadId);
 
-        if (lead.getStatus() == LeadStatus.CONVERTED || lead.getStatus() == LeadStatus.ENROLLED) {
-            throw new IllegalArgumentException("Lead is already converted to student");
+        if (lead.getStatus() != LeadStatus.PAID) {
+            throw new IllegalArgumentException("Lead must pay before converting to student");
         }
 
-        Clazz clazz = clazzRepository.findById(request.getClassId())
-                .orElseThrow(() -> new IllegalArgumentException("Class not found"));
-        User student = resolveStudentUser(lead, request);
-        student.setRole(UserRole.STUDENT);
-        student.setStatus(UserStatus.ACTIVE);
-        userRepository.save(student);
-
-        if (enrollmentRepository.existsByStudentIdAndClazzId(student.getId(), clazz.getId())) {
-            throw new IllegalArgumentException("Student is already enrolled in this class");
-        }
-
-        Enrollment enrollment = Enrollment.builder()
-                .student(student)
-                .clazz(clazz)
-                .enrollmentDate(LocalDate.now())
-                .status(EnrollmentStatus.ACTIVE)
-                .build();
-        enrollmentRepository.save(enrollment);
+        User user = userRepository.findById(lead.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Linked user not found"));
+        
+        user.setRole(UserRole.STUDENT);
+        userRepository.save(user);
 
         lead.setStatus(LeadStatus.CONVERTED);
-        lead.setUserId(student.getId());
-        if ((lead.getEmail() == null || lead.getEmail().isBlank()) && student.getEmail() != null) {
-            lead.setEmail(student.getEmail());
-        }
         leadRepository.save(lead);
 
-        log.info("Lead {} converted to student {}", leadId, student.getId());
+        log.info("Lead {} converted to student {}", leadId, user.getId());
 
         return LeadConversionResponse.builder()
                 .leadId(lead.getId())
                 .leadStatus(lead.getStatus())
-                .studentId(student.getId())
-                .studentEmail(student.getEmail())
-                .classId(clazz.getId())
-                .enrollmentId(enrollment.getId())
+                .studentId(user.getId())
+                .studentEmail(user.getEmail())
                 .message("Lead converted to student successfully")
                 .build();
     }
@@ -212,6 +348,23 @@ public class LeadService {
     }
 
     private LeadResponse mapToResponse(Lead lead) {
+        UUID enrollmentId = null;
+        UUID invoiceId = null;
+
+        if (lead.getUserId() != null) {
+            List<Enrollment> enrollments = enrollmentRepository.findByStudentId(lead.getUserId());
+            if (!enrollments.isEmpty()) {
+                // Lấy enrollment mới nhất (cuối danh sách)
+                Enrollment latest = enrollments.get(enrollments.size() - 1);
+                enrollmentId = latest.getId();
+
+                List<Invoice> invoices = invoiceRepository.findByEnrollmentId(enrollmentId);
+                if (!invoices.isEmpty()) {
+                    invoiceId = invoices.get(invoices.size() - 1).getId();
+                }
+            }
+        }
+
         return LeadResponse.builder()
                 .id(lead.getId())
                 .fullName(lead.getFullName())
@@ -227,6 +380,8 @@ public class LeadService {
                 .branchId(lead.getBranchId())
                 .userId(lead.getUserId())
                 .notes(lead.getNotes())
+                .currentEnrollmentId(enrollmentId)
+                .currentInvoiceId(invoiceId)
                 .interests(mapInterests(lead.getId()))
                 .createdAt(lead.getCreatedAt())
                 .updatedAt(lead.getUpdatedAt())
@@ -366,44 +521,6 @@ public class LeadService {
         }
     }
 
-    private User resolveStudentUser(Lead lead, ConvertLeadRequest request) {
-        if (lead.getUserId() != null) {
-            return userRepository.findById(lead.getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException("Linked user not found"));
-        }
-
-        String email = normalizeBlankToNull(request.getEmail());
-        if (email == null) {
-            email = normalizeBlankToNull(lead.getEmail());
-        }
-
-        if (email == null) {
-            throw new IllegalArgumentException("Email is required to convert lead without linked account");
-        }
-
-        Optional<User> existingUser = userRepository.findByEmail(email);
-        if (existingUser.isPresent()) {
-            return existingUser.get();
-        }
-
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Password is required to create student account for this lead");
-        }
-
-        return User.builder()
-                .email(email.toLowerCase())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .fullName(lead.getFullName())
-                .phone(lead.getPhone())
-                .dateOfBirth(lead.getDateOfBirth())
-                .gender(lead.getGender())
-                .address(lead.getAddress())
-                .role(UserRole.STUDENT)
-                .status(UserStatus.ACTIVE)
-                .branchId(lead.getBranchId())
-                .build();
-    }
-
     private List<LeadInterestResponse> mapInterests(UUID leadId) {
         return leadInterestRepository.findByLeadId(leadId).stream()
                 .map(this::mapInterest)
@@ -412,10 +529,13 @@ public class LeadService {
 
     private LeadInterestResponse mapInterest(LeadInterest interest) {
         Course course = interest.getCourse();
+        Clazz clazz = interest.getClazz();
         return LeadInterestResponse.builder()
                 .id(interest.getId())
-                .courseId(course != null ? course.getId() : null)
-                .courseName(course != null ? course.getName() : null)
+                .courseId(course != null ? course.getId() : (clazz != null ? clazz.getCourse().getId() : null))
+                .courseName(course != null ? course.getName() : (clazz != null ? clazz.getCourse().getName() : null))
+                .clazzId(clazz != null ? clazz.getId() : null)
+                .clazzName(clazz != null ? clazz.getName() : null)
                 .status(interest.getStatus())
                 .notes(interest.getNotes())
                 .createdAt(interest.getCreatedAt())

@@ -1,49 +1,43 @@
-import { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, Paper, CircularProgress, Alert } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Box, Card, CardContent, CircularProgress, Grid, Paper, Stack, Typography } from '@mui/material';
 import {
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  AccountBalance as AccountBalanceIcon,
-  Warning as WarningIcon,
+  AccountBalance,
+  ReceiptLong,
+  TrendingDown,
+  TrendingUp,
+  WarningAmber,
 } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { invoiceApi, analyticsApi } from '../../../services/api';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { expenseApi, invoiceApi, paymentApi } from '../../../services/api';
+import {
+  debtStatuses,
+  ExpenseRecord,
+  formatCurrency,
+  getMonthKey,
+  getOutstandingAmount,
+  InvoiceRecord,
+  isCurrentMonth,
+  PaymentRecord,
+} from './financeUtils';
 
-const defaultMonthlyData = [
-  { month: 'T1', revenue: 45000000, expense: 32000000 },
-  { month: 'T2', revenue: 52000000, expense: 35000000 },
-  { month: 'T3', revenue: 48000000, expense: 33000000 },
-  { month: 'T4', revenue: 61000000, expense: 38000000 },
-  { month: 'T5', revenue: 55000000, expense: 36000000 },
-];
-
-const defaultExpenseBreakdown = [
-  { name: 'Lương giáo viên', value: 24000000 },
-  { name: 'Thuê mặt bằng', value: 8000000 },
-  { name: 'Điện nước', value: 2000000 },
-  { name: 'Marketing', value: 2000000 },
-];
-
-const COLORS = ['#1976d2', '#4caf50', '#ff9800', '#f44336'];
-
-interface FinanceData {
-  currentMonthRevenue?: number;
-  currentMonthExpense?: number;
-  profit?: number;
-  outstandingDebt?: number;
-  monthlyData?: any[];
-  expenseBreakdown?: any[];
-}
+const colors = ['#1976d2', '#2e7d32', '#ed6c02', '#d32f2f', '#6d4c41', '#7b1fa2'];
 
 export default function FinanceDashboard() {
-  const [financeData, setFinanceData] = useState<FinanceData>({
-    currentMonthRevenue: 55000000,
-    currentMonthExpense: 36000000,
-    profit: 19000000,
-    outstandingDebt: 12500000,
-    monthlyData: defaultMonthlyData,
-    expenseBreakdown: defaultExpenseBreakdown,
-  });
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,38 +49,77 @@ export default function FinanceDashboard() {
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch invoice data for outstanding debt
-      const debtResponse = await invoiceApi.getDebt();
-      
-      if (debtResponse) {
-        const debtInvoices = Array.isArray(debtResponse.data) ? debtResponse.data : [];
-        const outstandingDebt = debtInvoices.reduce(
-          (total: number, invoice: any) => total + Number(invoice.finalAmount ?? invoice.totalAmount ?? 0),
-          0
-        );
-
-        setFinanceData((prev) => ({
-          ...prev,
-          outstandingDebt: outstandingDebt || prev.outstandingDebt,
-        }));
-      }
+      const [invoiceResponse, expenseResponse, paymentResponse] = await Promise.all([
+        invoiceApi.getAll(),
+        expenseApi.getAll(),
+        paymentApi.getAll(),
+      ]);
+      setInvoices(Array.isArray(invoiceResponse.data) ? invoiceResponse.data : []);
+      setExpenses(Array.isArray(expenseResponse.data) ? expenseResponse.data : []);
+      setPayments(Array.isArray(paymentResponse.data) ? paymentResponse.data : []);
     } catch (err: any) {
-      console.error('Failed to fetch finance data:', err);
-      setError('Không thể tải dữ liệu tài chính');
-      // Keep using default data
+      setError(err?.response?.data?.message || 'Khong tai duoc dashboard tai chinh');
     } finally {
       setLoading(false);
     }
   };
 
-  if (error) {
+  const summary = useMemo(() => {
+    const monthRevenue = payments
+      .filter((payment) => isCurrentMonth(payment.paymentDate))
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const monthExpense = expenses
+      .filter((expense) => isCurrentMonth(expense.expenseDate))
+      .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+    const outstandingDebt = invoices
+      .filter((invoice) => debtStatuses.has(invoice.status || 'UNPAID'))
+      .reduce((sum, invoice) => sum + getOutstandingAmount(invoice), 0);
+
+    return {
+      monthRevenue,
+      monthExpense,
+      profit: monthRevenue - monthExpense,
+      outstandingDebt,
+    };
+  }, [payments, expenses, invoices]);
+
+  const monthlyData = useMemo(() => {
+    const rows = new Map<string, { month: string; revenue: number; expense: number }>();
+
+    payments.forEach((payment) => {
+      const month = getMonthKey(payment.paymentDate);
+      const row = rows.get(month) || { month, revenue: 0, expense: 0 };
+      row.revenue += Number(payment.amount || 0);
+      rows.set(month, row);
+    });
+
+    expenses.forEach((expense) => {
+      const month = getMonthKey(expense.expenseDate);
+      const row = rows.get(month) || { month, revenue: 0, expense: 0 };
+      row.expense += Number(expense.amount || 0);
+      rows.set(month, row);
+    });
+
+    return Array.from(rows.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-6);
+  }, [payments, expenses]);
+
+  const expenseBreakdown = useMemo(() => {
+    const rows = new Map<string, number>();
+    expenses.forEach((expense) => {
+      rows.set(expense.category, (rows.get(expense.category) || 0) + Number(expense.amount || 0));
+    });
+    return Array.from(rows.entries()).map(([name, value]) => ({ name, value }));
+  }, [expenses]);
+
+  const unusualExpenses = useMemo(() => {
+    const average = expenses.length ? expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0) / expenses.length : 0;
+    return expenses.filter((expense) => average > 0 && Number(expense.amount || 0) >= average * 1.5);
+  }, [expenses]);
+
+  if (loading) {
     return (
-      <Box>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
-          Dashboard Tài chính
-        </Typography>
-        <Alert severity="error">{error}</Alert>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
       </Box>
     );
   }
@@ -94,142 +127,88 @@ export default function FinanceDashboard() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700}>
-        Dashboard Tài chính
+        Dashboard tai chinh
       </Typography>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {unusualExpenses.length > 0 && (
+        <Alert severity="warning" icon={<WarningAmber />} sx={{ mb: 3 }}>
+          Co {unusualExpenses.length} khoan chi cao bat thuong can doi soat.
+        </Alert>
+      )}
+
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Doanh thu tháng
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {loading ? '...' : (financeData.currentMonthRevenue || 55000000).toLocaleString('vi-VN')}đ
-                  </Typography>
-                </Box>
-                <TrendingUpIcon sx={{ fontSize: 40, color: 'success.main' }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Chi phí tháng
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {loading ? '...' : (financeData.currentMonthExpense || 36000000).toLocaleString('vi-VN')}đ
-                  </Typography>
-                </Box>
-                <TrendingDownIcon sx={{ fontSize: 40, color: 'error.main' }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Lợi nhuận
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {loading ? '...' : (financeData.profit || 19000000).toLocaleString('vi-VN')}đ
-                  </Typography>
-                </Box>
-                <AccountBalanceIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Công nợ
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {loading ? '...' : (financeData.outstandingDebt || 12500000).toLocaleString('vi-VN')}đ
-                  </Typography>
-                </Box>
-                <WarningIcon sx={{ fontSize: 40, color: 'warning.main' }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <SummaryCard title="Doanh thu thang" value={formatCurrency(summary.monthRevenue)} icon={<TrendingUp color="success" />} />
+        <SummaryCard title="Chi phi thang" value={formatCurrency(summary.monthExpense)} icon={<TrendingDown color="error" />} />
+        <SummaryCard title="Loi nhuan" value={formatCurrency(summary.profit)} icon={<AccountBalance color="primary" />} />
+        <SummaryCard title="Cong no hoc phi" value={formatCurrency(summary.outstandingDebt)} icon={<ReceiptLong color="warning" />} />
       </Grid>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              Doanh thu & Chi phí 5 tháng gần đây
+            <Typography variant="h6" gutterBottom fontWeight={700}>
+              Thu chi theo thang
             </Typography>
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={financeData.monthlyData || defaultMonthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="revenue" fill="#4caf50" name="Doanh thu" />
-                  <Bar dataKey="expense" fill="#f44336" name="Chi phí" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={(value) => `${Number(value) / 1000000}tr`} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Legend />
+                <Bar dataKey="revenue" fill="#2e7d32" name="Doanh thu" />
+                <Bar dataKey="expense" fill="#d32f2f" name="Chi phi" />
+              </BarChart>
+            </ResponsiveContainer>
           </Paper>
         </Grid>
 
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              Phân bổ chi phí
+            <Typography variant="h6" gutterBottom fontWeight={700}>
+              Co cau chi phi
             </Typography>
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', height: 300 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={financeData.expenseBreakdown || defaultExpenseBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {(financeData.expenseBreakdown || defaultExpenseBreakdown).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie data={expenseBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                  {expenseBreakdown.map((entry, index) => (
+                    <Cell key={entry.name} fill={colors[index % colors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              </PieChart>
+            </ResponsiveContainer>
           </Paper>
         </Grid>
       </Grid>
     </Box>
+  );
+}
+
+function SummaryCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
+  return (
+    <Grid item xs={12} md={3}>
+      <Card>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                {title}
+              </Typography>
+              <Typography variant="h5" fontWeight={700}>
+                {value}
+              </Typography>
+            </Box>
+            <Box sx={{ '& svg': { fontSize: 40 } }}>{icon}</Box>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Grid>
   );
 }

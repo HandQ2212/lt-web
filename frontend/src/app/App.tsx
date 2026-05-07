@@ -30,6 +30,11 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import ClassManagementPage from './pages/admin/ClassManagementPage';
 import LeadManagementPage from './pages/admin/LeadManagementPage';
+import TeacherManagementPage from './pages/admin/TeacherManagementPage';
+import StudentManagementPage from './pages/admin/StudentManagementPage';
+import AccountantManagementPage from './pages/admin/AccountantManagementPage';
+import NotificationManagementPage from './pages/admin/NotificationManagementPage';
+import ProgramManagementPage from './pages/admin/ProgramManagementPage';
 
 import TeacherSchedulePage from './pages/teacher/TeacherSchedulePage';
 import TeacherClassesPage from './pages/teacher/TeacherClassesPage';
@@ -39,10 +44,13 @@ import AssignmentPage from './pages/teacher/AssignmentPage';
 import StudentDashboard from './pages/student/StudentDashboard';
 import GradebookPage from './pages/student/GradebookPage';
 import PaymentPage from './pages/student/PaymentPage';
+import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage';
+import StudentInvoicesPage from './pages/student/StudentInvoicesPage';
 
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import StudentDebtPage from './pages/finance/StudentDebtPage';
 import TeacherPaymentsPage from './pages/finance/TeacherPaymentsPage';
+import FinanceOperationsPage from './pages/finance/FinanceOperationsPage';
 import { getDefaultRouteByRole } from './utils/roleRouting';
 
 const theme = createTheme({
@@ -146,8 +154,48 @@ function AppRoutes() {
                 <Route
                   path="/admin/leads"
                   element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
+                    <ProtectedRoute allowedRoles={['MANAGER', 'ACCOUNTANT']}>
                       <LeadManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/teachers"
+                  element={
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
+                      <TeacherManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/students"
+                  element={
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
+                      <StudentManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/accountants"
+                  element={
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
+                      <AccountantManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/notifications"
+                  element={
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
+                      <NotificationManagementPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/programs"
+                  element={
+                    <ProtectedRoute allowedRoles={['MANAGER']}>
+                      <ProgramManagementPage />
                     </ProtectedRoute>
                   }
                 />
@@ -204,8 +252,24 @@ function AppRoutes() {
                 <Route
                   path="/student/payments"
                   element={
-                    <ProtectedRoute allowedRoles={['STUDENT']}>
+                    <ProtectedRoute allowedRoles={['STUDENT', 'LEAD']}>
                       <PaymentPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/assignments"
+                  element={
+                    <ProtectedRoute allowedRoles={['STUDENT']}>
+                      <StudentAssignmentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/invoices"
+                  element={
+                    <ProtectedRoute allowedRoles={['STUDENT']}>
+                      <StudentInvoicesPage />
                     </ProtectedRoute>
                   }
                 />
@@ -231,6 +295,14 @@ function AppRoutes() {
                   element={
                     <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
                       <TeacherPaymentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/finance/operations"
+                  element={
+                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+                      <FinanceOperationsPage />
                     </ProtectedRoute>
                   }
                 />

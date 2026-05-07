@@ -194,10 +194,18 @@ public class ClazzService {
 
         switch (currentStatus) {
             case UPCOMING:
+                if (newStatus != ClassStatus.ACCEPTING && newStatus != ClassStatus.CANCELLED) {
+                    throw new InvalidClassStatusException(
+                            "Invalid status transition from " + currentStatus + " to " + newStatus +
+                                    ". Allowed transitions: UPCOMING → ACCEPTING, UPCOMING → CANCELLED");
+                }
+                break;
+
+            case ACCEPTING:
                 if (newStatus != ClassStatus.ONGOING && newStatus != ClassStatus.CANCELLED) {
                     throw new InvalidClassStatusException(
                             "Invalid status transition from " + currentStatus + " to " + newStatus +
-                                    ". Allowed transitions: UPCOMING → ONGOING, UPCOMING → CANCELLED");
+                                    ". Allowed transitions: ACCEPTING → ONGOING, ACCEPTING → CANCELLED");
                 }
                 break;
 
@@ -234,7 +242,12 @@ public class ClazzService {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new RuntimeException("Class not found"));
 
-        // Simple conflict check before adding
+        // Validate that start time is before end time
+        if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
+            throw new IllegalArgumentException("Start time must be strictly before end time. Start: " + request.getStartTime() + ", End: " + request.getEndTime());
+        }
+
+        // Conflict check before adding
         ConflictCheckRequest conflictRequest = ConflictCheckRequest.builder()
                 .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
                 .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
@@ -258,14 +271,166 @@ public class ClazzService {
         return mapToScheduleResponse(classScheduleRepository.save(schedule));
     }
 
+    @Transactional
+    public ScheduleResponse updateSchedule(UUID classId, UUID scheduleId, ScheduleRequest request) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        ClassSchedule schedule = classScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        if (schedule.getClazz() == null || !schedule.getClazz().getId().equals(clazz.getId())) {
+            throw new IllegalArgumentException("Schedule does not belong to the given class");
+        }
+
+        if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
+            throw new IllegalArgumentException("Start time must be strictly before end time. Start: " + request.getStartTime() + ", End: " + request.getEndTime());
+        }
+
+        ConflictCheckResponse conflict = checkConflictExcludingSchedule(scheduleId, ConflictCheckRequest.builder()
+                .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
+                .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
+                .dayOfWeek(request.getDayOfWeek())
+                .startTime(request.getStartTime())
+                .endTime(request.getEndTime())
+                .build());
+
+        if (conflict.isHasConflict()) {
+            throw new RuntimeException("Schedule conflict detected: " + conflict.getConflictMessage());
+        }
+
+        schedule.setDayOfWeek(request.getDayOfWeek());
+        schedule.setStartTime(request.getStartTime());
+        schedule.setEndTime(request.getEndTime());
+
+        return mapToScheduleResponse(classScheduleRepository.save(schedule));
+    }
+
+    @Transactional
+    public void deleteSchedule(UUID classId, UUID scheduleId) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        ClassSchedule schedule = classScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        if (schedule.getClazz() == null || !schedule.getClazz().getId().equals(clazz.getId())) {
+            throw new IllegalArgumentException("Schedule does not belong to the given class");
+        }
+
+        classScheduleRepository.delete(schedule);
+    }
+
     @Transactional(readOnly = true)
     public ConflictCheckResponse checkConflict(ConflictCheckRequest request) {
-        // This is a simplified conflict check logic
-        // In a real system, you would query existing schedules that overlap
-        // For now, we'll return no conflict to keep it simple, but the structure is there
+        // Validate that start time is before end time
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
+                return ConflictCheckResponse.builder()
+                        .hasConflict(true)
+                        .conflictMessage("Start time must be strictly before end time")
+                        .build();
+            }
+        }
+
+        // Check for overlapping schedules with the same teacher or room
+        List<ClassSchedule> existingSchedules = classScheduleRepository.findAll();
+        
+        for (ClassSchedule existing : existingSchedules) {
+            // Check if same day of week
+            if (!existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek())) {
+                continue;
+            }
+
+            // Check for teacher conflict
+            if (request.getTeacherId() != null && existing.getClazz() != null && existing.getClazz().getTeacher() != null) {
+                if (existing.getClazz().getTeacher().getId().equals(request.getTeacherId())) {
+                    if (isTimeOverlap(existing.getStartTime(), existing.getEndTime(), 
+                                     request.getStartTime(), request.getEndTime())) {
+                        return ConflictCheckResponse.builder()
+                                .hasConflict(true)
+                                .conflictMessage("Teacher already has a class scheduled at this time")
+                                .build();
+                    }
+                }
+            }
+
+            // Check for room conflict
+            if (request.getRoomId() != null && existing.getClazz() != null && existing.getClazz().getRoom() != null) {
+                if (existing.getClazz().getRoom().getId().equals(request.getRoomId())) {
+                    if (isTimeOverlap(existing.getStartTime(), existing.getEndTime(), 
+                                     request.getStartTime(), request.getEndTime())) {
+                        return ConflictCheckResponse.builder()
+                                .hasConflict(true)
+                                .conflictMessage("Room already has a class scheduled at this time")
+                                .build();
+                    }
+                }
+            }
+        }
+
         return ConflictCheckResponse.builder()
                 .hasConflict(false)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ConflictCheckResponse checkConflictExcludingSchedule(UUID excludedScheduleId, ConflictCheckRequest request) {
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
+                return ConflictCheckResponse.builder()
+                        .hasConflict(true)
+                        .conflictMessage("Start time must be strictly before end time")
+                        .build();
+            }
+        }
+
+        List<ClassSchedule> existingSchedules = classScheduleRepository.findAll();
+
+        for (ClassSchedule existing : existingSchedules) {
+            if (excludedScheduleId != null && excludedScheduleId.equals(existing.getId())) {
+                continue;
+            }
+
+            if (!existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek())) {
+                continue;
+            }
+
+            if (request.getTeacherId() != null && existing.getClazz() != null && existing.getClazz().getTeacher() != null) {
+                if (existing.getClazz().getTeacher().getId().equals(request.getTeacherId())) {
+                    if (isTimeOverlap(existing.getStartTime(), existing.getEndTime(), request.getStartTime(), request.getEndTime())) {
+                        return ConflictCheckResponse.builder()
+                                .hasConflict(true)
+                                .conflictMessage("Teacher already has a class scheduled at this time")
+                                .build();
+                    }
+                }
+            }
+
+            if (request.getRoomId() != null && existing.getClazz() != null && existing.getClazz().getRoom() != null) {
+                if (existing.getClazz().getRoom().getId().equals(request.getRoomId())) {
+                    if (isTimeOverlap(existing.getStartTime(), existing.getEndTime(), request.getStartTime(), request.getEndTime())) {
+                        return ConflictCheckResponse.builder()
+                                .hasConflict(true)
+                                .conflictMessage("Room already has a class scheduled at this time")
+                                .build();
+                    }
+                }
+            }
+        }
+
+        return ConflictCheckResponse.builder()
+                .hasConflict(false)
+                .build();
+    }
+
+    /**
+     * Check if two time periods overlap
+     * Times overlap if: start1 < end2 AND start2 < end1
+     */
+    private boolean isTimeOverlap(java.time.LocalTime start1, java.time.LocalTime end1, 
+                                  java.time.LocalTime start2, java.time.LocalTime end2) {
+        return start1.isBefore(end2) && start2.isBefore(end1);
     }
 
     private ClassResponse mapToResponse(Clazz clazz) {

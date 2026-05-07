@@ -38,6 +38,11 @@ app:
     expiration: 86400000 # 24 hours in ms
     refresh-expiration: 604800000 # 7 days in ms
 
+payos:
+  client-id: ${PAYOS_CLIENT_ID:YOUR_CLIENT_ID}
+  api-key: ${PAYOS_API_KEY:YOUR_API_KEY}
+  checksum-key: ${PAYOS_CHECKSUM_KEY:YOUR_CHECKSUM_KEY}
+
 server:
   address: localhost
   port: 8080

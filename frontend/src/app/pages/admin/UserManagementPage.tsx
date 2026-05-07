@@ -22,8 +22,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon, Search as SearchIcon } from '@mui/icons-material';
 import { AppUser, userApi, UserRole } from '../../../services/api';
+
+interface UserManagementPageProps {
+  role?: UserRole;
+}
 
 type UserForm = {
   fullName: string;
@@ -43,8 +47,10 @@ const defaultForm: UserForm = {
   password: '',
 };
 
-export default function UserManagementPage() {
+export default function UserManagementPage({ role }: UserManagementPageProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<AppUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -58,15 +64,33 @@ export default function UserManagementPage() {
 
   const isEdit = useMemo(() => !!selectedUser, [selectedUser]);
 
+  const pageTitle = role
+    ? role === 'TEACHER'
+      ? 'Quản lý Giáo viên'
+      : role === 'ACCOUNTANT'
+        ? 'Quản lý Kế toán'
+        : role === 'STUDENT'
+          ? 'Quản lý Học viên'
+          : 'Quản lý người dùng'
+    : 'Quản lý người dùng';
+
   useEffect(() => {
     void fetchUsers();
-  }, []);
+  }, [role]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const page = await userApi.getAll({ size: 100, sort: 'fullName,asc' });
-      setUsers(page.content);
+      let allUsers = page.content;
+      
+      // Filter by role if specified
+      if (role) {
+        allUsers = allUsers.filter((user) => user.role === role);
+      }
+      
+      setUsers(allUsers);
+      setFilteredUsers(allUsers);
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -75,6 +99,21 @@ export default function UserManagementPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setFilteredUsers(users);
+    } else {
+      const lowercaseQuery = query.toLowerCase();
+      const filtered = users.filter((user) =>
+        user.fullName?.toLowerCase().includes(lowercaseQuery) ||
+        user.email?.toLowerCase().includes(lowercaseQuery) ||
+        user.phone?.includes(lowercaseQuery)
+      );
+      setFilteredUsers(filtered);
     }
   };
 
@@ -87,7 +126,7 @@ export default function UserManagementPage() {
   const handleOpenEdit = (user: AppUser) => {
     setSelectedUser(user);
     setForm({
-      fullName: user.name,
+      fullName: user.fullName,
       email: user.email,
       phone: user.phone || '',
       role: user.role,
@@ -166,43 +205,85 @@ export default function UserManagementPage() {
     }
   };
 
+  const getRoleLabel = (roleValue: string) => {
+    switch (roleValue) {
+      case 'MANAGER':
+        return 'Quản lý viên';
+      case 'TEACHER':
+        return 'Giáo viên';
+      case 'STUDENT':
+        return 'Học viên';
+      case 'ACCOUNTANT':
+        return 'Kế toán';
+      case 'LEAD':
+        return 'Lead';
+      default:
+        return roleValue;
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={700}>
-          Quản lý người dùng
+          {pageTitle}
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
-          Thêm người dùng
-        </Button>
+        {!role && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
+            Thêm người dùng
+          </Button>
+        )}
+      </Box>
+
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Tìm kiếm (tên, email, số điện thoại...)"
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          InputProps={{
+            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+          }}
+          variant="outlined"
+          size="small"
+        />
       </Box>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
+      ) : filteredUsers.length === 0 ? (
+        <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <Typography color="text.secondary">
+            {searchQuery ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có người dùng nào'}
+          </Typography>
+        </Paper>
       ) : (
         <TableContainer component={Paper}>
           <Table>
-            <TableHead>
+            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
               <TableRow>
-                <TableCell>Họ tên</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Số điện thoại</TableCell>
-                <TableCell>Vai trò</TableCell>
-                <TableCell>Trạng thái</TableCell>
-                <TableCell align="right">Thao tác</TableCell>
+                <TableCell fontWeight={600}>Họ tên</TableCell>
+                <TableCell fontWeight={600}>Email</TableCell>
+                <TableCell fontWeight={600}>Số điện thoại</TableCell>
+                {!role && <TableCell fontWeight={600}>Vai trò</TableCell>}
+                <TableCell fontWeight={600}>Trạng thái</TableCell>
+                <TableCell align="right" fontWeight={600}>Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.id} hover>
+                  <TableCell>{user.fullName}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.phone || '-'}</TableCell>
-                  <TableCell>
-                    <Chip label={user.role} color={getRoleColor(user.role)} size="small" />
-                  </TableCell>
+                  {!role && (
+                    <TableCell>
+                      <Chip label={getRoleLabel(user.role)} color={getRoleColor(user.role)} size="small" />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Chip
                       label={user.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}

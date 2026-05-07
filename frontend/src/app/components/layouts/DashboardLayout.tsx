@@ -2,6 +2,7 @@ import { Box, Toolbar } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardHeader from './DashboardHeader';
+import ChatWidget from '../ChatWidget';
 
 const drawerWidth = 260;
 
@@ -23,6 +24,7 @@ export default function DashboardLayout() {
         <Box sx={{ p: 3 }}>
           <Outlet />
         </Box>
+        <ChatWidget />
       </Box>
     </Box>
   );

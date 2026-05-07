@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import com.elc.system.modules.sms.validation.ValidScheduleTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ public class ClassScheduleDto {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
+    @ValidScheduleTime(message = "Start time must be before end time")
     public static class ScheduleRequest {
         @NotNull(message = "Day of week is required")
         private String dayOfWeek;

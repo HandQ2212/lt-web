@@ -9,6 +9,9 @@ import com.elc.system.modules.finance.entity.InvoiceStatus;
 import com.elc.system.modules.finance.entity.Payment;
 import com.elc.system.modules.finance.repository.InvoiceRepository;
 import com.elc.system.modules.finance.repository.PaymentRepository;
+import com.elc.system.modules.lead.entity.Lead;
+import com.elc.system.modules.lead.entity.LeadStatus;
+import com.elc.system.modules.lead.repository.LeadRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
+    private final LeadRepository leadRepository;
 
     @Transactional(readOnly = true)
     public List<PaymentResponse> getAllPayments() {
@@ -100,7 +104,7 @@ public class PaymentService {
             return;
         }
 
-        if (user.getRole() == UserRole.STUDENT
+        if ((user.getRole() == UserRole.STUDENT || user.getRole() == UserRole.LEAD)
                 && invoice.getEnrollment().getStudent().getId().equals(user.getId())) {
             return;
         }
@@ -115,12 +119,25 @@ public class PaymentService {
 
         if (totalPaid.compareTo(invoice.getFinalAmount()) >= 0) {
             invoice.setStatus(InvoiceStatus.PAID);
+            
+            // Cập nhật LeadStatus nếu là Lead
+            updateLeadStatusIfApplicable(invoice.getEnrollment().getStudent());
+            
         } else if (totalPaid.compareTo(BigDecimal.ZERO) > 0) {
             invoice.setStatus(InvoiceStatus.PARTIAL);
         } else {
             invoice.setStatus(InvoiceStatus.UNPAID);
         }
         invoiceRepository.save(invoice);
+    }
+
+    private void updateLeadStatusIfApplicable(User user) {
+        if (user.getRole() == UserRole.LEAD) {
+            leadRepository.findByUserId(user.getId()).ifPresent(lead -> {
+                lead.setStatus(LeadStatus.PAID);
+                leadRepository.save(lead);
+            });
+        }
     }
 
     private PaymentResponse mapToResponse(Payment payment) {

@@ -35,8 +35,15 @@ public class InvoiceService {
     }
 
     @Transactional(readOnly = true)
+    public InvoiceResponse getInvoiceById(UUID id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+        return mapToResponse(invoice);
+    }
+
+    @Transactional(readOnly = true)
     public List<InvoiceResponse> getInvoicesForUser(User user) {
-        if (user.getRole() == UserRole.STUDENT) {
+        if (user.getRole() == UserRole.STUDENT || user.getRole() == UserRole.LEAD) {
             return invoiceRepository.findAll().stream()
                     .filter(invoice -> invoice.getEnrollment().getStudent().getId().equals(user.getId()))
                     .map(this::mapToResponse)
@@ -53,6 +60,7 @@ public class InvoiceService {
 
         Invoice invoice = Invoice.builder()
                 .enrollment(enrollment)
+                .amount(request.getTotalAmount())
                 .totalAmount(request.getTotalAmount())
                 .discountAmount(request.getDiscountAmount())
                 .finalAmount(request.getFinalAmount())

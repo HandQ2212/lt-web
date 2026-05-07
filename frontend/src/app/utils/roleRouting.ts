@@ -9,7 +9,7 @@ export function getDefaultRouteByRole(role?: User['role']): string {
     case 'STUDENT':
       return '/student/courses';
     case 'ACCOUNTANT':
-      return '/finance/debts';
+      return '/finance/dashboard';
     case 'LEAD':
       return '/profile';
     default:

@@ -72,6 +72,24 @@ public class ClazzController {
         return ResponseEntity.ok(clazzService.addSchedule(id, request));
     }
 
+    @PutMapping("/{id}/schedule/{scheduleId}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ScheduleResponse> updateSchedule(
+            @PathVariable UUID id,
+            @PathVariable UUID scheduleId,
+            @Valid @RequestBody ScheduleRequest request) {
+        return ResponseEntity.ok(clazzService.updateSchedule(id, scheduleId, request));
+    }
+
+    @DeleteMapping("/{id}/schedule/{scheduleId}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Void> deleteSchedule(
+            @PathVariable UUID id,
+            @PathVariable UUID scheduleId) {
+        clazzService.deleteSchedule(id, scheduleId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/check-conflict")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ConflictCheckResponse> checkConflict(

@@ -11,6 +11,12 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import PersonIcon from '@mui/icons-material/Person';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import HomeIcon from '@mui/icons-material/Home';
+import ExploreIcon from '@mui/icons-material/Explore';
 
 const drawerWidth = 260;
 
@@ -22,9 +28,17 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
+  { text: 'Trang chủ', icon: <HomeIcon />, path: '/', roles: ['STUDENT', 'LEAD', 'TEACHER', 'MANAGER', 'ACCOUNTANT'] },
+  { text: 'Khám phá khóa học', icon: <ExploreIcon />, path: '/courses', roles: ['STUDENT', 'LEAD'] },
+  
   { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
   { text: 'Quản lý lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
-  { text: 'CRM & Leads', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER'] },
+  { text: 'Quản lý Giáo viên', icon: <SchoolIcon />, path: '/admin/teachers', roles: ['MANAGER'] },
+  { text: 'Quản lý Kế toán', icon: <AccountBalanceIcon />, path: '/admin/accountants', roles: ['MANAGER'] },
+  { text: 'Quản lý Học viên', icon: <GroupsIcon />, path: '/admin/students', roles: ['MANAGER'] },
+  { text: 'CRM & Leads', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER', 'ACCOUNTANT'] },
+  { text: 'Quản lý Thông báo', icon: <NotificationsIcon />, path: '/admin/notifications', roles: ['MANAGER'] },
+  { text: 'Quản lý Chương trình', icon: <MenuBookIcon />, path: '/admin/programs', roles: ['MANAGER'] },
 
   { text: 'Lịch dạy', icon: <CalendarTodayIcon />, path: '/teacher/schedule', roles: ['TEACHER'] },
   { text: 'Lớp học của tôi', icon: <ClassIcon />, path: '/teacher/classes', roles: ['TEACHER'] },
@@ -32,9 +46,13 @@ const menuItems: MenuItem[] = [
   { text: 'Bài tập', icon: <AssignmentIcon />, path: '/teacher/assignments', roles: ['TEACHER'] },
 
   { text: 'Khóa học của tôi', icon: <SchoolIcon />, path: '/student/courses', roles: ['STUDENT'] },
+  { text: 'Bài tập', icon: <AssignmentIcon />, path: '/student/assignments', roles: ['STUDENT'] },
   { text: 'Bảng điểm', icon: <BarChartIcon />, path: '/student/grades', roles: ['STUDENT'] },
-  { text: 'Học phí', icon: <PaymentIcon />, path: '/student/payments', roles: ['STUDENT'] },
+  { text: 'Học phí', icon: <PaymentIcon />, path: '/student/payments', roles: ['STUDENT', 'LEAD'] },
+  { text: 'Hóa đơn học phí', icon: <ReceiptLongIcon />, path: '/student/invoices', roles: ['STUDENT'] },
 
+  { text: 'Dashboard tài chính', icon: <BarChartIcon />, path: '/finance/dashboard', roles: ['ACCOUNTANT'] },
+  { text: 'Nghiệp vụ kế toán', icon: <ReceiptLongIcon />, path: '/finance/operations', roles: ['ACCOUNTANT'] },
   { text: 'Công nợ học viên', icon: <BarChartIcon />, path: '/finance/debts', roles: ['ACCOUNTANT'] },
   { text: 'Thanh toán GV', icon: <PaymentIcon />, path: '/finance/teacher-payments', roles: ['ACCOUNTANT'] },
 

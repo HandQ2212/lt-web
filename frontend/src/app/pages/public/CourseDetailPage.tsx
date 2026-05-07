@@ -14,83 +14,93 @@ import {
   Card,
   CardContent,
   Divider,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleIcon from '@mui/icons-material/People';
-import { courseApi } from '../../../services/api';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import { courseApi, leadApi, classApi } from '../../../services/api';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store';
 
 export default function CourseDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
-    fetchCourse();
+    void fetchCourseData();
   }, [id]);
 
-  const fetchCourse = async () => {
+  const fetchCourseData = async () => {
     try {
-      const data = await courseApi.getById(id!);
-      setCourse({
-        ...mockCourse,
-        ...data,
-      });
+      setLoading(true);
+      const [courseData, classData] = await Promise.all([
+        courseApi.getById(id!),
+        classApi.getAll()
+      ]);
+      
+      setCourse(courseData);
+      // Filter classes for this course
+      const upcoming = (Array.isArray(classData) ? classData : classData?.content || [])
+        .filter((c: any) => c.courseId === id && (c.status === 'ACCEPTING' || c.status === 'UPCOMING'));
+      setClasses(upcoming);
     } catch (error) {
-      setCourse(mockCourse);
+      console.error('Failed to fetch course data', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const mockCourse = {
-    id: id,
-    name: 'IELTS Preparation',
-    level: 'ADVANCED',
-    price: 4500000,
-    duration: '3 tháng',
-    description:
-      'Khóa học luyện thi IELTS toàn diện, giúp học viên đạt điểm 7.0+ trong kỳ thi IELTS. Phương pháp giảng dạy hiện đại, tập trung vào 4 kỹ năng: Listening, Reading, Writing, Speaking.',
-    imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800',
-    syllabus: [
-      {
-        module: 'Module 1: IELTS Listening',
-        topics: [
-          'Kỹ thuật nghe hiểu cơ bản',
-          'Chiến lược làm bài Listening',
-          'Thực hành với các đề thi thực tế',
-        ],
-      },
-      {
-        module: 'Module 2: IELTS Reading',
-        topics: [
-          'Skimming và Scanning',
-          'Các dạng câu hỏi Reading',
-          'Luyện tập tốc độ đọc',
-        ],
-      },
-      {
-        module: 'Module 3: IELTS Writing',
-        topics: [
-          'Task 1: Graphs, Charts, Tables',
-          'Task 2: Essay Writing',
-          'Cấu trúc bài viết và từ vựng học thuật',
-        ],
-      },
-      {
-        module: 'Module 4: IELTS Speaking',
-        topics: [
-          'Part 1: Introduction',
-          'Part 2: Long Turn',
-          'Part 3: Discussion',
-        ],
-      },
-    ],
-    upcomingClasses: [
-      { id: '1', startDate: '2026-06-01', schedule: 'T2, T4, T6: 18:00-20:00', status: 'ACCEPTING' },
-      { id: '2', startDate: '2026-06-15', schedule: 'T3, T5, T7: 19:00-21:00', status: 'ACCEPTING' },
-    ],
+  const handleInterest = async (classId?: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      setActionLoading(true);
+      if (classId) {
+        await leadApi.interestClass(classId);
+      } else {
+        await leadApi.addMyInterests({ courseIds: [course.id] });
+      }
+      setSnackbar({ 
+        open: true, 
+        message: 'Đã ghi nhận sự quan tâm của bạn. Nhân viên tư vấn sẽ liên hệ sớm!', 
+        severity: 'success' 
+      });
+    } catch (error: any) {
+      setSnackbar({ 
+        open: true, 
+        message: error?.response?.data?.message || 'Không thể thực hiện yêu cầu', 
+        severity: 'error' 
+      });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  if (!course) return null;
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+      <CircularProgress />
+    </Box>
+  );
+
+  if (!course) return <Container sx={{ py: 10 }}><Alert severity="error">Khóa học không tồn tại</Alert></Container>;
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -98,99 +108,119 @@ export default function CourseDetailPage() {
         <Grid item xs={12} md={8}>
           <Box
             component="img"
-            src={course.imageUrl || mockCourse.imageUrl}
+            src={course.imageUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800'}
             alt={course.name}
-            sx={{ width: '100%', borderRadius: 2, mb: 3 }}
+            sx={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 4, mb: 3, boxShadow: 3 }}
           />
 
-          <Typography variant="h3" gutterBottom fontWeight={700}>
+          <Typography variant="h3" gutterBottom fontWeight={800} color="primary">
             {course.name}
           </Typography>
 
-          <Box sx={{ mb: 3 }}>
-            <Chip label={course.level} color="error" sx={{ mr: 1 }} />
-            <Chip label={course.duration || mockCourse.duration} icon={<AccessTimeIcon />} />
+          <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
+            <Chip label={course.level} color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+            <Chip label="3 tháng" icon={<AccessTimeIcon />} variant="outlined" />
           </Box>
 
-          <Typography variant="h6" gutterBottom fontWeight={600}>
-            Mô tả khóa học
+          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
+            Giới thiệu khóa học
           </Typography>
-          <Typography variant="body1" paragraph color="text.secondary">
-            {course.description}
+          <Typography variant="body1" paragraph color="text.secondary" sx={{ lineHeight: 1.8 }}>
+            {course.description || 'Khóa học chất lượng cao tại ELC System, giúp bạn làm chủ kiến thức và kỹ năng trong thời gian ngắn nhất.'}
           </Typography>
 
-          <Typography variant="h6" gutterBottom fontWeight={600} sx={{ mt: 4 }}>
-            Lộ trình học
+          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
+            Lớp học sắp khai giảng
           </Typography>
-          {(course.syllabus || mockCourse.syllabus).map((item: any, index: number) => (
-            <Accordion key={index}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={600}>{item.module}</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Box component="ul" sx={{ pl: 2 }}>
-                  {item.topics.map((topic: string, idx: number) => (
-                    <Typography component="li" key={idx} variant="body2" sx={{ mb: 1 }}>
-                      {topic}
-                    </Typography>
-                  ))}
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          ))}
-
-          <Typography variant="h6" gutterBottom fontWeight={600} sx={{ mt: 4 }}>
-            Lớp sắp khai giảng
-          </Typography>
-          <Grid container spacing={2}>
-            {(course.upcomingClasses || mockCourse.upcomingClasses).map((cls: any) => (
-              <Grid item xs={12} md={6} key={cls.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      Khai giảng: {cls.startDate}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {cls.schedule}
-                    </Typography>
-                    <Chip
-                      label={cls.status === 'ACCEPTING' ? 'Còn chỗ' : 'Đầy'}
-                      color="success"
-                      size="small"
-                      sx={{ mt: 1 }}
-                    />
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+          {classes.length === 0 ? (
+            <Alert severity="info">Hiện chưa có lớp học mới cho khóa học này. Vui lòng để lại thông tin tư vấn.</Alert>
+          ) : (
+            <Grid container spacing={2}>
+              {classes.map((cls) => (
+                <Grid item xs={12} md={6} key={cls.id}>
+                  <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.05)', height: '100%' }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight={700} color="primary">{cls.name}</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        <AccessTimeIcon sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
+                        {cls.startDate}
+                      </Typography>
+                      <Divider sx={{ my: 1.5 }} />
+                      <Button 
+                        variant="contained" 
+                        fullWidth 
+                        startIcon={<FavoriteIcon />}
+                        onClick={() => void handleInterest(cls.id)}
+                        disabled={actionLoading}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Quan tâm lớp này
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
-            <Typography variant="h4" color="primary" fontWeight={700} gutterBottom>
+          <Paper sx={{ p: 4, position: 'sticky', top: 100, borderRadius: 4, boxShadow: 4, bgcolor: 'primary.main', color: 'white' }}>
+            <Typography variant="h4" fontWeight={800} gutterBottom>
               {Number(course.price || 0).toLocaleString('vi-VN')}đ
             </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                <AccessTimeIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Thời lượng: {course.duration || mockCourse.duration}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                <PeopleIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Lớp nhỏ: Tối đa 15 học viên
-              </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.8, mb: 3 }}>
+              Học phí trọn gói, bao gồm giáo trình và lệ phí thi thử.
+            </Typography>
+            
+            <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} />
+            
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <AccessTimeIcon sx={{ mr: 2 }} />
+                <Typography variant="body1">Thời lượng: 3 tháng</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PeopleIcon sx={{ mr: 2 }} />
+                <Typography variant="body1">Sĩ số: Tối đa 15 học viên</Typography>
+              </Box>
             </Box>
-            <Button variant="contained" fullWidth size="large" onClick={() => navigate('/register')}>
-              Đăng ký ngay
+
+            <Button 
+              variant="contained" 
+              fullWidth 
+              size="large" 
+              bgcolor="white"
+              sx={{ 
+                bgcolor: 'white', 
+                color: 'primary.main', 
+                fontWeight: 700,
+                py: 1.5,
+                borderRadius: 2,
+                '&:hover': { bgcolor: 'grey.100' }
+              }}
+              onClick={() => void handleInterest()}
+              disabled={actionLoading}
+            >
+              Tư vấn ngay
             </Button>
-            <Button variant="outlined" fullWidth size="large" sx={{ mt: 2 }}>
-              Tư vấn miễn phí
-            </Button>
+            
+            <Typography variant="caption" sx={{ display: 'block', mt: 2, textAlign: 'center', opacity: 0.7 }}>
+              Cam kết đầu ra bằng văn bản
+            </Typography>
           </Paper>
         </Grid>
       </Grid>
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert severity={snackbar.severity} variant="filled" sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

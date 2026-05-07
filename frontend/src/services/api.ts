@@ -1,16 +1,21 @@
 import axios from 'axios';
 
-const API_BASE_URL = (import.meta.env as any).VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = ((import.meta as any).env?.VITE_API_BASE_URL as string) || 'http://localhost:8080/api';
 
 export type UserRole = 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
 
 export interface AppUser {
   id: string;
   email: string;
-  name: string;
+  fullName: string;
   role: UserRole;
   status: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED';
   phone?: string;
+  avatarUrl?: string;
+  address?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  branchId?: string;
 }
 
 export interface PageResponse<T> {
@@ -29,19 +34,29 @@ type BackendUser = {
   role: UserRole;
   status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED';
   phone?: string;
+  avatarUrl?: string;
+  address?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  branchId?: string;
 };
 
 const normalizeUser = (user: BackendUser): AppUser => ({
   id: user.id,
   email: user.email,
-  name: user.fullName || user.name || user.email,
+  fullName: user.fullName || user.name || user.email,
   role: user.role,
   status: user.status || 'ACTIVE',
   phone: user.phone,
+  avatarUrl: user.avatarUrl,
+  address: user.address,
+  dateOfBirth: user.dateOfBirth,
+  gender: user.gender,
+  branchId: user.branchId,
 });
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -99,12 +114,12 @@ export const authApi = {
     const response = await api.get('/profile');
     return normalizeUser(response.data);
   },
-  refresh: (refreshToken: string) => api.post('/auth/refresh', { refreshToken }),
+  refresh: (refreshToken: string) => api.post('auth/refresh', { refreshToken }),
 };
 
 export const courseApi = {
   getAll: async () => {
-    const response = await api.get('/courses');
+    const response = await api.get('courses');
     return (response.data as any[]).map((course) => ({
       id: course.id,
       name: course.name,
@@ -116,7 +131,7 @@ export const courseApi = {
     }));
   },
   getById: async (id: string) => {
-    const response = await api.get(`/courses/${id}`);
+    const response = await api.get(`courses/${id}`);
     const course = response.data;
     return {
       id: course.id,
@@ -128,77 +143,88 @@ export const courseApi = {
       imageUrl: course.imageUrl,
     };
   },
-  create: (data: any) => api.post('/courses', data),
-  update: (id: string, data: any) => api.put(`/courses/${id}`, data),
-  delete: (id: string) => api.delete(`/courses/${id}`),
+  create: (data: any) => api.post('courses', data),
+  update: (id: string, data: any) => api.put(`courses/${id}`, data),
+  delete: (id: string) => api.delete(`courses/${id}`),
 };
 
 export const branchApi = {
   getAll: async () => {
-    const response = await api.get('/branches');
+    const response = await api.get('branches');
     return response.data as any[];
   },
 };
 
 export const roomApi = {
   getAll: async () => {
-    const response = await api.get('/rooms');
+    const response = await api.get('rooms');
     return response.data as any[];
   },
 };
 
 export const classApi = {
   getAll: async () => {
-    const response = await api.get('/classes');
+    const response = await api.get('classes');
     return response.data;
   },
-  getById: (id: string) => api.get(`/classes/${id}`),
-  create: (data: any) => api.post('/classes', data),
-  update: (id: string, data: any) => api.put(`/classes/${id}`, data),
-  checkConflict: (data: any) => api.post('/classes/check-conflict', data),
-  getSchedule: (id: string) => api.get(`/classes/${id}/schedule`),
-  delete: (id: string) => api.delete(`/classes/${id}`),
+  getById: (id: string) => api.get(`classes/${id}`),
+  create: (data: any) => api.post('classes', data),
+  update: (id: string, data: any) => api.put(`classes/${id}`, data),
+  checkConflict: (data: any) => api.post('classes/check-conflict', data),
+  getSchedule: (id: string) => api.get(`classes/${id}/schedule`),
+  delete: (id: string) => api.delete(`classes/${id}`),
   updateStatus: (id: string, status: string) =>
-    api.patch(`/classes/${id}/status`, null, { params: { status } }),
-  addSchedule: (classId: string, schedule: any) => api.post(`/classes/${classId}/schedule`, schedule),
+    api.patch(`classes/${id}/status`, null, { params: { status } }),
+  addSchedule: (classId: string, schedule: any) => api.post(`classes/${classId}/schedule`, schedule),
+  updateSchedule: (classId: string, scheduleId: string, schedule: any) =>
+    api.put(`classes/${classId}/schedule/${scheduleId}`, schedule),
+  deleteSchedule: (classId: string, scheduleId: string) =>
+    api.delete(`classes/${classId}/schedule/${scheduleId}`),
 };
 
 export const enrollmentApi = {
-  getByClass: (classId: string) => api.get(`/enrollments/class/${classId}`),
-  getByStudent: (studentId: string) => api.get(`/enrollments/student/${studentId}`),
-  create: (data: any) => api.post('/enrollments', data),
+  getByClass: (classId: string) => api.get(`enrollments/class/${classId}`),
+  getByStudent: (studentId: string) => api.get(`enrollments/student/${studentId}`),
+  create: (data: any) => api.post('enrollments', data),
   updateStatus: (id: string, status: string) =>
-    api.patch(`/enrollments/${id}/status`, null, { params: { status } }),
+    api.patch(`enrollments/${id}/status`, null, { params: { status } }),
   transferClass: (id: string, targetClassId: string) =>
-    api.patch(`/enrollments/${id}/class`, { targetClassId }),
+    api.patch(`enrollments/${id}/class`, { targetClassId }),
 };
 
 export const resultApi = {
-  getByEnrollment: (enrollmentId: string) => api.get(`/results/enrollment/${enrollmentId}`),
+  getByEnrollment: (enrollmentId: string) => api.get(`results/enrollment/${enrollmentId}`),
 };
 
 export const leadApi = {
   getAll: async (params?: any) => {
-    const response = await api.get('/leads', { params });
+    const response = await api.get('leads', { params });
     return response.data as PageResponse<any>;
   },
   getMine: async () => {
-    const response = await api.get('/leads/me');
+    const response = await api.get('leads/me');
     return response.data;
   },
-  create: (data: any) => api.post('/leads', data),
+  create: (data: any) => api.post('leads', data),
   addMyInterests: async (payload: { courseIds: string[]; notes?: string }) => {
-    const response = await api.post('/leads/me/interests', payload);
+    const response = await api.post('leads/me/interests', payload);
     return response.data;
   },
-  updateStatus: (id: string, status: string) => api.put(`/leads/${id}/status`, { status }),
-  convert: (id: string, payload: { email?: string; password?: string; classId: string }) =>
-    api.post(`/leads/${id}/convert`, payload),
+  updateStatus: (id: string, status: string) => api.put(`leads/${id}/status`, { status }),
+  convert: (id: string) => api.post(`leads/${id}/convert`),
+  moveToConsulting: (id: string) => api.post(`leads/${id}/consulting`),
+  agree: (id: string, classId: string) => api.post(`leads/${id}/agree`, null, { params: { classId } }),
+  reject: (id: string) => api.post(`leads/${id}/reject`),
+  confirmCash: async (id: string) => {
+    const response = await api.post(`leads/${id}/confirm-cash`);
+    return response.data;
+  },
+  interestClass: (classId: string, notes?: string) => api.post('leads/me/interest-class', null, { params: { classId, notes } }),
 };
 
 export const userApi = {
   getAll: async (params?: any) => {
-    const response = await api.get('/users', { params });
+    const response = await api.get('users', { params });
     const page = response.data as PageResponse<BackendUser>;
     return {
       ...page,
@@ -212,19 +238,19 @@ export const userApi = {
     phone?: string;
     role: UserRole;
   }) => {
-    const response = await api.post('/users', payload);
+    const response = await api.post('users', payload);
     return normalizeUser(response.data);
   },
   update: async (
     id: string,
     payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED' }
   ) => {
-    const response = await api.put(`/users/${id}`, payload);
+    const response = await api.put(`users/${id}`, payload);
     return normalizeUser(response.data);
   },
-  deactivate: (id: string) => api.delete(`/users/${id}`),
+  deactivate: (id: string) => api.delete(`users/${id}`),
   getTeachers: async () => {
-    const response = await api.get('/users/teachers');
+    const response = await api.get('users/teachers');
     return (response.data as BackendUser[]).map(normalizeUser);
   },
 };
@@ -238,48 +264,55 @@ export const profileApi = {
     address?: string;
     avatarUrl?: string;
   }) => {
-    const response = await api.put('/profile', payload);
+    const response = await api.put('profile', payload);
     return normalizeUser(response.data);
   },
   changePassword: (payload: { oldPassword: string; newPassword: string }) =>
-    api.put('/profile/password', payload),
+    api.put('profile/password', payload),
 };
 
 export const attendanceApi = {
-  getByClass: (classId: string) => api.get(`/attendance/${classId}`),
-  submit: (data: any) => api.post('/attendance', data),
-  getMonthlyReport: (params: any) => api.get('/attendance/report/monthly', { params }),
+  getByClass: (classId: string, date?: string) => api.get(`attendance/${classId}`, { params: date ? { date } : undefined }),
+  submit: (data: any) => api.post('attendance', data),
+  getMonthlyReport: (params: any) => api.get('attendance/report/monthly', { params }),
 };
 
 export const assignmentApi = {
-  getByClass: (classId: string) => api.get(`/assignments/class/${classId}`),
-  create: (data: any) => api.post('/assignments', data),
+  getByClass: (classId: string) => api.get(`assignments/class/${classId}`),
+  create: (data: any) => api.post('assignments', data),
 };
 
 export const submissionApi = {
-  submit: (data: any) => api.post('/submissions/submit', data),
+  submit: (data: any) => api.post('submissions/submit', data),
   grade: (id: string, score: number, feedback: string) =>
-    api.put(`/submissions/${id}/grade`, { grade: score, feedback }),
+    api.put(`submissions/${id}/grade`, { grade: score, feedback }),
   getByAssignment: (assignmentId: string) =>
-    api.get(`/submissions/assignment/${assignmentId}`),
+    api.get(`submissions/assignment/${assignmentId}`),
+  getMine: () => api.get('submissions/me'),
 };
 
 export const transactionApi = {
-  getAll: (params?: any) => api.get('/transactions', { params }),
-  create: (data: any) => api.post('/transactions', data),
+  getAll: (params?: any) => api.get('transactions', { params }),
+  create: (data: any) => api.post('transactions', data),
 };
 
 export const invoiceApi = {
-  getAll: (params?: any) => api.get('/invoices', { params }),
-  getDebt: () => api.get('/invoices/debt'),
+  getAll: (params?: any) => api.get('invoices', { params }),
+  getById: async (id: string) => {
+    const response = await api.get(`invoices/${id}`);
+    return response.data;
+  },
+  getDebt: () => api.get('invoices/debt'),
   refund: (id: string, payload: { amount: number; reason?: string }) =>
-    api.post(`/invoices/${id}/refund`, payload),
-  create: (data: any) => api.post('/invoices', data),
+    api.post(`invoices/${id}/refund`, payload),
+  create: (data: any) => api.post('invoices', data),
   updateStatus: (id: string, status: string) =>
-    api.patch(`/invoices/${id}/status`, null, { params: { status } }),
+    api.patch(`invoices/${id}/status`, null, { params: { status } }),
 };
 
 export const paymentApi = {
+  getAll: (params?: any) => api.get('transactions', { params }),
+  getByInvoice: (invoiceId: string) => api.get(`payments/invoice/${invoiceId}`),
   create: (payload: {
     invoiceId: string;
     amount: number;
@@ -287,11 +320,12 @@ export const paymentApi = {
     paymentDate?: string;
     transactionId?: string;
     notes?: string;
-  }) => api.post('/payments', payload),
+  }) => api.post('payments', payload),
+  createPayosLink: (payload: { amount: number; invoiceId: string }) => api.post('v1/payment/create-link', payload),
 };
 
 export const expenseApi = {
-  getAll: (params?: any) => api.get('/expenses', { params }),
+  getAll: (params?: any) => api.get('expenses', { params }),
   create: (payload: {
     category: string;
     amount: number;
@@ -299,37 +333,48 @@ export const expenseApi = {
     vendor?: string;
     receiptUrl?: string;
     notes?: string;
-  }) => api.post('/expenses', payload),
+  }) => api.post('expenses', payload),
 };
 
 export const notificationApi = {
   getAll: async () => {
-    const response = await api.get('/notifications');
+    const response = await api.get('notifications');
     return {
       ...response,
       data: Array.isArray(response.data) ? response.data : response.data?.content || [],
     };
   },
-  getUnreadCount: () => api.get('/notifications/unread-count'),
-  markAsRead: (id: string) => api.put(`/notifications/${id}/read`),
-  markAllAsRead: () => api.patch('/notifications/read-all'),
+  getUnreadCount: () => api.get('notifications/unread-count'),
+  markAsRead: (id: string) => api.put(`notifications/${id}/read`),
+  markAllAsRead: () => api.patch('notifications/read-all'),
+};
+
+export const announcementApi = {
+  getAll: async (params?: any) => {
+    const response = await api.get('announcements', { params });
+    return {
+      ...response,
+      data: Array.isArray(response.data) ? response.data : response.data?.content || [],
+    };
+  },
+  create: (payload: any) => api.post('announcements', payload),
 };
 
 export const analyticsApi = {
-  getBranchPerformance: () => api.get('/analytics/branch-performance'),
-  getRevenue: (params?: any) => api.get('/analytics/revenue', { params }),
-  getAcademic: () => api.get('/analytics/academic'),
+  getBranchPerformance: () => api.get('analytics/branch-performance'),
+  getRevenue: (params?: any) => api.get('analytics/revenue', { params }),
+  getAcademic: () => api.get('analytics/academic'),
   getDashboard: async () => {
-    const response = await api.get('/analytics/dashboard');
+    const response = await api.get('analytics/dashboard');
     return response.data;
   },
 };
 
 export const reportsApi = {
-  getRevenue: () => api.get('/reports/revenue'),
-  getExpenses: () => api.get('/reports/expenses'),
-  getProfitLoss: () => api.get('/reports/profit-loss'),
-  getConversion: () => api.get('/reports/conversion'),
-  getTopCourses: () => api.get('/reports/top-courses'),
-  getChurnRate: () => api.get('/reports/churn-rate'),
+  getRevenue: () => api.get('reports/revenue'),
+  getExpenses: () => api.get('reports/expenses'),
+  getProfitLoss: () => api.get('reports/profit-loss'),
+  getConversion: () => api.get('reports/conversion'),
+  getTopCourses: () => api.get('reports/top-courses'),
+  getChurnRate: () => api.get('reports/churn-rate'),
 };

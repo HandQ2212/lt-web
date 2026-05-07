@@ -56,6 +56,10 @@ public class LeadDto {
         private UUID branchId;
 
         private List<UUID> courseIds;
+        
+        @NotBlank(message = "Password is required for manual lead creation")
+        @Size(min = 6, message = "Password must be at least 6 characters")
+        private String password;
 
         @Size(max = 2000, message = "Notes must be at most 2000 characters")
         private String notes;
@@ -118,13 +122,6 @@ public class LeadDto {
     @AllArgsConstructor
     @Builder
     public static class ConvertLeadRequest {
-        @Email(message = "Email format is invalid")
-        @NotBlank(message = "Email is required to convert lead")
-        private String email;
-
-        @Size(min = 8, message = "Password must be at least 8 characters")
-        private String password;
-
         @NotNull(message = "Class is required to convert lead")
         private UUID classId;
     }
@@ -135,8 +132,8 @@ public class LeadDto {
     @AllArgsConstructor
     @Builder
     public static class LeadInterestRequest {
-        @NotEmpty(message = "At least one course is required")
         private List<UUID> courseIds;
+        private UUID classId;
 
         @Size(max = 2000, message = "Notes must be at most 2000 characters")
         private String notes;
@@ -151,6 +148,8 @@ public class LeadDto {
         private UUID id;
         private UUID courseId;
         private String courseName;
+        private UUID clazzId;
+        private String clazzName;
         private LeadStatus status;
         private String notes;
         private ZonedDateTime createdAt;
@@ -176,6 +175,8 @@ public class LeadDto {
         private UUID branchId;
         private UUID userId;
         private String notes;
+        private UUID currentEnrollmentId;
+        private UUID currentInvoiceId;
         private List<LeadInterestResponse> interests;
         private ZonedDateTime createdAt;
         private ZonedDateTime updatedAt;
@@ -191,8 +192,6 @@ public class LeadDto {
         private LeadStatus leadStatus;
         private UUID studentId;
         private String studentEmail;
-        private UUID classId;
-        private UUID enrollmentId;
         private String message;
     }
 }

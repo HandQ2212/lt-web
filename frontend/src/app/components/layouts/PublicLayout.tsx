@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import PublicHeader from './PublicHeader';
 import PublicFooter from './PublicFooter';
+import ChatWidget from '../ChatWidget';
 
 export default function PublicLayout() {
   return (
@@ -10,6 +11,7 @@ export default function PublicLayout() {
       <Box component="main" sx={{ flexGrow: 1 }}>
         <Outlet />
       </Box>
+      <ChatWidget />
       <PublicFooter />
     </Box>
   );

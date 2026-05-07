@@ -42,6 +42,9 @@ public class EnrollmentDto {
         private String studentName;
         private UUID classId;
         private String className;
+        private String teacherName;
+        private String teacherEmail;
+        private String teacherPhone;
         private LocalDate enrollmentDate;
         private EnrollmentStatus status;
     }

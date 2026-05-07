@@ -23,9 +23,15 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT', 'LEAD')")
     public ResponseEntity<List<InvoiceResponse>> getAllInvoices(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(invoiceService.getInvoicesForUser(user));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT', 'LEAD')")
+    public ResponseEntity<InvoiceResponse> getInvoiceById(@PathVariable UUID id) {
+        return ResponseEntity.ok(invoiceService.getInvoiceById(id));
     }
 
     @PostMapping

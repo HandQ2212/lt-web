@@ -28,6 +28,9 @@ public class Invoice extends BaseEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
+    @Column(name = "amount", nullable = false)
+    private BigDecimal amount;
+
     @Column(name = "discount_amount")
     private BigDecimal discountAmount = BigDecimal.ZERO;
 

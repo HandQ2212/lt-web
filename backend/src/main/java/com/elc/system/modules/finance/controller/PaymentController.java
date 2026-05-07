@@ -22,7 +22,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping("/invoice/{invoiceId}")
-    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT', 'LEAD')")
     public ResponseEntity<List<PaymentResponse>> getPaymentsByInvoice(
             @PathVariable UUID invoiceId,
             @AuthenticationPrincipal User user) {
@@ -30,7 +30,7 @@ public class PaymentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER', 'STUDENT', 'LEAD')")
     public ResponseEntity<PaymentResponse> createPayment(
             @Valid @RequestBody PaymentRequest request,
             @AuthenticationPrincipal User user) {

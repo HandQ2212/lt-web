@@ -56,8 +56,12 @@ export interface User {
   name: string;
   role: 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
   status: 'ACTIVE' | 'INACTIVE';
-  avatar?: string;
   phone?: string;
+  avatarUrl?: string;
+  address?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  branchId?: string;
 }
 
 export interface Attendance {
