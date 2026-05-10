@@ -138,15 +138,31 @@ export default function AdminDashboard() {
 
       {/* Main Tabs Navigation */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin tabs">
-          <Tab label="Thống kê" index={0} />
-          <Tab label="Quản lý Lớp học" index={1} />
-          <Tab label="Quản lý Người dùng" index={2} />
-          <Tab label="Quản lý Giáo viên" index={3} />
-          <Tab label="Quản lý Kế toán" index={4} />
-          <Tab label="Quản lý Học viên" index={5} />
-          <Tab label="Quản lý Thông báo" index={6} />
-          <Tab label="Quản lý Chương trình" index={7} />
+        <Tabs 
+          value={tabValue} 
+          onChange={handleTabChange} 
+          aria-label="admin tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            '& .MuiTab-root': {
+              minWidth: 'fit-content',
+              px: 3,
+              fontWeight: 700,
+              textTransform: 'none',
+              fontSize: '0.95rem'
+            }
+          }}
+        >
+          <Tab label="Thống kê" />
+          <Tab label="Quản lý Lớp học" />
+          <Tab label="Quản lý Người dùng" />
+          <Tab label="Quản lý Giáo viên" />
+          <Tab label="Quản lý Kế toán" />
+          <Tab label="Quản lý Học viên" />
+          <Tab label="Quản lý Thông báo" />
+          <Tab label="Quản lý Chương trình" />
         </Tabs>
       </Box>
 

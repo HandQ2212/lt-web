@@ -145,7 +145,7 @@ export default function CourseListPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container maxWidth="xl" sx={{ py: 8 }}>
       <Typography variant="h3" gutterBottom fontWeight={700} align="center" sx={{ mb: 2 }}>
         Khóa học
       </Typography>

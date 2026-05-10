@@ -57,7 +57,6 @@ public class LeadDto {
 
         private List<UUID> courseIds;
         
-        @NotBlank(message = "Password is required for manual lead creation")
         @Size(min = 6, message = "Password must be at least 6 characters")
         private String password;
 

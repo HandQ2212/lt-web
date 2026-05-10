@@ -40,12 +40,12 @@ public class ProfileService {
     public UserResponse updateProfile(ProfileUpdateRequest request) {
         User user = getCurrentUser();
 
-        user.setFullName(request.getFullName());
-        user.setPhone(request.getPhone());
-        user.setDateOfBirth(request.getDateOfBirth());
-        user.setGender(request.getGender());
-        user.setAddress(request.getAddress());
-        user.setAvatarUrl(request.getAvatarUrl());
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
+        if (request.getGender() != null) user.setGender(request.getGender());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
 
         userRepository.save(user);
         log.info("Profile updated for user: {}", user.getEmail());

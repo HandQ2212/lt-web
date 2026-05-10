@@ -1,24 +1,26 @@
-import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, Typography, Divider, IconButton, useTheme, Tooltip } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import PeopleIcon from '@mui/icons-material/People';
-import SchoolIcon from '@mui/icons-material/School';
-import ClassIcon from '@mui/icons-material/Class';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import PaymentIcon from '@mui/icons-material/Payment';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import PersonIcon from '@mui/icons-material/Person';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import GroupsIcon from '@mui/icons-material/Groups';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import HomeIcon from '@mui/icons-material/Home';
-import ExploreIcon from '@mui/icons-material/Explore';
-
-const drawerWidth = 260;
+import {
+  People as PeopleIcon,
+  School as SchoolIcon,
+  Class as ClassIcon,
+  Assignment as AssignmentIcon,
+  Payment as PaymentIcon,
+  BarChart as BarChartIcon,
+  Person as PersonIcon,
+  CalendarToday as CalendarTodayIcon,
+  Groups as GroupsIcon,
+  ReceiptLong as ReceiptLongIcon,
+  Notifications as NotificationsIcon,
+  MenuBook as MenuBookIcon,
+  AccountBalance as AccountBalanceIcon,
+  Home as HomeIcon,
+  Explore as ExploreIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+} from '@mui/icons-material';
 
 interface MenuItem {
   text: string;
@@ -31,37 +33,48 @@ const menuItems: MenuItem[] = [
   { text: 'Trang chủ', icon: <HomeIcon />, path: '/', roles: ['STUDENT', 'LEAD', 'TEACHER', 'MANAGER', 'ACCOUNTANT'] },
   { text: 'Khám phá khóa học', icon: <ExploreIcon />, path: '/courses', roles: ['STUDENT', 'LEAD'] },
   
-  { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
-  { text: 'Quản lý lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
-  { text: 'Quản lý Giáo viên', icon: <SchoolIcon />, path: '/admin/teachers', roles: ['MANAGER'] },
-  { text: 'Quản lý Kế toán', icon: <AccountBalanceIcon />, path: '/admin/accountants', roles: ['MANAGER'] },
-  { text: 'Quản lý Học viên', icon: <GroupsIcon />, path: '/admin/students', roles: ['MANAGER'] },
-  { text: 'CRM & Leads', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER', 'ACCOUNTANT'] },
-  { text: 'Quản lý Thông báo', icon: <NotificationsIcon />, path: '/admin/notifications', roles: ['MANAGER'] },
-  { text: 'Quản lý Chương trình', icon: <MenuBookIcon />, path: '/admin/programs', roles: ['MANAGER'] },
+  { text: 'Người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
+  { text: 'Lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
+  { text: 'Giảng viên', icon: <SchoolIcon />, path: '/admin/teachers', roles: ['MANAGER'] },
+  { text: 'Kế toán', icon: <AccountBalanceIcon />, path: '/admin/accountants', roles: ['MANAGER'] },
+  { text: 'Học viên', icon: <GroupsIcon />, path: '/admin/students', roles: ['MANAGER'] },
+  { text: 'Quản lý Leads (CRM)', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER', 'ACCOUNTANT'] },
+  { text: 'Thông báo', icon: <NotificationsIcon />, path: '/admin/notifications', roles: ['MANAGER'] },
+  { text: 'Chương trình học', icon: <MenuBookIcon />, path: '/admin/programs', roles: ['MANAGER'] },
 
-  { text: 'Lịch dạy', icon: <CalendarTodayIcon />, path: '/teacher/schedule', roles: ['TEACHER'] },
-  { text: 'Lớp học của tôi', icon: <ClassIcon />, path: '/teacher/classes', roles: ['TEACHER'] },
+  { text: 'Lịch giảng dạy', icon: <CalendarTodayIcon />, path: '/teacher/schedule', roles: ['TEACHER'] },
+  { text: 'Lớp phụ trách', icon: <ClassIcon />, path: '/teacher/classes', roles: ['TEACHER'] },
   { text: 'Điểm danh', icon: <AssignmentIcon />, path: '/teacher/attendance', roles: ['TEACHER'] },
-  { text: 'Bài tập', icon: <AssignmentIcon />, path: '/teacher/assignments', roles: ['TEACHER'] },
+  { text: 'Bài tập giao', icon: <AssignmentIcon />, path: '/teacher/assignments', roles: ['TEACHER'] },
 
   { text: 'Khóa học của tôi', icon: <SchoolIcon />, path: '/student/courses', roles: ['STUDENT'] },
-  { text: 'Bài tập', icon: <AssignmentIcon />, path: '/student/assignments', roles: ['STUDENT'] },
-  { text: 'Bảng điểm', icon: <BarChartIcon />, path: '/student/grades', roles: ['STUDENT'] },
-  { text: 'Học phí', icon: <PaymentIcon />, path: '/student/payments', roles: ['STUDENT', 'LEAD'] },
+  { text: 'Bài tập về nhà', icon: <AssignmentIcon />, path: '/student/assignments', roles: ['STUDENT'] },
+  { text: 'Bảng điểm chi tiết', icon: <BarChartIcon />, path: '/student/grades', roles: ['STUDENT'] },
+  { text: 'Thanh toán học phí', icon: <PaymentIcon />, path: '/student/payments', roles: ['STUDENT', 'LEAD'] },
   { text: 'Hóa đơn học phí', icon: <ReceiptLongIcon />, path: '/student/invoices', roles: ['STUDENT'] },
 
-  { text: 'Dashboard tài chính', icon: <BarChartIcon />, path: '/finance/dashboard', roles: ['ACCOUNTANT'] },
+  { text: 'Thống kê tài chính', icon: <BarChartIcon />, path: '/finance/dashboard', roles: ['ACCOUNTANT'] },
   { text: 'Nghiệp vụ kế toán', icon: <ReceiptLongIcon />, path: '/finance/operations', roles: ['ACCOUNTANT'] },
-  { text: 'Công nợ học viên', icon: <BarChartIcon />, path: '/finance/debts', roles: ['ACCOUNTANT'] },
-  { text: 'Thanh toán GV', icon: <PaymentIcon />, path: '/finance/teacher-payments', roles: ['ACCOUNTANT'] },
+  { text: 'Theo dõi công nợ', icon: <BarChartIcon />, path: '/finance/debts', roles: ['ACCOUNTANT'] },
+  { text: 'Chi trả giảng viên', icon: <PaymentIcon />, path: '/finance/teacher-payments', roles: ['ACCOUNTANT'] },
 
-  { text: 'Hồ sơ', icon: <PersonIcon />, path: '/profile', roles: ['MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT', 'LEAD'] },
+  { text: 'Hồ sơ cá nhân', icon: <PersonIcon />, path: '/profile', roles: ['MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT', 'LEAD'] },
 ];
 
-export default function DashboardSidebar() {
+interface DashboardSidebarProps {
+  open: boolean;
+  onClose: () => void;
+  onToggle: () => void;
+  drawerWidth: number;
+  isMobile: boolean;
+}
+
+const CLOSED_DRAWER_WIDTH = 80;
+
+export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth, isMobile }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
   const user = useSelector((state: RootState) => state.auth.user);
 
   const filteredMenuItems = menuItems.filter(item =>
@@ -69,52 +82,159 @@ export default function DashboardSidebar() {
   );
 
   const isActive = (item: MenuItem) => {
-    return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+    return location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
   };
+
+  const getRoleLabel = (role?: string) => {
+    switch (role) {
+      case 'MANAGER': return 'Quản trị viên';
+      case 'TEACHER': return 'Giảng viên';
+      case 'STUDENT': return 'Học viên';
+      case 'ACCOUNTANT': return 'Kế toán';
+      case 'LEAD': return 'Khách hàng';
+      default: return 'Thành viên';
+    }
+  };
+
+  const drawerContent = (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box sx={{ 
+        p: open ? 2.5 : 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: open ? 'flex-start' : 'center',
+        justifyContent: 'center',
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+        color: 'white',
+        minHeight: 100,
+        transition: 'all 0.3s ease'
+      }}>
+        {open ? (
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h6" fontWeight={900} sx={{ letterSpacing: 1, lineHeight: 1.2 }}>
+                ELC SYSTEM
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {getRoleLabel(user?.role)}
+              </Typography>
+            </Box>
+            {isMobile && (
+              <IconButton onClick={onClose} sx={{ color: 'white' }}>
+                <ChevronLeftIcon />
+              </IconButton>
+            )}
+          </Box>
+        ) : (
+          <Typography variant="h6" fontWeight={900} color="inherit">ELC</Typography>
+        )}
+      </Box>
+      
+      <Divider />
+      
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 2, overflowX: 'hidden' }}>
+        <List sx={{ px: open ? 1.5 : 1 }}>
+          {filteredMenuItems.map((item) => (
+            <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+              <Tooltip title={!open ? item.text : ""} placement="right">
+                <ListItemButton
+                  selected={isActive(item)}
+                  onClick={() => {
+                    navigate(item.path);
+                    if (isMobile) onClose();
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    minHeight: 48,
+                    justifyContent: open ? 'initial' : 'center',
+                    px: open ? 2.5 : 2.5,
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'white',
+                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.25)',
+                      '&:hover': { bgcolor: 'primary.main' },
+                      '& .MuiListItemIcon-root': { color: 'white' }
+                    },
+                    '&:hover': {
+                      bgcolor: 'rgba(25, 118, 210, 0.08)',
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ 
+                    minWidth: 0,
+                    mr: open ? 2 : 'auto',
+                    justifyContent: 'center',
+                    color: isActive(item) ? 'white' : 'text.secondary',
+                    transition: 'color 0.2s'
+                  }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  {open && (
+                    <ListItemText 
+                      primary={item.text} 
+                      primaryTypographyProps={{ 
+                        fontWeight: isActive(item) ? 800 : 600,
+                        fontSize: '0.875rem',
+                        noWrap: true
+                      }} 
+                    />
+                  )}
+                </ListItemButton>
+              </Tooltip>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      {/* Toggle Button for Desktop */}
+      {!isMobile && (
+        <Box sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
+          <IconButton 
+            onClick={onToggle}
+            sx={{ 
+              bgcolor: 'rgba(0,0,0,0.04)', 
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' },
+              borderRadius: 2
+            }}
+          >
+            {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+          </IconButton>
+        </Box>
+      )}
+
+      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)', textAlign: 'center' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
+          {open ? 'VERSION 1.4.0' : 'V1.4'}
+        </Typography>
+      </Box>
+    </Box>
+  );
 
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? 'temporary' : 'permanent'}
+      open={open}
+      onClose={onClose}
       sx={{
-        width: drawerWidth,
+        width: open ? drawerWidth : CLOSED_DRAWER_WIDTH,
         flexShrink: 0,
+        whiteSpace: 'nowrap',
+        boxSizing: 'border-box',
         '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          borderRight: '1px solid rgba(0,0,0,0.12)',
+          width: open ? drawerWidth : CLOSED_DRAWER_WIDTH,
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+          overflowX: 'hidden',
+          borderRight: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.03)',
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" fontWeight={700} color="primary">
-          ELC System
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {user?.role}
-        </Typography>
-      </Box>
-      <Divider />
-      <List>
-        {filteredMenuItems.map((item) => (
-          <ListItem key={item.path} disablePadding>
-            <ListItemButton
-              selected={isActive(item)}
-              onClick={() => navigate(item.path)}
-              sx={{
-                '&.Mui-selected': {
-                  bgcolor: 'primary.light',
-                  '&:hover': { bgcolor: 'primary.light' },
-                },
-              }}
-            >
-              <ListItemIcon sx={{ color: isActive(item) ? 'primary.main' : 'inherit' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+      {drawerContent}
     </Drawer>
   );
 }

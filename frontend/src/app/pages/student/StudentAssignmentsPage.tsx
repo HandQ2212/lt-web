@@ -18,6 +18,9 @@ import {
   CircularProgress,
   Snackbar,
   IconButton,
+  Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon,
@@ -25,12 +28,16 @@ import {
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
   Link as LinkIcon,
+  ErrorOutline as ErrorIcon,
 } from '@mui/icons-material';
 import { enrollmentApi, assignmentApi, submissionApi } from '../../../services/api';
 import { RootState } from '../../../store';
 
 export default function StudentAssignmentsPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state: RootState) => state.auth.user);
+  
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -39,6 +46,7 @@ export default function StudentAssignmentsPage() {
   const [fileUrl, setFileUrl] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -52,7 +60,7 @@ export default function StudentAssignmentsPage() {
   const fetchAssignments = async () => {
     try {
       setLoading(true);
-      const userId = user?.id || '';
+      const userId = user?.id || localStorage.getItem('userId') || '';
       if (!userId) return;
 
       const enrollmentsResponse = await enrollmentApi.getByStudent(userId);
@@ -66,13 +74,11 @@ export default function StudentAssignmentsPage() {
       const allAssignments: any[] = [];
       const allSubmissions: Record<string, any> = {};
 
-      // Map my submissions
       const mySubs = Array.isArray(mySubmissionsResponse.data) ? mySubmissionsResponse.data : [];
       mySubs.forEach((s: any) => {
         allSubmissions[s.assignmentId] = s;
       });
 
-      // Map assignments
       assignmentsResponse.forEach((res, index) => {
         const classAssignments = Array.isArray(res.data) ? res.data : [];
         const enrollment = enrollments.filter(e => e.classId)[index];
@@ -88,7 +94,7 @@ export default function StudentAssignmentsPage() {
       setSubmissions(allSubmissions);
     } catch (error) {
       console.error('Failed to fetch assignments', error);
-      setSnackbar({ open: true, message: 'Không thể tải danh sách bài tập', severity: 'error' });
+      setSnackbar({ open: true, message: 'Không thể tải danh sách bài tập. Vui lòng thử lại sau.', severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -103,7 +109,10 @@ export default function StudentAssignmentsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedAssignment || !submissionUrl) return;
+    if (!selectedAssignment || !fileUrl) {
+      setSnackbar({ open: true, message: 'Vui lòng cung cấp link bài làm', severity: 'error' });
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -112,13 +121,13 @@ export default function StudentAssignmentsPage() {
         fileUrl: fileUrl,
         content: content
       });
-      setSnackbar({ open: true, message: 'Nộp bài thành công', severity: 'success' });
+      setSnackbar({ open: true, message: 'Nộp bài tập thành công!', severity: 'success' });
       setSubmitDialogOpen(false);
       await fetchAssignments();
     } catch (error: any) {
       setSnackbar({ 
         open: true, 
-        message: error?.response?.data?.message || 'Không thể nộp bài', 
+        message: error?.response?.data?.message || 'Không thể nộp bài tập. Vui lòng kiểm tra lại.', 
         severity: 'error' 
       });
     } finally {
@@ -131,10 +140,15 @@ export default function StudentAssignmentsPage() {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
-        Bài tập & Nhiệm vụ
-      </Typography>
+    <Box sx={{ pb: 6 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
+          Bài tập & Nhiệm vụ
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Hoàn thành các bài tập đúng hạn để đạt kết quả học tập tốt nhất.
+        </Typography>
+      </Box>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
@@ -144,7 +158,10 @@ export default function StudentAssignmentsPage() {
         <Grid container spacing={3}>
           {assignments.length === 0 && (
             <Grid item xs={12}>
-              <Alert severity="info">Bạn chưa có bài tập nào được giao.</Alert>
+              <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 4, bgcolor: 'rgba(0,0,0,0.02)' }}>
+                <AssignmentIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary">Bạn chưa có bài tập nào được giao.</Typography>
+              </Paper>
             </Grid>
           )}
           {assignments.map((assignment) => {
@@ -157,58 +174,69 @@ export default function StudentAssignmentsPage() {
                   height: '100%', 
                   display: 'flex', 
                   flexDirection: 'column',
-                  borderRadius: 3,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  border: overdue ? '1px solid #f44336' : '1px solid rgba(0,0,0,0.05)'
+                  borderRadius: 4,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+                  border: overdue ? '2px solid rgba(244, 67, 54, 0.2)' : '1px solid rgba(0,0,0,0.05)',
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'translateY(-4px)' }
                 }}>
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ p: 1, bgcolor: 'primary.light', borderRadius: 2, display: 'flex' }}>
-                        <AssignmentIcon color="primary" />
-                      </Box>
+                  <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                       <Chip 
                         label={assignment.className} 
                         size="small" 
+                        color="primary"
                         variant="outlined" 
-                        sx={{ borderRadius: 1 }}
+                        sx={{ fontWeight: 700, borderRadius: 1.5 }}
                       />
+                      {overdue && (
+                        <Chip 
+                          icon={<ErrorIcon sx={{ fontSize: '14px !important' }} />}
+                          label="Quá hạn" 
+                          size="small" 
+                          color="error" 
+                          sx={{ fontWeight: 800, borderRadius: 1.5 }}
+                        />
+                      )}
+                      {submission && (
+                        <Chip 
+                          icon={<CheckCircleIcon sx={{ fontSize: '14px !important' }} />}
+                          label="Đã hoàn thành" 
+                          size="small" 
+                          color="success" 
+                          sx={{ fontWeight: 800, borderRadius: 1.5 }}
+                        />
+                      )}
                     </Box>
 
-                    <Typography variant="h6" fontWeight={700} gutterBottom>
+                    <Typography variant="h6" fontWeight={800} gutterBottom>
                       {assignment.title}
                     </Typography>
 
-                    <Typography variant="body2" color="text.secondary" paragraph sx={{ 
+                    <Typography variant="body2" color="text.secondary" sx={{ 
+                      mb: 2,
                       display: '-webkit-box',
-                      WebkitLineClamp: 3,
+                      WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
-                      height: 60
+                      minHeight: 40
                     }}>
-                      {assignment.description || 'Không có mô tả chi tiết.'}
+                      {assignment.description || 'Không có mô tả chi tiết từ giảng viên.'}
                     </Typography>
+
+                    <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, color: overdue ? 'error.main' : 'text.secondary' }}>
                       <ScheduleIcon sx={{ fontSize: 16, mr: 1 }} />
-                      <Typography variant="caption" fontWeight={600}>
-                        Hạn nộp: {new Date(assignment.dueDate).toLocaleString('vi-VN')}
+                      <Typography variant="caption" fontWeight={700}>
+                        Hạn chót: {new Date(assignment.dueDate).toLocaleString('vi-VN')}
                       </Typography>
                     </Box>
 
-                    {submission && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main', mt: 1 }}>
-                        <CheckCircleIcon sx={{ fontSize: 16, mr: 1 }} />
-                        <Typography variant="caption" fontWeight={700}>
-                          Đã nộp: {new Date(submission.submissionDate).toLocaleDateString('vi-VN')}
-                        </Typography>
-                        {submission.grade != null && (
-                          <Chip 
-                            label={`${submission.grade}đ`} 
-                            size="small" 
-                            color="success" 
-                            sx={{ ml: 2, fontWeight: 800, height: 20 }}
-                          />
-                        )}
+                    {submission?.grade != null && (
+                      <Box sx={{ mt: 2, p: 1.5, bgcolor: 'success.light', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'success.contrastText' }}>
+                        <Typography variant="subtitle2" fontWeight={800}>Điểm số:</Typography>
+                        <Typography variant="h6" fontWeight={900}>{submission.grade} / 10</Typography>
                       </Box>
                     )}
                   </CardContent>
@@ -220,9 +248,9 @@ export default function StudentAssignmentsPage() {
                       startIcon={submission ? <CheckCircleIcon /> : <UploadIcon />}
                       onClick={() => handleOpenSubmit(assignment)}
                       color={overdue ? "error" : "primary"}
-                      sx={{ borderRadius: 2 }}
+                      sx={{ borderRadius: 2, py: 1, fontWeight: 700 }}
                     >
-                      {submission ? "Xem bài nộp / Nộp lại" : "Nộp bài tập"}
+                      {submission ? "Xem bài làm / Nộp lại" : "Nộp bài ngay"}
                     </Button>
                   </Box>
                 </Card>
@@ -232,57 +260,68 @@ export default function StudentAssignmentsPage() {
         </Grid>
       )}
 
-      <Dialog open={submitDialogOpen} onClose={() => setSubmitDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>
+      {/* Submission Dialog */}
+      <Dialog open={submitDialogOpen} onClose={() => setSubmitDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>
           {submissions[selectedAssignment?.id] ? 'Cập nhật bài nộp' : 'Nộp bài tập'}
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+        <DialogContent dividers>
+          <Typography variant="h6" fontWeight={700} color="primary.main" gutterBottom>
             {selectedAssignment?.title}
           </Typography>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Vui lòng tải bài làm lên các nền tảng lưu trữ (Google Drive, Dropbox...) và dán link vào bên dưới. Đảm bảo đã bật quyền truy cập cho giảng viên.
+          
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 3 }}>
+            <Typography variant="body2" fontWeight={600}>Lưu ý quan trọng:</Typography>
+            <Typography variant="caption">
+              Vui lòng tải tệp lên Google Drive/Dropbox và bật quyền "Bất kỳ ai có liên kết đều có thể xem" trước khi dán link vào đây.
+            </Typography>
           </Alert>
+
           <TextField
             fullWidth
-            label="Link bài làm"
-            placeholder="https://drive.google.com/..."
+            label="Liên kết bài làm (URL)"
+            placeholder="https://drive.google.com/file/d/..."
             margin="normal"
             value={fileUrl}
             onChange={(e) => setFileUrl(e.target.value)}
             InputProps={{
-              startAdornment: <LinkIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              startAdornment: <LinkIcon sx={{ mr: 1, color: 'primary.main' }} />,
             }}
+            sx={{ mb: 2 }}
           />
+          
           <TextField
             fullWidth
-            label="Ghi chú (nếu có)"
+            label="Ghi chú gửi giảng viên"
             multiline
-            rows={3}
+            rows={4}
             margin="normal"
+            placeholder="Ví dụ: Em gửi bài tập phần Reading..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
+
           {submissions[selectedAssignment?.id]?.feedback && (
-            <Paper sx={{ p: 2, mt: 2, bgcolor: 'grey.50', border: '1px dashed #ccc' }}>
-              <Typography variant="subtitle2" color="primary" fontWeight={700}>
-                Phản hồi từ giảng viên:
+            <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(25, 118, 210, 0.05)', borderRadius: 3, borderLeft: '4px solid #1976d2' }}>
+              <Typography variant="subtitle2" color="primary" fontWeight={800} display="flex" alignItems="center">
+                <CheckCircleIcon sx={{ fontSize: 16, mr: 1 }} /> Nhận xét từ giảng viên:
               </Typography>
-              <Typography variant="body2">
-                {submissions[selectedAssignment?.id].feedback}
+              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                "{submissions[selectedAssignment?.id].feedback}"
               </Typography>
-            </Paper>
+            </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setSubmitDialogOpen(false)}>Hủy</Button>
+          <Button onClick={() => setSubmitDialogOpen(false)} color="inherit">Hủy bỏ</Button>
           <Button 
             variant="contained" 
             onClick={() => void handleSubmit()} 
             disabled={!fileUrl || submitting}
             startIcon={submitting ? <CircularProgress size={20} /> : <UploadIcon />}
+            sx={{ borderRadius: 2, px: 4, fontWeight: 700 }}
           >
-            {submitting ? 'Đang nộp...' : 'Xác nhận nộp'}
+            {submitting ? 'Đang nộp bài...' : 'Xác nhận nộp bài'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -292,7 +331,7 @@ export default function StudentAssignmentsPage() {
         autoHideDuration={4000} 
         onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       >
-        <Alert severity={snackbar.severity} variant="filled">
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

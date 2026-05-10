@@ -18,4 +18,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(i.finalAmount), 0) FROM Invoice i")
     java.math.BigDecimal getTotalInvoicedAmount();
+
+    @org.springframework.data.jpa.repository.Query("SELECT i FROM Invoice i WHERE i.enrollment.student.id = :studentId")
+    List<Invoice> findByStudentId(@org.springframework.data.repository.query.Param("studentId") UUID studentId);
 }

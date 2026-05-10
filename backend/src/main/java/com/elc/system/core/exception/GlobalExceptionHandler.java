@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -173,11 +175,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult()
+        List<String> messages = new ArrayList<>();
+
+        ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
-                .collect(Collectors.joining("; "));
+            .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+            .forEach(messages::add);
+
+        ex.getBindingResult()
+            .getGlobalErrors()
+            .stream()
+            .map(globalError -> globalError.getDefaultMessage())
+            .forEach(messages::add);
+
+        String message = messages.stream().distinct().collect(Collectors.joining("; "));
 
         ErrorResponse error = ErrorResponse.builder()
                 .status(400)

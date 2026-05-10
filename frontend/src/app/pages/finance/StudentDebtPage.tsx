@@ -15,12 +15,17 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Avatar,
+  Stack,
+  Divider,
 } from '@mui/material';
 import {
   AccountBalanceWallet as DebtIcon,
   MonetizationOn as TotalIcon,
   Paid as PaidIcon,
   PeopleAlt as StudentIcon,
+  AssignmentLate as LateIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { invoiceApi } from '../../../services/api';
 
@@ -80,7 +85,7 @@ export default function StudentDebtPage() {
       const response = await invoiceApi.getAll();
       setInvoices(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu công nợ');
+      setError(err?.response?.data?.message || 'Không tải được dữ liệu công nợ học viên');
     } finally {
       setLoading(false);
     }
@@ -140,125 +145,93 @@ export default function StudentDebtPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
-        Công nợ học viên
-      </Typography>
+    <Box sx={{ pb: 6 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
+          Theo dõi Công nợ Học viên
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Chi tiết các khoản học phí còn nợ và tình trạng thanh toán của từng học viên.
+        </Typography>
+      </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
           {error}
         </Alert>
       )}
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Tổng tiền hệ thống
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {formatCurrency(totals.totalAmount)}
-                  </Typography>
-                </Box>
-                <TotalIcon color="primary" sx={{ fontSize: 40 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Đã thu
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {formatCurrency(totals.paidAmount)}
-                  </Typography>
-                </Box>
-                <PaidIcon color="success" sx={{ fontSize: 40 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Công nợ còn lại
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {formatCurrency(totalDebt)}
-                  </Typography>
-                </Box>
-                <DebtIcon color="warning" sx={{ fontSize: 40 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Học sinh còn nợ
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700}>
-                    {studentDebts.length}
-                  </Typography>
-                </Box>
-                <StudentIcon color="error" sx={{ fontSize: 40 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <SummaryCard 
+          title="Tổng học phí hệ thống" 
+          value={formatCurrency(totals.totalAmount)} 
+          icon={<TotalIcon sx={{ color: 'primary.main' }} />} 
+          color="#e3f2fd"
+        />
+        <SummaryCard 
+          title="Tổng số tiền đã thu" 
+          value={formatCurrency(totals.paidAmount)} 
+          icon={<PaidIcon sx={{ color: 'success.main' }} />} 
+          color="#e8f5e9"
+        />
+        <SummaryCard 
+          title="Công nợ cần thu hồi" 
+          value={formatCurrency(totalDebt)} 
+          icon={<DebtIcon sx={{ color: 'error.main' }} />} 
+          color="#ffebee"
+        />
+        <SummaryCard 
+          title="Học viên đang nợ" 
+          value={studentDebts.length.toString()} 
+          icon={<StudentIcon sx={{ color: 'warning.main' }} />} 
+          color="#fff8e1"
+        />
       </Grid>
 
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
+      <Typography variant="h6" fontWeight={800} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+        <LateIcon sx={{ mr: 1, color: 'error.main' }} /> Danh sách học viên còn nợ học phí
+      </Typography>
+
+      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.05)', mb: 5 }}>
         <Table>
-          <TableHead>
+          <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
             <TableRow>
-              <TableCell>Học sinh</TableCell>
-              <TableCell>Lớp</TableCell>
-              <TableCell align="right">Tổng phải thu</TableCell>
-              <TableCell align="right">Đã thu</TableCell>
-              <TableCell align="right">Còn nợ</TableCell>
-              <TableCell align="right">Số hóa đơn</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Lớp đang tham gia</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800 }}>Tổng phải thu</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800 }}>Đã đóng</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800, color: 'error.main' }}>Còn nợ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 800 }}>Số hóa đơn</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {studentDebts.map((row) => (
-              <TableRow key={row.studentName}>
-                <TableCell>{row.studentName}</TableCell>
-                <TableCell>{Array.from(row.classes).join(', ')}</TableCell>
-                <TableCell align="right">{formatCurrency(row.totalAmount)}</TableCell>
-                <TableCell align="right">{formatCurrency(row.paidAmount)}</TableCell>
-                <TableCell align="right">{formatCurrency(row.debtAmount)}</TableCell>
-                <TableCell align="right">{row.invoices}</TableCell>
+              <TableRow key={row.studentName} hover>
+                <TableCell sx={{ fontWeight: 700 }}>{row.studentName}</TableCell>
+                <TableCell>
+                  {Array.from(row.classes).map((c, i) => (
+                    <Chip key={i} label={c} size="small" variant="outlined" sx={{ mr: 0.5, borderRadius: 1.5, fontWeight: 600 }} />
+                  ))}
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(row.totalAmount)}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600, color: 'success.main' }}>{formatCurrency(row.paidAmount)}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 900, color: 'error.main' }}>{formatCurrency(row.debtAmount)}</TableCell>
+                <TableCell align="center">
+                  <Chip label={row.invoices} size="small" sx={{ fontWeight: 800, bgcolor: 'rgba(0,0,0,0.05)' }} />
+                </TableCell>
               </TableRow>
             ))}
             {studentDebts.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} align="center">
-                  Không có công nợ học viên
+                <TableCell colSpan={6} align="center" sx={{ py: 4, opacity: 0.5 }}>
+                  Không có dữ liệu công nợ học viên
                 </TableCell>
               </TableRow>
             )}
@@ -266,39 +239,43 @@ export default function StudentDebtPage() {
         </Table>
       </TableContainer>
 
-      <Typography variant="h6" gutterBottom fontWeight={600}>
-        Chi tiết hóa đơn còn nợ
+      <Typography variant="h6" fontWeight={800} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+        <SearchIcon sx={{ mr: 1, color: 'primary.main' }} /> Chi tiết các hóa đơn chưa hoàn tất
       </Typography>
-      <TableContainer component={Paper}>
+
+      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
         <Table>
-          <TableHead>
+          <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
             <TableRow>
-              <TableCell>Học sinh</TableCell>
-              <TableCell>Lớp</TableCell>
-              <TableCell>Hạn thanh toán</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell align="right">Phải thu</TableCell>
-              <TableCell align="right">Đã thu</TableCell>
-              <TableCell align="right">Còn nợ</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Mã hóa đơn</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Hạn nộp</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800 }}>Phải thu</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800, color: 'error.main' }}>Còn nợ</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {debtInvoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell>{invoice.studentName || '-'}</TableCell>
-                <TableCell>{invoice.className || '-'}</TableCell>
-                <TableCell>{invoice.dueDate || '-'}</TableCell>
+              <TableRow key={invoice.id} hover>
+                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>#{invoice.id.substring(0, 8).toUpperCase()}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{invoice.studentName || '-'}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{invoice.dueDate || '-'}</TableCell>
                 <TableCell>
-                  <Chip label={getStatusLabel(invoice.status)} color={invoice.status === 'PARTIAL' ? 'warning' : 'error'} size="small" />
+                  <Chip 
+                    label={getStatusLabel(invoice.status)} 
+                    color={invoice.status === 'PARTIAL' ? 'warning' : 'error'} 
+                    size="small" 
+                    sx={{ fontWeight: 800, borderRadius: 1.5 }}
+                  />
                 </TableCell>
-                <TableCell align="right">{formatCurrency(Number(invoice.finalAmount ?? invoice.totalAmount ?? 0))}</TableCell>
-                <TableCell align="right">{formatCurrency(Number(invoice.paidAmount ?? 0))}</TableCell>
-                <TableCell align="right">{formatCurrency(Number(invoice.outstandingAmount ?? invoice.finalAmount ?? 0))}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(Number(invoice.finalAmount ?? invoice.totalAmount ?? 0))}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: 'error.main' }}>{formatCurrency(Number(invoice.outstandingAmount ?? invoice.finalAmount ?? 0))}</TableCell>
               </TableRow>
             ))}
             {debtInvoices.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={6} align="center" sx={{ py: 4, opacity: 0.5 }}>
                   Không có hóa đơn còn nợ
                 </TableCell>
               </TableRow>
@@ -307,5 +284,29 @@ export default function StudentDebtPage() {
         </Table>
       </TableContainer>
     </Box>
+  );
+}
+
+function SummaryCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
+  return (
+    <Grid item xs={12} sm={6} md={3}>
+      <Card sx={{ borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography variant="body2" color="text.secondary" fontWeight={600} gutterBottom>
+                {title}
+              </Typography>
+              <Typography variant="h5" fontWeight={800} color="text.primary">
+                {value}
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: color, borderRadius: 3, width: 48, height: 48 }}>
+              {icon}
+            </Avatar>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Grid>
   );
 }

@@ -208,7 +208,7 @@ export default function UserManagementPage({ role }: UserManagementPageProps) {
   const getRoleLabel = (roleValue: string) => {
     switch (roleValue) {
       case 'MANAGER':
-        return 'Quản lý viên';
+        return 'Quản trị viên';
       case 'TEACHER':
         return 'Giáo viên';
       case 'STUDENT':
@@ -216,7 +216,7 @@ export default function UserManagementPage({ role }: UserManagementPageProps) {
       case 'ACCOUNTANT':
         return 'Kế toán';
       case 'LEAD':
-        return 'Lead';
+        return 'Khách tiềm năng';
       default:
         return roleValue;
     }
@@ -265,12 +265,12 @@ export default function UserManagementPage({ role }: UserManagementPageProps) {
           <Table>
             <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
               <TableRow>
-                <TableCell fontWeight={600}>Họ tên</TableCell>
-                <TableCell fontWeight={600}>Email</TableCell>
-                <TableCell fontWeight={600}>Số điện thoại</TableCell>
-                {!role && <TableCell fontWeight={600}>Vai trò</TableCell>}
-                <TableCell fontWeight={600}>Trạng thái</TableCell>
-                <TableCell align="right" fontWeight={600}>Thao tác</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Họ tên</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Số điện thoại</TableCell>
+                {!role && <TableCell sx={{ fontWeight: 600 }}>Vai trò</TableCell>}
+                <TableCell sx={{ fontWeight: 600 }}>Trạng thái</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -281,12 +281,17 @@ export default function UserManagementPage({ role }: UserManagementPageProps) {
                   <TableCell>{user.phone || '-'}</TableCell>
                   {!role && (
                     <TableCell>
-                      <Chip label={getRoleLabel(user.role)} color={getRoleColor(user.role)} size="small" />
+                      <Chip 
+                        label={getRoleLabel(user.role)} 
+                        color={getRoleColor(user.role)} 
+                        size="small" 
+                        sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}
+                      />
                     </TableCell>
                   )}
                   <TableCell>
                     <Chip
-                      label={user.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}
+                      label={user.status === 'ACTIVE' ? 'Hoạt động' : 'Vô hiệu hóa'}
                       color={user.status === 'ACTIVE' ? 'success' : 'default'}
                       size="small"
                     />
@@ -349,12 +354,19 @@ export default function UserManagementPage({ role }: UserManagementPageProps) {
             margin="normal"
             value={form.role}
             onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
+            SelectProps={{
+              MenuProps: {
+                PaperProps: {
+                  sx: { minWidth: 200 }
+                }
+              }
+            }}
           >
-            <MenuItem value="MANAGER">Manager</MenuItem>
-            <MenuItem value="TEACHER">Teacher</MenuItem>
-            <MenuItem value="STUDENT">Student</MenuItem>
-            <MenuItem value="ACCOUNTANT">Accountant</MenuItem>
-            <MenuItem value="LEAD">Lead</MenuItem>
+            <MenuItem value="MANAGER">Quản trị viên</MenuItem>
+            <MenuItem value="TEACHER">Giáo viên</MenuItem>
+            <MenuItem value="STUDENT">Học viên</MenuItem>
+            <MenuItem value="ACCOUNTANT">Kế toán</MenuItem>
+            <MenuItem value="LEAD">Khách tiềm năng</MenuItem>
           </TextField>
           <TextField
             fullWidth
@@ -365,6 +377,13 @@ export default function UserManagementPage({ role }: UserManagementPageProps) {
             onChange={(e) =>
               setForm((prev) => ({ ...prev, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED' }))
             }
+            SelectProps={{
+              MenuProps: {
+                PaperProps: {
+                  sx: { minWidth: 200 }
+                }
+              }
+            }}
           >
             <MenuItem value="ACTIVE">Hoạt động</MenuItem>
             <MenuItem value="INACTIVE">Không hoạt động</MenuItem>

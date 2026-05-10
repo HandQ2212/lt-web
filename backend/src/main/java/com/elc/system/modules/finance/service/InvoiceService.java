@@ -44,8 +44,7 @@ public class InvoiceService {
     @Transactional(readOnly = true)
     public List<InvoiceResponse> getInvoicesForUser(User user) {
         if (user.getRole() == UserRole.STUDENT || user.getRole() == UserRole.LEAD) {
-            return invoiceRepository.findAll().stream()
-                    .filter(invoice -> invoice.getEnrollment().getStudent().getId().equals(user.getId()))
+            return invoiceRepository.findByStudentId(user.getId()).stream()
                     .map(this::mapToResponse)
                     .collect(Collectors.toList());
         }

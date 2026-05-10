@@ -47,11 +47,12 @@ export default function AttendancePage() {
   useEffect(() => {
     if (selectedClass) {
       void fetchStudents(selectedClass);
+      void fetchExistingAttendance(selectedClass, attendanceDate);
     } else {
       setStudents([]);
       setAttendance({});
     }
-  }, [selectedClass]);
+  }, [selectedClass, attendanceDate]);
 
   const fetchClasses = async () => {
     try {
@@ -72,9 +73,32 @@ export default function AttendancePage() {
       const response = await enrollmentApi.getByClass(classId);
       const enrollments = Array.isArray(response.data) ? response.data : [];
       setStudents(enrollments);
-      setAttendance(Object.fromEntries(enrollments.map((item: any) => [item.id, 'PRESENT'])));
+      // Default to PRESENT for new entries
+      setAttendance((prev) => {
+        const next = { ...prev };
+        enrollments.forEach((item: any) => {
+          if (!next[item.id]) next[item.id] = 'PRESENT';
+        });
+        return next;
+      });
     } catch (err: any) {
       setSnackbar({ open: true, message: err?.response?.data?.message || 'Không thể tải học viên', severity: 'error' });
+    }
+  };
+
+  const fetchExistingAttendance = async (classId: string, date: string) => {
+    try {
+      const response = await attendanceApi.getByClass(classId, date);
+      const records = Array.isArray(response.data) ? response.data : [];
+      if (records.length > 0) {
+        const existingMap: Record<string, string> = {};
+        records.forEach((rec: any) => {
+          existingMap[rec.enrollmentId] = rec.status;
+        });
+        setAttendance((prev) => ({ ...prev, ...existingMap }));
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch existing attendance', err);
     }
   };
 

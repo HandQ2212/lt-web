@@ -21,25 +21,43 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final ClazzRepository clazzRepository;
 
+    public AttendanceService(
+            AttendanceRepository attendanceRepository,
+            EnrollmentRepository enrollmentRepository,
+            ClazzRepository clazzRepository) {
+        this.attendanceRepository = attendanceRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.clazzRepository = clazzRepository;
+    }
+
     public List<AttendanceResponse> getAttendanceByClass(UUID classId, LocalDate date) {
-        return attendanceRepository.findByEnrollmentClazzIdAndAttendanceDate(classId, date).stream()
+        List<Attendance> attendanceList = date != null
+                ? attendanceRepository.findByEnrollmentClazzIdAndAttendanceDate(classId, date)
+                : attendanceRepository.findByEnrollmentClazzId(classId);
+
+        return attendanceList.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+    public List<AttendanceResponse> getAttendanceByEnrollment(UUID enrollmentId) {
+        return attendanceRepository.findByEnrollmentId(enrollmentId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+        @Transactional
     public AttendanceResponse markAttendance(AttendanceRequest request) {
-        // If record exists, update it. If not, create new.
-        Attendance attendance = attendanceRepository.findByEnrollmentId(request.getEnrollmentId()).stream()
-                .filter(a -> a.getAttendanceDate().equals(request.getAttendanceDate() != null ? request.getAttendanceDate() : LocalDate.now()))
-                .findFirst()
+        LocalDate date = request.getAttendanceDate() != null ? request.getAttendanceDate() : LocalDate.now();
+        
+        Attendance attendance = attendanceRepository.findByEnrollmentIdAndAttendanceDate(request.getEnrollmentId(), date)
                 .orElse(null);
 
         if (attendance != null) {

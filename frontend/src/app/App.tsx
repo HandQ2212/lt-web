@@ -20,6 +20,7 @@ import CourseDetailPage from './pages/public/CourseDetailPage';
 import ContactPage from './pages/public/ContactPage';
 import TeachersPage from './pages/public/TeachersPage';
 
+import PublicRoute from './components/PublicRoute';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
@@ -42,6 +43,7 @@ import AttendancePage from './pages/teacher/AttendancePage';
 import AssignmentPage from './pages/teacher/AssignmentPage';
 
 import StudentDashboard from './pages/student/StudentDashboard';
+import StudentClassesPage from './pages/student/StudentClassesPage';
 import GradebookPage from './pages/student/GradebookPage';
 import PaymentPage from './pages/student/PaymentPage';
 import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage';
@@ -103,214 +105,222 @@ function AppRoutes() {
 
   return (
     <Routes>
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/courses" element={<CourseListPage />} />
-                <Route path="/courses/:id" element={<CourseDetailPage />} />
-                <Route path="/teachers" element={<TeachersPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-              </Route>
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/courses" element={<CourseListPage />} />
+        <Route path="/courses/:id" element={<CourseDetailPage />} />
+        <Route path="/teachers" element={<TeachersPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+      </Route>
 
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
 
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  path="/dashboard"
-                  element={<Navigate to={getDefaultRouteByRole(user?.role)} replace />}
-                />
+      <Route
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          path="/dashboard"
+          element={<Navigate to={getDefaultRouteByRole(user?.role)} replace />}
+        />
 
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/users"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <UserManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/classes"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <ClassManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/leads"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER', 'ACCOUNTANT']}>
-                      <LeadManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/teachers"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <TeacherManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/students"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <StudentManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/accountants"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <AccountantManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/notifications"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <NotificationManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/programs"
-                  element={
-                    <ProtectedRoute allowedRoles={['MANAGER']}>
-                      <ProgramManagementPage />
-                    </ProtectedRoute>
-                  }
-                />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/classes"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <ClassManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/leads"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER', 'ACCOUNTANT']}>
+              <LeadManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/teachers"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <TeacherManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <StudentManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/accountants"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <AccountantManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <NotificationManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/programs"
+          element={
+            <ProtectedRoute allowedRoles={['MANAGER']}>
+              <ProgramManagementPage />
+            </ProtectedRoute>
+          }
+        />
 
-                <Route
-                  path="/teacher/schedule"
-                  element={
-                    <ProtectedRoute allowedRoles={['TEACHER']}>
-                      <TeacherSchedulePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/teacher/classes"
-                  element={
-                    <ProtectedRoute allowedRoles={['TEACHER']}>
-                      <TeacherClassesPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/teacher/attendance"
-                  element={
-                    <ProtectedRoute allowedRoles={['TEACHER']}>
-                      <AttendancePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/teacher/assignments"
-                  element={
-                    <ProtectedRoute allowedRoles={['TEACHER']}>
-                      <AssignmentPage />
-                    </ProtectedRoute>
-                  }
-                />
+        <Route
+          path="/teacher/schedule"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <TeacherSchedulePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/classes"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <TeacherClassesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <AttendancePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/assignments"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <AssignmentPage />
+            </ProtectedRoute>
+          }
+        />
 
-                <Route
-                  path="/student/courses"
-                  element={
-                    <ProtectedRoute allowedRoles={['STUDENT']}>
-                      <StudentDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/student/grades"
-                  element={
-                    <ProtectedRoute allowedRoles={['STUDENT']}>
-                      <GradebookPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/student/payments"
-                  element={
-                    <ProtectedRoute allowedRoles={['STUDENT', 'LEAD']}>
-                      <PaymentPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/student/assignments"
-                  element={
-                    <ProtectedRoute allowedRoles={['STUDENT']}>
-                      <StudentAssignmentsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/student/invoices"
-                  element={
-                    <ProtectedRoute allowedRoles={['STUDENT']}>
-                      <StudentInvoicesPage />
-                    </ProtectedRoute>
-                  }
-                />
+        <Route
+          path="/student/courses"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentClassesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/grades"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <GradebookPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/payments"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT', 'LEAD']}>
+              <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/assignments"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentAssignmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/invoices"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentInvoicesPage />
+            </ProtectedRoute>
+          }
+        />
 
-                <Route
-                  path="/finance/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
-                      <FinanceDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/finance/debts"
-                  element={
-                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
-                      <StudentDebtPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/finance/teacher-payments"
-                  element={
-                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
-                      <TeacherPaymentsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/finance/operations"
-                  element={
-                    <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
-                      <FinanceOperationsPage />
-                    </ProtectedRoute>
-                  }
-                />
+        <Route
+          path="/finance/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+              <FinanceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/debts"
+          element={
+            <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+              <StudentDebtPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/teacher-payments"
+          element={
+            <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+              <TeacherPaymentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/operations"
+          element={
+            <ProtectedRoute allowedRoles={['ACCOUNTANT']}>
+              <FinanceOperationsPage />
+            </ProtectedRoute>
+          }
+        />
 
-                <Route path="/profile" element={<ProfilePage />} />
-              </Route>
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

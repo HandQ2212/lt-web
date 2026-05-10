@@ -45,7 +45,6 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class LeadService {
 
     private final LeadRepository leadRepository;
@@ -57,6 +56,29 @@ public class LeadService {
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.elc.system.core.service.EmailService emailService;
+
+    public LeadService(LeadRepository leadRepository,
+                       LeadInterestRepository leadInterestRepository,
+                       UserRepository userRepository,
+                       CourseRepository courseRepository,
+                       ClazzRepository clazzRepository,
+                       EnrollmentRepository enrollmentRepository,
+                       InvoiceRepository invoiceRepository,
+                       PaymentRepository paymentRepository,
+                       PasswordEncoder passwordEncoder,
+                       com.elc.system.core.service.EmailService emailService) {
+        this.leadRepository = leadRepository;
+        this.leadInterestRepository = leadInterestRepository;
+        this.userRepository = userRepository;
+        this.courseRepository = courseRepository;
+        this.clazzRepository = clazzRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.paymentRepository = paymentRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+    }
 
     @Transactional
     public LeadResponse createLead(CreateLeadRequest request) {
@@ -80,7 +102,10 @@ public class LeadService {
                         newUser.setEmail(email);
                         newUser.setFullName(request.getFullName());
                         newUser.setPhone(phone);
-                        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+                        String rawPassword = (request.getPassword() != null && !request.getPassword().isBlank()) 
+                                ? request.getPassword() 
+                                : phone;
+                        newUser.setPassword(passwordEncoder.encode(rawPassword));
                         newUser.setRole(UserRole.LEAD);
                         newUser.setStatus(UserStatus.ACTIVE);
                         return userRepository.save(newUser);
@@ -92,6 +117,15 @@ public class LeadService {
         leadRepository.save(lead);
         addCourseInterests(lead, request.getCourseIds(), request.getNotes());
         log.info("Lead created: {}", lead.getId());
+
+        if (lead.getSource() == LeadSource.WEBSITE_FORM) {
+            emailService.sendSimpleEmail(
+                lead.getEmail(),
+                "Cảm ơn bạn đã liên hệ với ELC",
+                "Chào " + lead.getFullName() + ",\n\nCảm ơn bạn đã quan tâm đến các khóa học tại ELC. Chúng tôi đã nhận được thông tin của bạn và sẽ liên hệ lại sớm nhất.\n\nTrân trọng,\nĐội ngũ ELC"
+            );
+        }
+
         return mapToResponse(lead);
     }
 
@@ -198,12 +232,12 @@ public class LeadService {
         Lead lead = findLeadOrThrow(leadId);
         
         if (lead.getUserId() == null) {
-            throw new IllegalArgumentException("Lead does not have a linked user");
+            throw new IllegalArgumentException("Khách hàng chưa có tài khoản người dùng liên kết");
         }
 
         List<Enrollment> enrollments = enrollmentRepository.findByStudentId(lead.getUserId());
         if (enrollments.isEmpty()) {
-            throw new IllegalArgumentException("No enrollment found for this lead");
+            throw new IllegalArgumentException("Không tìm thấy thông tin ghi danh cho khách hàng này");
         }
         
         Enrollment latest = enrollments.get(enrollments.size() - 1);
@@ -212,10 +246,17 @@ public class LeadService {
 
         List<Invoice> invoices = invoiceRepository.findByEnrollmentId(latest.getId());
         if (invoices.isEmpty()) {
-            throw new IllegalArgumentException("No invoice found for the enrollment");
+            throw new IllegalArgumentException("Không tìm thấy hóa đơn cho thông tin ghi danh");
         }
 
         Invoice invoice = invoices.get(invoices.size() - 1);
+        
+        // Ngăn chặn thanh toán trùng lặp
+        if (invoice.getStatus() == InvoiceStatus.PAID) {
+            log.warn("Hóa đơn {} đã được thanh toán trước đó cho Lead: {}", invoice.getId(), leadId);
+            lead.setStatus(LeadStatus.PAID);
+            return mapToResponse(leadRepository.save(lead));
+        }
         
         // Create Payment record for Cash payment
         com.elc.system.modules.finance.entity.Payment payment = com.elc.system.modules.finance.entity.Payment.builder()
@@ -223,7 +264,7 @@ public class LeadService {
                 .amount(invoice.getFinalAmount())
                 .paymentDate(ZonedDateTime.now())
                 .paymentMethod(com.elc.system.modules.finance.entity.PaymentMethod.CASH)
-                .notes("Thu tiền mặt trực tiếp từ Lead Management")
+                .notes("Thu tiền mặt trực tiếp từ Quản lý Lead")
                 .build();
         paymentRepository.save(payment);
 
@@ -231,7 +272,7 @@ public class LeadService {
         invoiceRepository.save(invoice);
 
         lead.setStatus(LeadStatus.PAID);
-        log.info("Cash payment confirmed for lead: {}. Invoice: {}, Enrollment: {}", leadId, invoice.getId(), latest.getId());
+        log.info("Xác nhận thu tiền mặt cho lead: {}. Hóa đơn: {}, Ghi danh: {}", leadId, invoice.getId(), latest.getId());
         
         return mapToResponse(leadRepository.save(lead));
     }

@@ -35,25 +35,25 @@ export interface PaymentRecord {
 }
 
 export const manualPaymentMethods = [
-  { value: 'CASH', label: 'Tien mat' },
-  { value: 'BANK_TRANSFER', label: 'Chuyen khoan' },
+  { value: 'CASH', label: 'Tiền mặt' },
+  { value: 'BANK_TRANSFER', label: 'Chuyển khoản' },
 ] as const;
 
 export const operatingCategories = [
-  'Luong giao vien',
-  'Mat bang',
-  'Dien nuoc',
-  'Van phong pham',
+  'Lương giáo viên',
+  'Mặt bằng',
+  'Điện nước',
+  'Văn phòng phẩm',
   'Marketing',
-  'Bao tri co so',
-  'Hoan phi',
-  'Khac',
+  'Bảo trì cơ sở',
+  'Hoàn phí',
+  'Khác',
 ];
 
 export const debtStatuses = new Set(['UNPAID', 'PARTIAL', 'PENDING']);
 
 export const formatCurrency = (value: number | string | undefined | null) =>
-  `${Number(value || 0).toLocaleString('vi-VN')}d`;
+  `${Number(value || 0).toLocaleString('vi-VN')}đ`;
 
 export const formatDate = (value?: string) => {
   if (!value) {
@@ -71,30 +71,30 @@ export const getOutstandingAmount = (invoice: InvoiceRecord) =>
 export const getStatusLabel = (status?: string) => {
   switch (status) {
     case 'PAID':
-      return 'Da thanh toan';
+      return 'Đã thanh toán';
     case 'PARTIAL':
-      return 'Thanh toan mot phan';
+      return 'Thanh toán một phần';
     case 'PENDING':
-      return 'Cho thanh toan';
+      return 'Chờ thanh toán';
     case 'REFUNDED':
-      return 'Da hoan phi';
+      return 'Đã hoàn phí';
     case 'CANCELLED':
-      return 'Da huy';
+      return 'Đã hủy';
     default:
-      return 'Chua thanh toan';
+      return 'Chưa thanh toán';
   }
 };
 
 export const getPaymentMethodLabel = (method?: string) => {
   switch (method) {
     case 'CASH':
-      return 'Tien mat';
+      return 'Tiền mặt';
     case 'BANK_TRANSFER':
-      return 'Chuyen khoan';
+      return 'Chuyển khoản';
     case 'CREDIT_CARD':
-      return 'The';
+      return 'Thẻ tín dụng';
     case 'MOMO':
-      return 'Momo';
+      return 'Ví MoMo';
     case 'VN_PAY':
       return 'VNPay';
     default:
@@ -105,7 +105,7 @@ export const getPaymentMethodLabel = (method?: string) => {
 export const getMonthKey = (value?: string) => {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
-    return 'Khac';
+    return 'Khác';
   }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };

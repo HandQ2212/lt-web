@@ -18,7 +18,7 @@ function figmaAssetResolver() {
 
 export default defineConfig({
   server: {
-    allowedHosts: ['elc.handq2212.site'],
+    allowedHosts: true,
   },
   plugins: [
     figmaAssetResolver(),

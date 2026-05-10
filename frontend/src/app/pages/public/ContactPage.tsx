@@ -41,7 +41,7 @@ export default function ContactPage() {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await leadApi.create({
+      await leadApi.publicSubmit({
         fullName: form.fullName,
         email: form.email,
         phone: form.phone,
@@ -106,24 +106,45 @@ export default function ContactPage() {
         </Grid>
 
         <Grid item xs={12}>
-          <Paper sx={{ p: 4 }}>
-            <Typography variant="h5" gutterBottom fontWeight={600}>Gửi tin nhắn cho chúng tôi</Typography>
+          <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 4 }}>
+            <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mb: 4 }}>
+              Gửi tin nhắn cho chúng tôi
+            </Typography>
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Họ tên" required value={form.fullName} onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))} />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Email" type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField fullWidth label="Số điện thoại" required value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} />
-                </Grid>
-                <Grid item xs={12}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                  <TextField 
+                    fullWidth 
+                    label="Họ tên" 
+                    required 
+                    variant="outlined"
+                    value={form.fullName} 
+                    onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))} 
+                  />
+                  <TextField 
+                    fullWidth 
+                    label="Email" 
+                    type="email" 
+                    variant="outlined"
+                    value={form.email} 
+                    onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} 
+                  />
+                </Box>
+                
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                  <TextField 
+                    fullWidth 
+                    label="Số điện thoại" 
+                    required 
+                    variant="outlined"
+                    value={form.phone} 
+                    onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} 
+                  />
                   <TextField
                     fullWidth
                     select
                     label="Khóa học quan tâm"
+                    variant="outlined"
                     value={form.courseIds}
                     SelectProps={{
                       multiple: true,
@@ -143,19 +164,40 @@ export default function ContactPage() {
                       </MenuItem>
                     ))}
                   </TextField>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField fullWidth label="Tiêu đề" required value={form.subject} onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))} />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField fullWidth label="Nội dung" multiline rows={6} required value={form.message} onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))} />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button type="submit" variant="contained" size="large" disabled={submitting}>
+                </Box>
+
+                <TextField 
+                  fullWidth 
+                  label="Tiêu đề" 
+                  required 
+                  variant="outlined"
+                  value={form.subject} 
+                  onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))} 
+                />
+                
+                <TextField 
+                  fullWidth 
+                  label="Nội dung" 
+                  multiline 
+                  rows={5} 
+                  required 
+                  variant="outlined"
+                  value={form.message} 
+                  onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))} 
+                />
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
+                  <Button 
+                    type="submit" 
+                    variant="contained" 
+                    size="large" 
+                    sx={{ px: 6, py: 1.5, borderRadius: 2, fontWeight: 600 }}
+                    disabled={submitting}
+                  >
                     {submitting ? 'Đang gửi...' : 'Gửi tin nhắn'}
                   </Button>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </form>
           </Paper>
         </Grid>

@@ -75,7 +75,7 @@ export default function FinanceOperationsPage() {
   });
 
   const [expenseForm, setExpenseForm] = useState({
-    category: 'Mat bang',
+    category: 'Mặt bằng',
     amount: '',
     expenseDate: today,
     vendor: '',
@@ -131,7 +131,7 @@ export default function FinanceOperationsPage() {
       setRefundForm((prev) => ({ ...prev, invoiceId: prev.invoiceId || nextInvoices[0]?.id || '' }));
       setPayrollForm((prev) => ({ ...prev, teacherId: prev.teacherId || teacherList[0]?.id || '' }));
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Khong tai duoc du lieu ke toan');
+      setError(err?.response?.data?.message || 'Không thể tải dữ liệu kế toán');
     } finally {
       setLoading(false);
     }
@@ -159,7 +159,7 @@ export default function FinanceOperationsPage() {
     const expense = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
     const debt = debtInvoices.reduce((sum, invoice) => sum + getOutstandingAmount(invoice), 0);
     const refund = expenses
-      .filter((item) => item.category === 'Refund' || item.category === 'Hoan phi')
+      .filter((item) => item.category === 'Refund' || item.category === 'Hoàn phí')
       .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
     return { revenue, expense, debt, refund, profit: revenue - expense };
@@ -175,22 +175,22 @@ export default function FinanceOperationsPage() {
   const auditRows = useMemo(() => {
     const invoiceRows = invoices.map((invoice) => ({
       time: invoice.createdAt || invoice.dueDate || '',
-      actor: 'System',
-      action: `Tao/Cap nhat hoa don ${getStatusLabel(invoice.status)}`,
+      actor: 'Hệ thống',
+      action: `Tạo/Cập nhật hóa đơn: ${getStatusLabel(invoice.status)}`,
       object: `${invoice.studentName || '-'} - ${invoice.className || '-'}`,
       amount: getInvoiceAmount(invoice),
     }));
     const paymentRows = payments.map((payment) => ({
       time: payment.paymentDate || '',
-      actor: 'Accountant',
-      action: `Ghi nhan thu tien ${getPaymentMethodLabel(payment.paymentMethod)}`,
-      object: payment.invoiceId,
+      actor: 'Kế toán',
+      action: `Ghi nhận phiếu thu: ${getPaymentMethodLabel(payment.paymentMethod)}`,
+      object: `HĐ: ${payment.invoiceId?.slice(0, 8)}`,
       amount: Number(payment.amount || 0),
     }));
     const expenseRows = expenses.map((expense) => ({
       time: expense.expenseDate || '',
-      actor: expense.approvedByName || 'Accountant',
-      action: `Ghi nhan phieu chi: ${expense.category}`,
+      actor: expense.approvedByName || 'Kế toán',
+      action: `Ghi nhận phiếu chi: ${expense.category}`,
       object: expense.vendor || expense.notes || '-',
       amount: Number(expense.amount || 0),
     }));
@@ -205,7 +205,7 @@ export default function FinanceOperationsPage() {
   const handleCreatePayment = async () => {
     const amount = Number(paymentForm.amount || 0);
     if (!paymentForm.invoiceId || amount <= 0) {
-      showMessage('Chon hoa don va nhap so tien hop le', 'error');
+      showMessage('Vui lòng chọn hóa đơn và nhập số tiền hợp lệ', 'error');
       return;
     }
 
@@ -221,9 +221,9 @@ export default function FinanceOperationsPage() {
       });
       setPaymentForm((prev) => ({ ...prev, amount: '', transactionId: '', notes: '' }));
       await fetchData();
-      showMessage('Da ghi nhan phieu thu');
+      showMessage('Đã ghi nhận phiếu thu thành công');
     } catch (err: any) {
-      showMessage(err?.response?.data?.message || 'Khong ghi nhan duoc phieu thu', 'error');
+      showMessage(err?.response?.data?.message || 'Không thể ghi nhận phiếu thu', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -232,7 +232,7 @@ export default function FinanceOperationsPage() {
   const handleCreateExpense = async () => {
     const amount = Number(expenseForm.amount || 0);
     if (!expenseForm.category || amount <= 0) {
-      showMessage('Nhap danh muc va so tien chi hop le', 'error');
+      showMessage('Vui lòng nhập danh mục và số tiền chi hợp lệ', 'error');
       return;
     }
 
@@ -241,9 +241,9 @@ export default function FinanceOperationsPage() {
       await expenseApi.create({ ...expenseForm, amount });
       setExpenseForm((prev) => ({ ...prev, amount: '', vendor: '', receiptUrl: '', notes: '' }));
       await fetchData();
-      showMessage('Da ghi nhan phieu chi');
+      showMessage('Đã ghi nhận phiếu chi thành công');
     } catch (err: any) {
-      showMessage(err?.response?.data?.message || 'Khong ghi nhan duoc phieu chi', 'error');
+      showMessage(err?.response?.data?.message || 'Không thể ghi nhận phiếu chi', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -252,18 +252,18 @@ export default function FinanceOperationsPage() {
   const handleRefund = async () => {
     const amount = Number(refundForm.amount || 0);
     if (!refundForm.invoiceId || amount <= 0) {
-      showMessage('Chon hoa don va nhap so tien hoan hop le', 'error');
+      showMessage('Vui lòng chọn hóa đơn và nhập số tiền hoàn hợp lệ', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
-      await invoiceApi.refund(refundForm.invoiceId, { amount, reason: refundForm.reason || 'Hoan phi hoc vu' });
+      await invoiceApi.refund(refundForm.invoiceId, { amount, reason: refundForm.reason || 'Hoàn phí học vụ' });
       setRefundForm((prev) => ({ ...prev, amount: '', reason: '' }));
       await fetchData();
-      showMessage('Da xu ly hoan phi');
+      showMessage('Đã xử lý hoàn phí thành công');
     } catch (err: any) {
-      showMessage(err?.response?.data?.message || 'Khong xu ly duoc hoan phi', 'error');
+      showMessage(err?.response?.data?.message || 'Không thể xử lý hoàn phí', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -271,27 +271,27 @@ export default function FinanceOperationsPage() {
 
   const handleCreatePayroll = async () => {
     if (!selectedTeacher || payrollAmount <= 0) {
-      showMessage('Chon giao vien va thong tin tinh luong hop le', 'error');
+      showMessage('Vui lòng chọn giáo viên và điền đầy đủ thông tin tính lương', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
       await expenseApi.create({
-        category: 'Luong giao vien',
+        category: 'Lương giáo viên',
         amount: payrollAmount,
         expenseDate: `${payrollForm.month}-28`,
         vendor: selectedTeacher.name,
         notes:
           payrollForm.notes ||
-          `Chot cong ${payrollForm.sessions} buoi, ${payrollForm.hoursPerSession} gio/buoi, don gia ${formatCurrency(
+          `Chốt công ${payrollForm.sessions} buổi, ${payrollForm.hoursPerSession} giờ/buổi, đơn giá ${formatCurrency(
             Number(payrollForm.hourlyRate || 0)
           )}`,
       });
       await fetchData();
-      showMessage('Da chot cong va ghi nhan luong giao vien');
+      showMessage('Đã chốt công và ghi nhận lương giáo viên thành công');
     } catch (err: any) {
-      showMessage(err?.response?.data?.message || 'Khong chot duoc luong', 'error');
+      showMessage(err?.response?.data?.message || 'Không thể chốt lương giáo viên', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -299,94 +299,93 @@ export default function FinanceOperationsPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
+    <Box sx={{ pb: 4 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 4 }}>
         <Box>
-          <Typography variant="h4" fontWeight={700}>
-            Nghiep vu ke toan
+          <Typography variant="h4" fontWeight={800} color="primary.main">
+            Nghiệp vụ Kế toán
           </Typography>
-          <Typography color="text.secondary">
-            Quan ly thu chi, cong no, hoc vu tai chinh, luong giao vien va audit log.
+          <Typography variant="body1" color="text.secondary">
+            Quản lý phiếu thu, phiếu chi, chốt lương giáo viên và theo dõi lịch sử giao dịch.
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<Search />} onClick={fetchData}>
-          Tai lai
+        <Button variant="outlined" startIcon={<Search />} onClick={fetchData} sx={{ borderRadius: 2, fontWeight: 700 }}>
+          Tải lại dữ liệu
         </Button>
       </Stack>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <SummaryCard title="Da thu" value={formatCurrency(totals.revenue)} icon={<Paid color="success" />} />
-        <SummaryCard title="Da chi" value={formatCurrency(totals.expense)} icon={<ReceiptLong color="error" />} />
-        <SummaryCard title="Cong no" value={formatCurrency(totals.debt)} icon={<AccountBalanceWallet color="warning" />} />
-        <SummaryCard title="Loi nhuan tam tinh" value={formatCurrency(totals.profit)} icon={<Savings color="primary" />} />
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <SummaryCard title="Tổng thu" value={formatCurrency(totals.revenue)} icon={<Paid sx={{ color: 'success.main' }} />} />
+        <SummaryCard title="Tổng chi" value={formatCurrency(totals.expense)} icon={<ReceiptLong sx={{ color: 'error.main' }} />} />
+        <SummaryCard title="Công nợ học viên" value={formatCurrency(totals.debt)} icon={<AccountBalanceWallet sx={{ color: 'warning.main' }} />} />
+        <SummaryCard title="Lợi nhuận tạm tính" value={formatCurrency(totals.profit)} icon={<Savings sx={{ color: 'primary.main' }} />} />
       </Grid>
 
-      <Paper sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto">
-          <Tab label="Chung tu" />
-          <Tab label="Cong no hoc phi" />
-          <Tab label="Tai chinh hoc vu" />
-          <Tab label="Chot cong & luong" />
-          <Tab label="Chi phi van hanh" />
-          <Tab label="Audit log" />
+      <Paper sx={{ mb: 4, borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+        <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto" sx={{ px: 1 }}>
+          <Tab label="Phiếu thu" sx={{ fontWeight: 700 }} />
+          <Tab label="Công nợ học phí" sx={{ fontWeight: 700 }} />
+          <Tab label="Hoàn phí & Học vụ" sx={{ fontWeight: 700 }} />
+          <Tab label="Lương giáo viên" sx={{ fontWeight: 700 }} />
+          <Tab label="Chi phí vận hành" sx={{ fontWeight: 700 }} />
+          <Tab label="Nhật ký giao dịch" sx={{ fontWeight: 700 }} />
         </Tabs>
       </Paper>
 
       {activeTab === 0 && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Tao phieu thu
+            <Paper sx={{ p: 3, borderRadius: 4 }}>
+              <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
+                Tạo phiếu thu mới
               </Typography>
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <TextField
                   select
-                  label="Hoa don"
+                  fullWidth
+                  label="Chọn hóa đơn cần thu"
                   value={paymentForm.invoiceId}
                   onChange={(event) => setPaymentForm((prev) => ({ ...prev, invoiceId: event.target.value }))}
                 >
                   {debtInvoices.map((invoice) => (
                     <MenuItem key={invoice.id} value={invoice.id}>
-                      {invoice.studentName} - {invoice.className} - con {formatCurrency(getOutstandingAmount(invoice))}
+                      {invoice.studentName} - {invoice.className} (Còn {formatCurrency(getOutstandingAmount(invoice))})
                     </MenuItem>
                   ))}
                 </TextField>
                 {selectedInvoice && (
-                  <Alert severity="info">
-                    Phai thu {formatCurrency(getInvoiceAmount(selectedInvoice))}, da thu{' '}
-                    {formatCurrency(Number(selectedInvoice.paidAmount || 0))}, con{' '}
-                    {formatCurrency(getOutstandingAmount(selectedInvoice))}
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    Cần thu: {formatCurrency(getInvoiceAmount(selectedInvoice))} • Đã nộp: {formatCurrency(Number(selectedInvoice.paidAmount || 0))} • <strong>Còn thiếu: {formatCurrency(getOutstandingAmount(selectedInvoice))}</strong>
                   </Alert>
                 )}
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="number"
-                      label="So tien"
+                      label="Số tiền thu"
                       value={paymentForm.amount}
                       onChange={(event) => setPaymentForm((prev) => ({ ...prev, amount: event.target.value }))}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       select
                       fullWidth
-                      label="Phuong thuc"
+                      label="Phương thức"
                       value={paymentForm.paymentMethod}
                       onChange={(event) => setPaymentForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}
                     >
@@ -400,39 +399,36 @@ export default function FinanceOperationsPage() {
                 </Grid>
                 <TextField
                   type="date"
-                  label="Ngay thu"
+                  fullWidth
+                  label="Ngày thu tiền"
                   value={paymentForm.paymentDate}
                   onChange={(event) => setPaymentForm((prev) => ({ ...prev, paymentDate: event.target.value }))}
                   InputLabelProps={{ shrink: true }}
                 />
                 <TextField
-                  label="Ma doi soat/chuyen khoan"
+                  fullWidth
+                  label="Mã giao dịch / Ghi chú"
                   value={paymentForm.transactionId}
                   onChange={(event) => setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }))}
                 />
-                <TextField
-                  label="Ghi chu"
-                  value={paymentForm.notes}
-                  onChange={(event) => setPaymentForm((prev) => ({ ...prev, notes: event.target.value }))}
-                />
-                <Button variant="contained" startIcon={<AssignmentTurnedIn />} disabled={submitting} onClick={handleCreatePayment}>
-                  Ghi nhan phieu thu
+                <Button variant="contained" size="large" startIcon={<AssignmentTurnedIn />} disabled={submitting} onClick={handleCreatePayment} sx={{ borderRadius: 2, py: 1.5, fontWeight: 700 }}>
+                  Xác nhận thu tiền
                 </Button>
               </Stack>
             </Paper>
           </Grid>
           <Grid item xs={12} md={7}>
             <FinanceTable
-              title="Phieu thu gan day"
-              columns={['Ngay', 'Hoa don', 'Phuong thuc', 'So tien', 'Ghi chu']}
-              rows={payments.slice(0, 8).map((payment) => [
+              title="Phiếu thu gần đây"
+              columns={['Ngày', 'Nội dung', 'Phương thức', 'Số tiền', 'Ghi chú']}
+              rows={payments.slice(0, 10).map((payment) => [
                 formatDate(payment.paymentDate),
-                payment.invoiceId,
+                `HĐ: ${payment.invoiceId?.slice(0, 8)}`,
                 getPaymentMethodLabel(payment.paymentMethod),
-                formatCurrency(payment.amount),
+                <Typography fontWeight={700} color="success.main">{formatCurrency(payment.amount)}</Typography>,
                 payment.notes || '-',
               ])}
-              emptyText="Chua co phieu thu"
+              emptyText="Chưa có dữ liệu phiếu thu"
             />
           </Grid>
         </Grid>
@@ -440,81 +436,83 @@ export default function FinanceOperationsPage() {
 
       {activeTab === 1 && (
         <FinanceTable
-          title="Cong no chi tiet theo hoa don"
-          columns={['Hoc vien', 'Lop', 'Han thanh toan', 'Trang thai', 'Phai thu', 'Da thu', 'Con no']}
+          title="Chi tiết công nợ học phí"
+          columns={['Học viên', 'Lớp học', 'Hạn thanh toán', 'Trạng thái', 'Tổng học phí', 'Đã nộp', 'Còn nợ']}
           rows={debtInvoices.map((invoice) => [
-            invoice.studentName || '-',
+            <Typography fontWeight={700}>{invoice.studentName}</Typography>,
             invoice.className || '-',
             formatDate(invoice.dueDate),
             getStatusLabel(invoice.status),
             formatCurrency(getInvoiceAmount(invoice)),
             formatCurrency(invoice.paidAmount),
-            formatCurrency(getOutstandingAmount(invoice)),
+            <Typography fontWeight={800} color="error.main">{formatCurrency(getOutstandingAmount(invoice))}</Typography>,
           ])}
-          emptyText="Khong co cong no"
+          emptyText="Hiện không có học viên nào nợ phí"
         />
       )}
 
       {activeTab === 2 && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Hoan phi / bao luu / chuyen khoa
+            <Paper sx={{ p: 3, borderRadius: 4 }}>
+              <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
+                Xử lý hoàn phí & Điều chỉnh
               </Typography>
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <TextField
                   select
-                  label="Hoa don"
+                  fullWidth
+                  label="Chọn hóa đơn học viên"
                   value={refundForm.invoiceId}
                   onChange={(event) => setRefundForm((prev) => ({ ...prev, invoiceId: event.target.value }))}
                 >
                   {invoices.map((invoice) => (
                     <MenuItem key={invoice.id} value={invoice.id}>
-                      {invoice.studentName} - {invoice.className} - {getStatusLabel(invoice.status)}
+                      {invoice.studentName} - {invoice.className}
                     </MenuItem>
                   ))}
                 </TextField>
                 {refundableInvoice && (
-                  <Alert severity="warning">
-                    Da thu {formatCurrency(refundableInvoice.paidAmount)} tren tong {formatCurrency(getInvoiceAmount(refundableInvoice))}.
-                    He thong se ghi nhan khoan hoan phi vao chi phi.
+                  <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                    Đã thu thực tế: {formatCurrency(refundableInvoice.paidAmount)}. Khoản hoàn phí sẽ được ghi nhận vào chi phí của trung tâm.
                   </Alert>
                 )}
                 <TextField
+                  fullWidth
                   type="number"
-                  label="So tien hoan/chenh lech"
+                  label="Số tiền hoàn lại"
                   value={refundForm.amount}
                   onChange={(event) => setRefundForm((prev) => ({ ...prev, amount: event.target.value }))}
                 />
                 <TextField
+                  fullWidth
                   multiline
-                  minRows={3}
-                  label="Ly do"
-                  placeholder="Hoan phi, phi bao luu, hoac chenh lech khi chuyen khoa"
+                  rows={3}
+                  label="Lý do hoàn phí"
+                  placeholder="VD: Học viên bảo lưu, rút hồ sơ, hoặc chuyển khóa thừa tiền..."
                   value={refundForm.reason}
                   onChange={(event) => setRefundForm((prev) => ({ ...prev, reason: event.target.value }))}
                 />
-                <Button variant="contained" color="warning" disabled={submitting} onClick={handleRefund}>
-                  Xu ly tai chinh hoc vu
+                <Button variant="contained" color="warning" size="large" disabled={submitting} onClick={handleRefund} sx={{ borderRadius: 2, py: 1.5, fontWeight: 700 }}>
+                  Thực hiện hoàn phí
                 </Button>
               </Stack>
             </Paper>
           </Grid>
           <Grid item xs={12} md={7}>
             <FinanceTable
-              title="Lich su hoan phi / dieu chinh"
-              columns={['Ngay', 'Loai', 'So tien', 'Doi tuong', 'Ghi chu']}
+              title="Lịch sử hoàn phí / Điều chỉnh"
+              columns={['Ngày', 'Loại nghiệp vụ', 'Số tiền', 'Đối tượng', 'Lý do']}
               rows={expenses
-                .filter((expense) => ['Refund', 'Hoan phi'].includes(expense.category))
+                .filter((expense) => ['Refund', 'Hoàn phí'].includes(expense.category))
                 .map((expense) => [
                   formatDate(expense.expenseDate),
-                  expense.category,
-                  formatCurrency(expense.amount),
+                  <Chip label={expense.category} size="small" color="warning" variant="outlined" sx={{ fontWeight: 700 }} />,
+                  <Typography fontWeight={700} color="error.main">{formatCurrency(expense.amount)}</Typography>,
                   expense.vendor || '-',
                   expense.notes || '-',
                 ])}
-              emptyText="Chua co xu ly tai chinh hoc vu"
+              emptyText="Chưa có dữ liệu hoàn phí"
             />
           </Grid>
         </Grid>
@@ -523,14 +521,15 @@ export default function FinanceOperationsPage() {
       {activeTab === 3 && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Chot cong va tinh luong
+            <Paper sx={{ p: 3, borderRadius: 4 }}>
+              <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
+                Chốt công & Tính lương giáo viên
               </Typography>
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <TextField
                   select
-                  label="Giao vien"
+                  fullWidth
+                  label="Chọn giáo viên"
                   value={payrollForm.teacherId}
                   onChange={(event) => setPayrollForm((prev) => ({ ...prev, teacherId: event.target.value }))}
                 >
@@ -541,94 +540,95 @@ export default function FinanceOperationsPage() {
                   ))}
                 </TextField>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="month"
-                      label="Thang"
+                      label="Tháng tính lương"
                       value={payrollForm.month}
                       onChange={(event) => setPayrollForm((prev) => ({ ...prev, month: event.target.value }))}
                       InputLabelProps={{ shrink: true }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="number"
-                      label="So buoi"
+                      label="Tổng số buổi dạy"
                       value={payrollForm.sessions}
                       onChange={(event) => setPayrollForm((prev) => ({ ...prev, sessions: event.target.value }))}
                     />
                   </Grid>
                 </Grid>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="number"
-                      label="Gio/buoi"
+                      label="Số giờ/buổi"
                       value={payrollForm.hoursPerSession}
                       onChange={(event) => setPayrollForm((prev) => ({ ...prev, hoursPerSession: event.target.value }))}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="number"
-                      label="Don gia/gio"
+                      label="Đơn giá/giờ"
                       value={payrollForm.hourlyRate}
                       onChange={(event) => setPayrollForm((prev) => ({ ...prev, hourlyRate: event.target.value }))}
                     />
                   </Grid>
                 </Grid>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="number"
-                      label="Thuong"
+                      label="Thưởng thêm"
                       value={payrollForm.bonus}
                       onChange={(event) => setPayrollForm((prev) => ({ ...prev, bonus: event.target.value }))}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       type="number"
-                      label="Khau tru"
+                      label="Khấu trừ / Phạt"
                       value={payrollForm.deduction}
                       onChange={(event) => setPayrollForm((prev) => ({ ...prev, deduction: event.target.value }))}
                     />
                   </Grid>
                 </Grid>
-                <Alert icon={<WorkHistory />} severity="info">
-                  Luong tam tinh: {formatCurrency(payrollAmount)}
+                <Alert icon={<WorkHistory />} severity="info" sx={{ borderRadius: 2 }}>
+                  Tổng lương tạm tính: <strong>{formatCurrency(payrollAmount)}</strong>
                 </Alert>
                 <TextField
-                  label="Ghi chu"
+                  fullWidth
+                  label="Ghi chú chi tiết"
                   value={payrollForm.notes}
                   onChange={(event) => setPayrollForm((prev) => ({ ...prev, notes: event.target.value }))}
                 />
-                <Button variant="contained" disabled={submitting} onClick={handleCreatePayroll}>
-                  Chot cong va ghi phieu chi luong
+                <Button variant="contained" size="large" disabled={submitting} onClick={handleCreatePayroll} sx={{ borderRadius: 2, py: 1.5, fontWeight: 700 }}>
+                  Xác nhận chốt lương
                 </Button>
               </Stack>
             </Paper>
           </Grid>
           <Grid item xs={12} md={7}>
             <FinanceTable
-              title="Lich su luong giao vien"
-              columns={['Ngay', 'Giao vien', 'So tien', 'Nguoi duyet', 'Ghi chu']}
+              title="Lịch sử lương đã chốt"
+              columns={['Ngày chốt', 'Giáo viên', 'Tổng tiền', 'Người duyệt', 'Chi tiết']}
               rows={expenses
-                .filter((expense) => expense.category === 'Luong giao vien')
+                .filter((expense) => expense.category === 'Lương giáo viên')
                 .map((expense) => [
                   formatDate(expense.expenseDate),
-                  expense.vendor || '-',
-                  formatCurrency(expense.amount),
+                  <Typography fontWeight={700}>{expense.vendor}</Typography>,
+                  <Typography fontWeight={800} color="primary.main">{formatCurrency(expense.amount)}</Typography>,
                   expense.approvedByName || '-',
                   expense.notes || '-',
                 ])}
-              emptyText="Chua co phieu luong"
+              emptyText="Chưa có dữ liệu lương giáo viên"
             />
           </Grid>
         </Grid>
@@ -637,14 +637,15 @@ export default function FinanceOperationsPage() {
       {activeTab === 4 && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Ghi nhan chi phi van hanh
+            <Paper sx={{ p: 3, borderRadius: 4 }}>
+              <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
+                Ghi nhận chi phí vận hành
               </Typography>
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <TextField
                   select
-                  label="Danh muc"
+                  fullWidth
+                  label="Danh mục chi phí"
                   value={expenseForm.category}
                   onChange={(event) => setExpenseForm((prev) => ({ ...prev, category: event.target.value }))}
                 >
@@ -655,59 +656,64 @@ export default function FinanceOperationsPage() {
                   ))}
                 </TextField>
                 <TextField
+                  fullWidth
                   type="number"
-                  label="So tien"
+                  label="Số tiền chi"
                   value={expenseForm.amount}
                   onChange={(event) => setExpenseForm((prev) => ({ ...prev, amount: event.target.value }))}
                 />
                 <TextField
+                  fullWidth
                   type="date"
-                  label="Ngay chi"
+                  label="Ngày thực hiện chi"
                   value={expenseForm.expenseDate}
                   onChange={(event) => setExpenseForm((prev) => ({ ...prev, expenseDate: event.target.value }))}
                   InputLabelProps={{ shrink: true }}
                 />
                 <TextField
-                  label="Nha cung cap/doi tuong"
+                  fullWidth
+                  label="Nhà cung cấp / Đối tượng nhận"
                   value={expenseForm.vendor}
                   onChange={(event) => setExpenseForm((prev) => ({ ...prev, vendor: event.target.value }))}
                 />
                 <TextField
-                  label="Link chung tu"
+                  fullWidth
+                  label="Link ảnh / file chứng từ"
                   value={expenseForm.receiptUrl}
                   onChange={(event) => setExpenseForm((prev) => ({ ...prev, receiptUrl: event.target.value }))}
                 />
                 <TextField
+                  fullWidth
                   multiline
-                  minRows={2}
-                  label="Ghi chu"
+                  rows={2}
+                  label="Ghi chú thêm"
                   value={expenseForm.notes}
                   onChange={(event) => setExpenseForm((prev) => ({ ...prev, notes: event.target.value }))}
                 />
-                <Button variant="contained" color="error" disabled={submitting} onClick={handleCreateExpense}>
-                  Ghi nhan phieu chi
+                <Button variant="contained" color="error" size="large" disabled={submitting} onClick={handleCreateExpense} sx={{ borderRadius: 2, py: 1.5, fontWeight: 700 }}>
+                  Xác nhận chi tiền
                 </Button>
               </Stack>
             </Paper>
           </Grid>
           <Grid item xs={12} md={7}>
             {unusualExpenses.length > 0 && (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                Co {unusualExpenses.length} khoan chi cao bat thuong so voi trung binh hien tai.
+              <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                Phát hiện <strong>{unusualExpenses.length} khoản chi cao bất thường</strong> so với trung bình hàng tháng.
               </Alert>
             )}
             <FinanceTable
-              title="Chi phi van hanh"
-              columns={['Ngay', 'Danh muc', 'So tien', 'Doi tuong', 'Nguoi duyet', 'Ghi chu']}
+              title="Danh sách các khoản chi"
+              columns={['Ngày', 'Danh mục', 'Số tiền', 'Đối tượng', 'Người duyệt', 'Ghi chú']}
               rows={expenses.map((expense) => [
                 formatDate(expense.expenseDate),
-                expense.category,
-                formatCurrency(expense.amount),
+                <Chip label={expense.category} size="small" variant="outlined" sx={{ fontWeight: 700 }} />,
+                <Typography fontWeight={700} color="error.main">{formatCurrency(expense.amount)}</Typography>,
                 expense.vendor || '-',
                 expense.approvedByName || '-',
                 expense.notes || '-',
               ])}
-              emptyText="Chua co chi phi"
+              emptyText="Chưa có dữ liệu chi phí vận hành"
             />
           </Grid>
         </Grid>
@@ -715,25 +721,29 @@ export default function FinanceOperationsPage() {
 
       {activeTab === 5 && (
         <FinanceTable
-          title="Audit log tai chinh"
-          columns={['Thoi gian', 'Nguoi thuc hien', 'Hanh dong', 'Doi tuong', 'Gia tri']}
+          title="Nhật ký giao dịch tài chính (Audit Log)"
+          columns={['Thời gian', 'Người thực hiện', 'Hành động', 'Đối tượng liên quan', 'Giá trị giao dịch']}
           rows={auditRows.map((row) => [
             formatDate(row.time),
-            row.actor,
+            <Typography fontWeight={700}>{row.actor}</Typography>,
             row.action,
             row.object,
-            formatCurrency(row.amount),
+            <Typography fontWeight={800} color={row.action.includes('thu') ? 'success.main' : 'error.main'}>
+              {formatCurrency(row.amount)}
+            </Typography>,
           ])}
-          emptyText="Chua co log tai chinh"
+          emptyText="Hệ thống chưa ghi nhận nhật ký giao dịch nào"
         />
       )}
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
-        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2, fontWeight: 600 }}>
+          {snackbar.message}
+        </Alert>
       </Snackbar>
     </Box>
   );
@@ -742,18 +752,18 @@ export default function FinanceOperationsPage() {
 function SummaryCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
   return (
     <Grid item xs={12} sm={6} md={3}>
-      <Card>
-        <CardContent>
+      <Card sx={{ borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+        <CardContent sx={{ p: 3 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
             <Box>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
                 {title}
               </Typography>
-              <Typography variant="h5" fontWeight={700}>
+              <Typography variant="h5" fontWeight={900} sx={{ mt: 0.5 }}>
                 {value}
               </Typography>
             </Box>
-            <Box sx={{ '& svg': { fontSize: 38 } }}>{icon}</Box>
+            <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.02)', '& svg': { fontSize: 32 } }}>{icon}</Box>
           </Stack>
         </CardContent>
       </Card>
@@ -773,43 +783,40 @@ function FinanceTable({
   emptyText: string;
 }) {
   return (
-    <Paper>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ p: 2 }}>
+    <Paper sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.01)' }}>
         <FactCheck color="primary" />
-        <Typography variant="h6" fontWeight={700}>
+        <Typography variant="h6" fontWeight={800}>
           {title}
         </Typography>
       </Stack>
       <Divider />
       <TableContainer>
         <Table size="small">
-          <TableHead>
+          <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.01)' }}>
             <TableRow>
               {columns.map((column) => (
-                <TableCell key={column}>{column}</TableCell>
+                <TableCell key={column} sx={{ fontWeight: 800, py: 2 }}>{column}</TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row, index) => (
-              <TableRow key={index}>
-                {row.map((cell, cellIndex) => (
-                  <TableCell key={cellIndex}>
-                    {typeof cell === 'string' && ['Da thanh toan', 'Thanh toan mot phan', 'Cho thanh toan', 'Chua thanh toan'].includes(cell) ? (
-                      <Chip size="small" label={cell} />
-                    ) : (
-                      cell
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-            {rows.length === 0 && (
+            {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} align="center">
-                  {emptyText}
+                <TableCell colSpan={columns.length} sx={{ py: 6, textAlign: 'center' }}>
+                  <Typography color="text.secondary">{emptyText}</Typography>
                 </TableCell>
               </TableRow>
+            ) : (
+              rows.map((row, index) => (
+                <TableRow key={index} hover>
+                  {row.map((cell, cellIndex) => (
+                    <TableCell key={cellIndex} sx={{ py: 2 }}>
+                      {cell}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

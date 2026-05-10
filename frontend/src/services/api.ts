@@ -41,19 +41,30 @@ type BackendUser = {
   branchId?: string;
 };
 
-const normalizeUser = (user: BackendUser): AppUser => ({
-  id: user.id,
-  email: user.email,
-  fullName: user.fullName || user.name || user.email,
-  role: user.role,
-  status: user.status || 'ACTIVE',
-  phone: user.phone,
-  avatarUrl: user.avatarUrl,
-  address: user.address,
-  dateOfBirth: user.dateOfBirth,
-  gender: user.gender,
-  branchId: user.branchId,
-});
+const normalizeUser = (user: BackendUser | null | undefined): AppUser => {
+  if (!user) {
+    return {
+      id: '',
+      email: '',
+      fullName: 'Người dùng hệ thống',
+      role: 'STUDENT',
+      status: 'INACTIVE',
+    };
+  }
+  return {
+    id: user.id || '',
+    email: user.email || '',
+    fullName: user.fullName || user.name || user.email || 'Học viên',
+    role: user.role || 'STUDENT',
+    status: user.status || 'ACTIVE',
+    phone: user.phone,
+    avatarUrl: user.avatarUrl,
+    address: user.address,
+    dateOfBirth: user.dateOfBirth,
+    gender: user.gender,
+    branchId: user.branchId,
+  };
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`,
@@ -91,7 +102,7 @@ export default api;
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('auth/login', { email, password });
     const data = response.data;
     return {
       token: data.accessToken,
@@ -220,6 +231,7 @@ export const leadApi = {
     return response.data;
   },
   interestClass: (classId: string, notes?: string) => api.post('leads/me/interest-class', null, { params: { classId, notes } }),
+  publicSubmit: (data: any) => api.post('public/leads', data),
 };
 
 export const userApi = {
@@ -275,6 +287,7 @@ export const attendanceApi = {
   getByClass: (classId: string, date?: string) => api.get(`attendance/${classId}`, { params: date ? { date } : undefined }),
   submit: (data: any) => api.post('attendance', data),
   getMonthlyReport: (params: any) => api.get('attendance/report/monthly', { params }),
+  getByEnrollment: (enrollmentId: string) => api.get(`attendance/enrollment/${enrollmentId}`),
 };
 
 export const assignmentApi = {

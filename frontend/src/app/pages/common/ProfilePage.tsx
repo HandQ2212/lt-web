@@ -20,9 +20,25 @@ import {
   Stack,
   TextField,
   Typography,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useTheme,
+  useMediaQuery,
+  Card,
+  CardContent,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import { Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material';
+import { 
+  Edit as EditIcon, 
+  Save as SaveIcon, 
+  PhotoCamera as PhotoCameraIcon,
+  Lock as LockIcon,
+  Person as PersonIcon,
+  Favorite as FavoriteIcon,
+} from '@mui/icons-material';
 import { RootState } from '../../../store';
 import { courseApi, leadApi, profileApi } from '../../../services/api';
 import { setCurrentUser } from '../../../store/slices/authSlice';
@@ -48,6 +64,8 @@ type LeadProfile = {
 };
 
 export default function ProfilePage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const isLead = user?.role === 'LEAD';
@@ -60,11 +78,13 @@ export default function ProfilePage() {
   const [interestNotes, setInterestNotes] = useState('');
   const [interestLoading, setInterestLoading] = useState(false);
   const [interestSaving, setInterestSaving] = useState(false);
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
   });
+
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
@@ -73,11 +93,13 @@ export default function ProfilePage() {
     dateOfBirth: user?.dateOfBirth || '',
     gender: user?.gender || '',
   });
+
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
+
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState(user?.avatarUrl || '');
 
@@ -93,13 +115,10 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    if (!isLead) {
-      return;
-    }
+    if (!isLead) return;
 
     setInterestLoading(true);
-    courseApi
-      .getAll()
+    courseApi.getAll()
       .then((courseList) => {
         setCourses(courseList);
         return leadApi.getMine();
@@ -121,11 +140,6 @@ export default function ProfilePage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleCourseSelect = (event: SelectChangeEvent<string[]>) => {
-    const value = event.target.value;
-    setSelectedCourseIds(typeof value === 'string' ? value.split(',') : value);
-  };
-
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -137,15 +151,12 @@ export default function ProfilePage() {
         gender: formData.gender,
       });
       dispatch(setCurrentUser(updated));
-      setSnackbar({ open: true, message: 'Cập nhật thông tin thành công', severity: 'success' });
+      setSnackbar({ open: true, message: 'Đã lưu thay đổi hồ sơ cá nhân', severity: 'success' });
       setIsEditing(false);
-      if (isLead) {
-        leadApi.getMine().then(setLeadProfile).catch(() => undefined);
-      }
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Cập nhật thông tin thất bại',
+        message: error?.response?.data?.message || 'Không thể lưu hồ sơ',
         severity: 'error',
       });
     } finally {
@@ -157,18 +168,13 @@ export default function ProfilePage() {
     try {
       setSaving(true);
       const updated = await profileApi.update({
-        fullName: formData.fullName,
         avatarUrl: newAvatarUrl,
       });
       dispatch(setCurrentUser(updated));
-      setSnackbar({ open: true, message: 'Cập nhật ảnh đại diện thành công', severity: 'success' });
+      setSnackbar({ open: true, message: 'Đã cập nhật ảnh đại diện mới', severity: 'success' });
       setAvatarDialogOpen(false);
     } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message: error?.response?.data?.message || 'Cập nhật ảnh thất bại',
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: 'Lỗi khi cập nhật ảnh đại diện', severity: 'error' });
     } finally {
       setSaving(false);
     }
@@ -176,7 +182,7 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setSnackbar({ open: true, message: 'Xác nhận mật khẩu mới không khớp', severity: 'error' });
+      setSnackbar({ open: true, message: 'Mật khẩu mới không khớp nhau', severity: 'error' });
       return;
     }
 
@@ -185,41 +191,10 @@ export default function ProfilePage() {
         oldPassword: passwordForm.oldPassword,
         newPassword: passwordForm.newPassword,
       });
-      setSnackbar({ open: true, message: 'Đổi mật khẩu thành công', severity: 'success' });
+      setSnackbar({ open: true, message: 'Mật khẩu đã được thay đổi thành công', severity: 'success' });
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message: error?.response?.data?.message || 'Đổi mật khẩu thất bại',
-        severity: 'error',
-      });
-    }
-  };
-
-  const handleAddInterests = async () => {
-    if (selectedCourseIds.length === 0) {
-      setSnackbar({ open: true, message: 'Chọn ít nhất một khóa học', severity: 'error' });
-      return;
-    }
-
-    try {
-      setInterestSaving(true);
-      const updatedLead = await leadApi.addMyInterests({
-        courseIds: selectedCourseIds,
-        notes: interestNotes || undefined,
-      });
-      setLeadProfile(updatedLead);
-      setSelectedCourseIds([]);
-      setInterestNotes('');
-      setSnackbar({ open: true, message: 'Đã lưu khóa học quan tâm', severity: 'success' });
-    } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message: error?.response?.data?.message || 'Không lưu được khóa học quan tâm',
-        severity: 'error',
-      });
-    } finally {
-      setInterestSaving(false);
+      setSnackbar({ open: true, message: error?.response?.data?.message || 'Mật khẩu hiện tại không chính xác', severity: 'error' });
     }
   };
 
@@ -227,293 +202,272 @@ export default function ProfilePage() {
   const availableCourses = courses.filter((course) => !interestedCourseIds.has(course.id));
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
-        Hồ sơ cá nhân
-      </Typography>
+    <Box sx={{ pb: 6 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
+          Hồ sơ của tôi
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Quản lý thông tin cá nhân và thiết lập tài khoản của bạn.
+        </Typography>
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
-            <Avatar
-              src={user?.avatarUrl}
-              sx={{
-                width: 120,
-                height: 120,
-                mx: 'auto',
-                mb: 2,
-                bgcolor: 'primary.main',
-                fontSize: 48,
-                boxShadow: 3,
-              }}
-            >
-              {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
-            </Avatar>
-            <Typography variant="h6" fontWeight={600}>
-              {user?.fullName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {user?.role}
-            </Typography>
-            <Button 
-              variant="outlined" 
-              startIcon={<EditIcon />} 
-              sx={{ mt: 2, borderRadius: 2 }}
-              onClick={() => setAvatarDialogOpen(true)}
-            >
-              Thay đổi ảnh
-            </Button>
+      <Grid container spacing={4}>
+        {/* Left Column: Avatar & Basic Info */}
+        <Grid item xs={12} lg={4}>
+          <Paper sx={{ p: 4, borderRadius: 4, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.05)', height: '100%' }}>
+            <Box sx={{ position: 'relative', width: 150, height: 150, mx: 'auto', mb: 3 }}>
+              <Avatar
+                src={user?.avatarUrl}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  border: '4px solid white',
+                  bgcolor: 'primary.main',
+                  fontSize: 64,
+                }}
+              >
+                {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
+              </Avatar>
+              <IconButton 
+                size="small"
+                onClick={() => setAvatarDialogOpen(true)}
+                sx={{ 
+                  position: 'absolute', 
+                  bottom: 5, 
+                  right: 5, 
+                  bgcolor: 'primary.main', 
+                  color: 'white',
+                  '&:hover': { bgcolor: 'primary.dark' },
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)'
+                }}
+              >
+                <PhotoCameraIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            
+            <Typography variant="h5" fontWeight={800} gutterBottom>{user?.fullName}</Typography>
+            <Chip 
+              label={
+                user?.role === 'STUDENT' ? 'Học viên' : 
+                user?.role === 'ADMIN' ? 'Quản trị viên' : 
+                user?.role === 'MANAGER' ? 'Quản trị viên' : 
+                user?.role === 'TEACHER' ? 'Giảng viên' : 
+                user?.role === 'ACCOUNTANT' ? 'Kế toán viên' : 
+                'Khách hàng'
+              } 
+              color="primary" 
+              variant="outlined"
+              sx={{ fontWeight: 700, borderRadius: 2, mb: 2 }} 
+            />
+            
+            <Divider sx={{ my: 3, borderStyle: 'dashed' }} />
+            
+            <Stack spacing={2} sx={{ textAlign: 'left' }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">Email đăng ký</Typography>
+                <Typography variant="body2" fontWeight={600}>{user?.email}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">Ngày tham gia</Typography>
+                <Typography variant="body2" fontWeight={600}>Cập nhật lần cuối: {new Date().toLocaleDateString('vi-VN')}</Typography>
+              </Box>
+            </Stack>
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" fontWeight={600}>
-                Thông tin cá nhân
-              </Typography>
-              {!isEditing && (
-                <Button variant="outlined" startIcon={<EditIcon />} onClick={() => setIsEditing(true)}>
-                  Chỉnh sửa
-                </Button>
-              )}
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Họ tên"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Email" name="email" type="email" value={formData.email} disabled />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Số điện thoại"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  disabled={!isEditing}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Ngày sinh"
-                  name="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                  disabled={!isEditing}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Giới tính"
-                  name="gender"
-                  select
-                  SelectProps={{ native: true }}
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  disabled={!isEditing}
-                >
-                  <option value="">Chọn giới tính</option>
-                  <option value="MALE">Nam</option>
-                  <option value="FEMALE">Nữ</option>
-                  <option value="OTHER">Khác</option>
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Địa chỉ"
-                  name="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  disabled={!isEditing}
-                  multiline
-                  rows={2}
-                />
-              </Grid>
-            </Grid>
-
-            {isEditing && (
-              <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={saving}>
-                  {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                </Button>
-                <Button variant="outlined" onClick={() => setIsEditing(false)}>
-                  Hủy
-                </Button>
-              </Box>
-            )}
-
-            <Divider sx={{ my: 3 }} />
-
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Đổi mật khẩu
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Mật khẩu hiện tại"
-                  type="password"
-                  value={passwordForm.oldPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, oldPassword: e.target.value }))}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Mật khẩu mới"
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Xác nhận mật khẩu mới"
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                />
-              </Grid>
-            </Grid>
-            <Button variant="outlined" sx={{ mt: 2 }} onClick={() => void handleChangePassword()}>
-              Đổi mật khẩu
-            </Button>
-          </Paper>
-
-          {isLead && (
-            <Paper sx={{ p: 3, mt: 3 }}>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Khóa học quan tâm
-              </Typography>
-
-              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>
-                {interestLoading && <Typography color="text.secondary">Đang tải...</Typography>}
-                {!interestLoading && (leadProfile?.interests || []).length === 0 && (
-                  <Typography color="text.secondary">Bạn chưa chọn khóa học quan tâm.</Typography>
-                )}
-                {(leadProfile?.interests || []).map((interest) => (
-                  <Chip
-                    key={interest.id}
-                    label={`${interest.courseName || 'Khóa học'} - ${
-                      interest.status === 'NEW' ? 'Đang chờ' : 
-                      interest.status === 'CONSULTING' ? 'Đang tư vấn' : 
-                      interest.status === 'AGREED' ? 'Đã đồng ý' : 
-                      interest.status === 'REJECTED' ? 'Đã từ chối' :
-                      interest.status === 'PAID' ? 'Đã nộp phí' : interest.status
-                    }`}
-                    color={
-                      interest.status === 'PAID' ? 'success' : 
-                      interest.status === 'REJECTED' ? 'error' : 
-                      interest.status === 'CONSULTING' ? 'warning' : 'primary'
-                    }
-                    variant="filled"
-                    sx={{ fontWeight: 600 }}
-                  />
-                ))}
-              </Stack>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <FormControl fullWidth disabled={interestLoading || availableCourses.length === 0}>
-                    <InputLabel id="interested-courses-label">Chọn khóa học</InputLabel>
-                    <Select
-                      labelId="interested-courses-label"
-                      multiple
-                      value={selectedCourseIds}
-                      onChange={handleCourseSelect}
-                      input={<OutlinedInput label="Chọn khóa học" />}
-                      renderValue={(selected) =>
-                        selected
-                          .map((courseId) => courses.find((course) => course.id === courseId)?.name)
-                          .filter(Boolean)
-                          .join(', ')
-                      }
+        {/* Right Column: Detailed Info & Security */}
+        <Grid item xs={12} lg={8}>
+          <Stack spacing={4}>
+            {/* Personal Details Card */}
+            <Card sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', overflow: 'visible' }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                  <Typography variant="h6" fontWeight={800} display="flex" alignItems="center">
+                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} /> Thông tin chi tiết
+                  </Typography>
+                  {!isEditing ? (
+                    <Button 
+                      variant="contained" 
+                      startIcon={<EditIcon />} 
+                      onClick={() => setIsEditing(true)}
+                      sx={{ borderRadius: 2, px: 3 }}
                     >
-                      {availableCourses.map((course) => (
-                        <MenuItem key={course.id} value={course.id}>
-                          <Checkbox checked={selectedCourseIds.includes(course.id)} />
-                          <ListItemText primary={course.name} secondary={course.level} />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    label="Ghi chú nhu cầu học"
-                    value={interestNotes}
-                    onChange={(e) => setInterestNotes(e.target.value)}
-                  />
-                </Grid>
-              </Grid>
+                      Chỉnh sửa
+                    </Button>
+                  ) : (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button variant="outlined" onClick={() => setIsEditing(false)} sx={{ borderRadius: 2 }}>Hủy</Button>
+                      <Button 
+                        variant="contained" 
+                        startIcon={<SaveIcon />} 
+                        onClick={handleSave} 
+                        disabled={saving}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Lưu thông tin
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
 
-              <Button
-                variant="contained"
-                sx={{ mt: 2 }}
-                onClick={() => void handleAddInterests()}
-                disabled={interestSaving || selectedCourseIds.length === 0}
-              >
-                {interestSaving ? 'Đang lưu...' : 'Thêm khóa quan tâm'}
-              </Button>
-            </Paper>
-          )}
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Họ và tên"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Số điện thoại"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Ngày sinh"
+                      name="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Giới tính"
+                      name="gender"
+                      select
+                      value={formData.gender}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                    >
+                      <MenuItem value="MALE">Nam</MenuItem>
+                      <MenuItem value="FEMALE">Nữ</MenuItem>
+                      <MenuItem value="OTHER">Khác</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Địa chỉ thường trú"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                      multiline
+                      rows={2}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Security Card */}
+            <Card sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
+              <CardContent sx={{ p: 4 }}>
+                <Typography variant="h6" fontWeight={800} sx={{ mb: 4 }} display="flex" alignItems="center">
+                  <LockIcon sx={{ mr: 1, color: 'primary.main' }} /> Bảo mật & Đổi mật khẩu
+                </Typography>
+                
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Mật khẩu hiện tại"
+                      type="password"
+                      value={passwordForm.oldPassword}
+                      onChange={(e) => setPasswordForm(p => ({ ...p, oldPassword: e.target.value }))}
+                      placeholder="Nhập mật khẩu cũ để xác minh"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Mật khẩu mới"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Xác nhận mật khẩu mới"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                    />
+                  </Grid>
+                </Grid>
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  sx={{ mt: 3, borderRadius: 2, px: 4 }}
+                  onClick={handleChangePassword}
+                >
+                  Cập nhật mật khẩu mới
+                </Button>
+              </CardContent>
+            </Card>
+          </Stack>
         </Grid>
       </Grid>
 
-      <Dialog open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Thay đổi ảnh đại diện</DialogTitle>
-        <DialogContent>
+      {/* Avatar Edit Dialog */}
+      <Dialog open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>Cập nhật ảnh đại diện</DialogTitle>
+        <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Dán đường dẫn (URL) ảnh của bạn vào bên dưới.
+            Vui lòng dán đường dẫn (URL) hình ảnh bạn muốn sử dụng làm ảnh đại diện.
           </Typography>
           <TextField
             fullWidth
-            label="Image URL"
+            label="Đường dẫn ảnh (URL)"
             value={newAvatarUrl}
             onChange={(e) => setNewAvatarUrl(e.target.value)}
             margin="normal"
-            placeholder="https://example.com/image.jpg"
+            placeholder="https://example.com/avatar.jpg"
           />
           {newAvatarUrl && (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="caption" display="block" gutterBottom>Xem trước:</Typography>
-              <Avatar src={newAvatarUrl} sx={{ width: 100, height: 100, mx: 'auto' }} />
+            <Box sx={{ mt: 3, textAlign: 'center' }}>
+              <Typography variant="caption" display="block" sx={{ mb: 1 }}>Xem trước ảnh mới:</Typography>
+              <Avatar src={newAvatarUrl} sx={{ width: 120, height: 120, mx: 'auto', boxShadow: 3 }} />
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAvatarDialogOpen(false)}>Hủy</Button>
-          <Button variant="contained" onClick={() => void handleAvatarSave()} disabled={saving}>
-            {saving ? 'Đang lưu...' : 'Lưu ảnh'}
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setAvatarDialogOpen(false)} color="inherit">Hủy bỏ</Button>
+          <Button variant="contained" onClick={handleAvatarSave} disabled={saving} sx={{ borderRadius: 2 }}>
+            {saving ? 'Đang lưu...' : 'Lưu ảnh đại diện'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbar(p => ({ ...p, open: false }))}
       >
-        <Alert severity={snackbar.severity} variant="filled">
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

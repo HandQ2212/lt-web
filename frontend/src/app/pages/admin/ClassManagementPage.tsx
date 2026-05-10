@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
@@ -29,6 +30,8 @@ import {
   Tabs,
   TextField,
   Typography,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -106,6 +109,19 @@ type ScheduleForm = {
   endTime: string;
 };
 
+type ScheduleSessionRow = {
+  key: string;
+  sortTime: number;
+  dateLabel: string;
+  timeLabel: string;
+  roomLabel: string;
+  formatLabel: string;
+  attendanceLabel: string;
+  teacherLabel: string;
+  titleLabel: string;
+  materialLabel: string;
+};
+
 const defaultForm: ClassForm = {
   name: '',
   courseId: '',
@@ -126,7 +142,40 @@ const defaultScheduleForm: ScheduleForm = {
 
 const statusOrder = ['UPCOMING', 'ACCEPTING', 'ONGOING', 'COMPLETED'];
 
+const dayOfWeekIndexMap: Record<string, number> = {
+  SUNDAY: 0,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6,
+};
+
+const dayOfWeekLabelMap: Record<string, string> = {
+  SUNDAY: 'Chủ Nhật',
+  MONDAY: 'Thứ Hai',
+  TUESDAY: 'Thứ Ba',
+  WEDNESDAY: 'Thứ Tư',
+  THURSDAY: 'Thứ Năm',
+  FRIDAY: 'Thứ Sáu',
+  SATURDAY: 'Thứ Bảy',
+};
+
+const formatSessionDateLabel = (date: Date) => {
+  const raw = date.toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
 export default function ClassManagementPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [filteredClasses, setFilteredClasses] = useState<ClassItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,7 +234,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the tai danh sach lop',
+        message: error?.response?.data?.message || 'Không thể tải danh sách lớp học',
         severity: 'error',
       });
     } finally {
@@ -209,7 +258,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the tai du lieu tao lop',
+        message: error?.response?.data?.message || 'Không thể tải dữ liệu tùy chọn lớp học',
         severity: 'error',
       });
     }
@@ -228,7 +277,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the tai chi tiet lop',
+        message: error?.response?.data?.message || 'Không thể tải chi tiết lớp học',
         severity: 'error',
       });
     } finally {
@@ -268,14 +317,14 @@ export default function ClassManagementPage() {
         status: form.status,
       });
 
-      setSnackbar({ open: true, message: 'Tao lop thanh cong', severity: 'success' });
+      setSnackbar({ open: true, message: 'Tạo lớp học thành công', severity: 'success' });
       setOpenDialog(false);
       setForm(defaultForm);
       await fetchClasses();
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the tao lop',
+        message: error?.response?.data?.message || 'Không thể tạo lớp học',
         severity: 'error',
       });
     } finally {
@@ -286,7 +335,7 @@ export default function ClassManagementPage() {
   const handleDelete = async (id: string) => {
     try {
       await classApi.delete(id);
-      setSnackbar({ open: true, message: 'Xoa lop thanh cong', severity: 'success' });
+      setSnackbar({ open: true, message: 'Xóa lớp học thành công', severity: 'success' });
       if (selectedClassId === id) {
         setSelectedClass(null);
         setEnrollments([]);
@@ -296,7 +345,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the xoa lop',
+        message: error?.response?.data?.message || 'Không thể xóa lớp học',
         severity: 'error',
       });
     }
@@ -305,7 +354,7 @@ export default function ClassManagementPage() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
       await classApi.updateStatus(id, newStatus);
-      setSnackbar({ open: true, message: 'Cap nhat trang thai thanh cong', severity: 'success' });
+      setSnackbar({ open: true, message: 'Cập nhật trạng thái thành công', severity: 'success' });
       await fetchClasses();
       if (selectedClassId === id) {
         setSelectedClass((prev) => (prev ? { ...prev, status: newStatus } : prev));
@@ -313,7 +362,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the cap nhat trang thai',
+        message: error?.response?.data?.message || 'Không thể cập nhật trạng thái lớp học',
         severity: 'error',
       });
     }
@@ -325,10 +374,10 @@ export default function ClassManagementPage() {
     setScheduleForm(
       schedule
         ? {
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: formatTimeToHHMM(schedule.startTime),
-            endTime: formatTimeToHHMM(schedule.endTime),
-          }
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: formatTimeToHHMM(schedule.startTime),
+          endTime: formatTimeToHHMM(schedule.endTime),
+        }
         : defaultScheduleForm
     );
   };
@@ -336,12 +385,18 @@ export default function ClassManagementPage() {
   const handleSaveSchedule = async () => {
     try {
       setScheduleSubmitting(true);
+      const targetClassId = scheduleDialog.classId || selectedClassId || activeClass?.id;
+
+      if (!targetClassId) {
+        throw new Error('Không tìm thấy lớp học để lưu lịch');
+      }
+
       if (scheduleMode === 'edit' && scheduleDialog.scheduleId) {
-        await classApi.updateSchedule(scheduleDialog.classId, scheduleDialog.scheduleId, scheduleForm);
-        setSnackbar({ open: true, message: 'Cap nhat buoi hoc thanh cong', severity: 'success' });
+        await classApi.updateSchedule(targetClassId, scheduleDialog.scheduleId, scheduleForm);
+        setSnackbar({ open: true, message: 'Cập nhật lịch học thành công', severity: 'success' });
       } else {
-        await classApi.addSchedule(scheduleDialog.classId, scheduleForm);
-        setSnackbar({ open: true, message: 'Them lich hoc thanh cong', severity: 'success' });
+        await classApi.addSchedule(targetClassId, scheduleForm);
+        setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
       }
       setScheduleDialog({ open: false, classId: '' });
       setScheduleForm(defaultScheduleForm);
@@ -352,7 +407,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the luu buoi hoc',
+        message: error?.response?.data?.message || 'Không thể lưu lịch học',
         severity: 'error',
       });
     } finally {
@@ -363,7 +418,7 @@ export default function ClassManagementPage() {
   const handleDeleteSchedule = async (classId: string, scheduleId: string) => {
     try {
       await classApi.deleteSchedule(classId, scheduleId);
-      setSnackbar({ open: true, message: 'Xoa buoi hoc thanh cong', severity: 'success' });
+      setSnackbar({ open: true, message: 'Xóa buổi học thành công', severity: 'success' });
       await fetchClasses();
       if (selectedClassId) {
         await fetchClassDetails(selectedClassId);
@@ -371,7 +426,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the xoa buoi hoc',
+        message: error?.response?.data?.message || 'Không thể xóa buổi học',
         severity: 'error',
       });
     }
@@ -386,7 +441,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Khong the tai ket qua hoc tap',
+        message: error?.response?.data?.message || 'Không thể tải kết quả học tập của học viên',
         severity: 'error',
       });
       setStudentDialogOpen(true);
@@ -413,17 +468,17 @@ export default function ClassManagementPage() {
   const getStatusLabel = (status?: string) => {
     switch (status) {
       case 'UPCOMING':
-        return 'Vua tao';
+        return 'Chờ khai giảng';
       case 'ACCEPTING':
-        return 'Dang tuyen sinh';
+        return 'Đang tuyển sinh';
       case 'ONGOING':
-        return 'Dang dien ra';
+        return 'Đang diễn ra';
       case 'COMPLETED':
-        return 'Hoan thanh';
+        return 'Đã hoàn thành';
       case 'CANCELLED':
-        return 'Da huy';
+        return 'Đã hủy';
       default:
-        return status || 'Khong xac dinh';
+        return status || 'Không xác định';
     }
   };
 
@@ -443,48 +498,117 @@ export default function ClassManagementPage() {
 
   const activeClass = classes.find((item) => item.id === selectedClassId) || selectedClass;
 
+  const scheduleSessionRows = useMemo<ScheduleSessionRow[]>(() => {
+    if (!activeClass?.schedules?.length) {
+      return [];
+    }
+
+    const rows: ScheduleSessionRow[] = [];
+
+    const startDate = activeClass.startDate ? new Date(`${activeClass.startDate}T00:00:00`) : null;
+    const endDate = activeClass.endDate ? new Date(`${activeClass.endDate}T23:59:59`) : null;
+
+    const validRange = startDate && endDate && !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && startDate <= endDate;
+
+    // If we have a valid start/end range, expand schedules into actual occurrences
+    if (validRange) {
+      activeClass.schedules.forEach((schedule) => {
+        const targetDay = dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()];
+        if (targetDay === undefined) {
+          return;
+        }
+
+        const firstOccurrence = new Date(startDate as Date);
+        const daysUntilFirstOccurrence = (targetDay - firstOccurrence.getDay() + 7) % 7;
+        firstOccurrence.setDate(firstOccurrence.getDate() + daysUntilFirstOccurrence);
+
+        for (let occurrence = new Date(firstOccurrence); occurrence <= (endDate as Date); occurrence.setDate(occurrence.getDate() + 7)) {
+          const occurrenceDateKey = [
+            occurrence.getFullYear(),
+            String(occurrence.getMonth() + 1).padStart(2, '0'),
+            String(occurrence.getDate()).padStart(2, '0'),
+          ].join('-');
+
+          rows.push({
+            key: `${schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`}-${occurrenceDateKey}`,
+            sortTime: occurrence.getTime(),
+            dateLabel: formatSessionDateLabel(new Date(occurrence)),
+            timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+            roomLabel: activeClass.roomName || '-',
+            formatLabel: activeClass.roomName ? 'Trực tiếp' : 'Online',
+            attendanceLabel: 'Chưa điểm danh',
+            teacherLabel: activeClass.teacherName || '-',
+            titleLabel: activeClass.name || activeClass.courseName || '-',
+            materialLabel: '-',
+          });
+        }
+      });
+
+      return rows.sort((left, right) => left.sortTime - right.sortTime);
+    }
+
+    // Fallback: no valid start/end range — show weekly schedule definitions instead
+    activeClass.schedules.forEach((schedule) => {
+      const labelDay = dayOfWeekLabelMap[schedule.dayOfWeek.toUpperCase()] || schedule.dayOfWeek;
+      rows.push({
+        key: schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`,
+        sortTime: dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()] || 0,
+        dateLabel: labelDay,
+        timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+        roomLabel: activeClass.roomName || '-',
+        formatLabel: activeClass.roomName ? 'Trực tiếp' : 'Online',
+        attendanceLabel: 'Chưa điểm danh',
+        teacherLabel: activeClass.teacherName || '-',
+        titleLabel: activeClass.name || activeClass.courseName || '-',
+        materialLabel: '-',
+      });
+    });
+
+    return rows.sort((l, r) => l.sortTime - r.sortTime);
+  }, [activeClass]);
+
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2 }}>
+    <Box sx={{ pb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 2 }}>
         <Box>
-          <Typography variant="h4" fontWeight={700}>
-            Quan ly lop hoc
+          <Typography variant="h4" fontWeight={800} color="primary.main">
+            Quản lý Lớp học
           </Typography>
-          <Typography color="text.secondary">
-            Click vao tung lop de xem chi tiet buoi hoc, hoc vien va dieu chinh lich.
+          <Typography variant="body1" color="text.secondary">
+            Xem chi tiết buổi học, danh sách học viên và điều chỉnh lịch học cho các lớp.
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenDialog(true)}>
-          Tao lop moi
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenDialog(true)} sx={{ borderRadius: 2, px: 3, py: 1, fontWeight: 700 }}>
+          Tạo lớp mới
         </Button>
       </Box>
 
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 4 }}>
         <TextField
           fullWidth
-          placeholder="Tim kiem lop hoc theo ten, ma lop, trang thai..."
+          placeholder="Tìm kiếm lớp học theo tên, mã lớp, trạng thái..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
           }}
           variant="outlined"
-          size="small"
+          sx={{ bgcolor: 'white', borderRadius: 2, '& fieldset': { borderRadius: 2 } }}
         />
       </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
           <CircularProgress />
         </Box>
       ) : filteredClasses.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="text.secondary">
-            {searchQuery ? 'Khong tim thay ket qua phu hop' : 'Chua co lop hoc nao'}
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 4, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Typography color="text.secondary" variant="h6">
+            {searchQuery ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có lớp học nào trong hệ thống'}
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           {filteredClasses.map((cls) => {
             const scheduleCount = cls.schedules?.length || 0;
             const enrolCount = cls.id === selectedClassId ? enrollments.length : undefined;
@@ -493,135 +617,119 @@ export default function ClassManagementPage() {
             const lifecyclePct = Math.min(100, Math.round((lifecycleIndex / 3) * 100));
 
             return (
-              <Grid key={cls.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+              <Grid key={cls.id} item xs={12} sm={6} lg={4}>
                 <Card
                   onClick={() => setSelectedClass(cls)}
                   sx={{
                     cursor: 'pointer',
                     height: '100%',
+                    borderRadius: 4,
                     border: selectedClassId === cls.id ? '2px solid' : '1px solid transparent',
                     borderColor: selectedClassId === cls.id ? 'primary.main' : 'transparent',
-                    boxShadow: 2,
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 32px rgba(0,0,0,0.1)' },
                   }}
                 >
-                  <CardContent>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 2 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
                       <Box sx={{ minWidth: 0 }}>
-                        <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap' }}>
-                          <Chip size="small" label={cls.status || 'UPCOMING'} color={getStatusColor(cls.status)} />
-                          <Chip size="small" variant="outlined" label={cls.id.slice(0, 8).toUpperCase()} />
+                        <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
+                          <Chip size="small" label={getStatusLabel(cls.status)} color={getStatusColor(cls.status)} sx={{ fontWeight: 800 }} />
+                          <Chip size="small" variant="outlined" label={`#${cls.id.slice(0, 8).toUpperCase()}`} sx={{ fontWeight: 600 }} />
                         </Stack>
-                        <Typography variant="h6" fontWeight={700} noWrap>
+                        <Typography variant="h6" fontWeight={800} noWrap sx={{ mb: 0.5 }}>
                           {cls.name || cls.id}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDateToDDMMYYYY(cls.startDate)} - {formatDateToDDMMYYYY(cls.endDate)}
+                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <EventBusyIcon sx={{ fontSize: 14, mr: 0.5 }} /> {formatDateToDDMMYYYY(cls.startDate)} - {formatDateToDDMMYYYY(cls.endDate)}
                         </Typography>
                       </Box>
-                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setSelectedClass(cls); }}>
-                        <ExpandMoreIcon />
-                      </IconButton>
                     </Stack>
 
-                    <Grid container spacing={1.5} sx={{ mb: 2 }}>
-                      <Grid size={4}>
-                        <Paper sx={{ p: 1.25, textAlign: 'center', bgcolor: 'background.default' }}>
-                          <Typography variant="body2" fontWeight={700}>
-                            {scheduleCount}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Buoi
-                          </Typography>
-                        </Paper>
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                      <Grid item xs={4}>
+                        <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+                          <Typography variant="h6" fontWeight={800}>{scheduleCount}</Typography>
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>Buổi/Tuần</Typography>
+                        </Box>
                       </Grid>
-                      <Grid size={4}>
-                        <Paper sx={{ p: 1.25, textAlign: 'center', bgcolor: 'background.default' }}>
-                          <Typography variant="body2" fontWeight={700}>
-                            {cls.id === selectedClassId ? attendanceSummary.present : 0}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Diem danh
-                          </Typography>
-                        </Paper>
+                      <Grid item xs={4}>
+                        <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+                          <Typography variant="h6" fontWeight={800}>{enrolCount ?? '-'}</Typography>
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>Học viên</Typography>
+                        </Box>
                       </Grid>
-                      <Grid size={4}>
-                        <Paper sx={{ p: 1.25, textAlign: 'center', bgcolor: 'background.default' }}>
-                          <Typography variant="body2" fontWeight={700}>
-                            {enrolCount ?? '...'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Hoc vien
-                          </Typography>
-                        </Paper>
+                      <Grid item xs={4}>
+                        <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+                          <Typography variant="h6" fontWeight={800}>{cls.maxStudents || '-'}</Typography>
+                          <Typography variant="caption" color="text.secondary" fontWeight={600}>Tối đa</Typography>
+                        </Box>
                       </Grid>
                     </Grid>
 
-                    <Stack spacing={1.25}>
+                    <Stack spacing={2} sx={{ mb: 3 }}>
                       <Box>
-                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Tien trinh trang thai
-                          </Typography>
-                          <Typography variant="caption" fontWeight={600}>
-                            {getStatusLabel(cls.status)}
-                          </Typography>
+                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={700}>TIẾN ĐỘ TRẠNG THÁI</Typography>
+                          <Typography variant="caption" fontWeight={800} color="primary">{lifecyclePct}%</Typography>
                         </Stack>
-                        <LinearProgress variant="determinate" value={lifecyclePct} sx={{ height: 8, borderRadius: 999 }} />
+                        <LinearProgress variant="determinate" value={lifecyclePct} sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.05)' }} />
                       </Box>
 
                       <Box>
-                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Lap day lop
-                          </Typography>
-                          <Typography variant="caption" fontWeight={600}>
-                            {cls.maxStudents ? `${enrolCount || 0}/${cls.maxStudents}` : `${enrolCount || 0}`}
-                          </Typography>
+                        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={700}>TỶ LỆ LẤP ĐẦY</Typography>
+                          <Typography variant="caption" fontWeight={800} color="secondary">{fillRate}%</Typography>
                         </Stack>
-                        <LinearProgress variant="determinate" value={fillRate} sx={{ height: 8, borderRadius: 999 }} color="secondary" />
+                        <LinearProgress variant="determinate" value={fillRate} sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.05)' }} color="secondary" />
                       </Box>
                     </Stack>
 
-                    <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap' }}>
+                    <Divider sx={{ mb: 2.5 }} />
+
+                    <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
                       <Button
                         size="small"
                         variant="outlined"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedClass(cls);
-                          setDetailTab(0);
                         }}
-                        startIcon={<SchoolIcon />}
+                        sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
                       >
-                        Chi tiet
+                        Chi tiết
                       </Button>
-                      {cls.status && cls.status !== 'COMPLETED' && cls.status !== 'CANCELLED' && (
-                        <Button
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {cls.status && cls.status !== 'COMPLETED' && cls.status !== 'CANCELLED' && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const idx = statusOrder.indexOf(cls.status || 'UPCOMING');
+                              const nextStatus = statusOrder[Math.min(idx + 1, statusOrder.length - 1)] || 'ACCEPTING';
+                              void handleUpdateStatus(cls.id, nextStatus);
+                            }}
+                            sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
+                          >
+                            Tiếp theo
+                          </Button>
+                        )}
+                        <IconButton
+                          color="error"
                           size="small"
-                          variant="contained"
-                          startIcon={<PlayCircleOutlineIcon />}
                           onClick={(e) => {
                             e.stopPropagation();
-                            const idx = statusOrder.indexOf(cls.status || 'UPCOMING');
-                            const nextStatus = statusOrder[Math.min(idx + 1, statusOrder.length - 1)] || 'ACCEPTING';
-                            void handleUpdateStatus(cls.id, nextStatus);
+                            if (window.confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
+                              void handleDelete(cls.id);
+                            }
                           }}
+                          sx={{ bgcolor: 'rgba(211, 47, 47, 0.05)', '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.1)' } }}
                         >
-                          {cls.status === 'UPCOMING' ? 'Sang tuyen sinh' : cls.status === 'ACCEPTING' ? 'Bat dau' : 'Hoan thanh'}
-                        </Button>
-                      )}
-                      <IconButton
-                        color="error"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleDelete(cls.id);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </Stack>
                   </CardContent>
                 </Card>
@@ -631,543 +739,418 @@ export default function ClassManagementPage() {
         </Grid>
       )}
 
-      <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="lg" fullWidth>
-        <DialogTitle>
-          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2}>
+      {/* Class Details Dialog */}
+      <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2} alignItems={isMobile ? 'flex-start' : 'center'}>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
-                {activeClass?.name || 'Chi tiet lop hoc'}
+              <Typography variant="h5" fontWeight={900} color="primary.main">
+                {activeClass?.name || 'Chi tiết lớp học'}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {activeClass?.courseName || 'Chua co khoa hoc'}
-                {activeClass?.roomName ? ` • ${activeClass.roomName}` : ''}
-                {activeClass?.teacherName ? ` • ${activeClass.teacherName}` : ''}
+              <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                {activeClass?.courseName || 'Khóa học chưa xác định'}
+                {activeClass?.roomName ? ` • Phòng ${activeClass.roomName}` : ''}
+                {activeClass?.teacherName ? ` • GV: ${activeClass.teacherName}` : ''}
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              <Chip label={getStatusLabel(activeClass?.status)} color={getStatusColor(activeClass?.status)} />
-              <Chip label={`${formatDateToDDMMYYYY(activeClass?.startDate)} - ${formatDateToDDMMYYYY(activeClass?.endDate)}`} variant="outlined" />
+            <Stack direction="row" spacing={1}>
+              <Chip label={getStatusLabel(activeClass?.status)} color={getStatusColor(activeClass?.status)} sx={{ fontWeight: 800 }} />
+              <Button variant="outlined" size="small" onClick={() => setSelectedClass(null)} sx={{ borderRadius: 2 }}>Đóng</Button>
             </Stack>
           </Stack>
         </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  So hoc vien hien tai
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {enrollments.length}/{activeClass?.maxStudents || '-'}
-                </Typography>
-                <LinearProgress value={activeClass?.maxStudents ? (enrollments.length / activeClass.maxStudents) * 100 : 0} variant="determinate" sx={{ mt: 1, height: 8, borderRadius: 999 }} />
-              </Paper>
+        <DialogContent dividers sx={{ p: 0 }}>
+          <Box sx={{ p: 3 }}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} md={4}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
+                  <Typography variant="h4" fontWeight={900}>{enrollments.length} / {activeClass?.maxStudents || '-'}</Typography>
+                  <LinearProgress
+                    value={activeClass?.maxStudents ? (enrollments.length / activeClass.maxStudents) * 100 : 0}
+                    variant="determinate"
+                    sx={{ mt: 2, height: 8, borderRadius: 4 }}
+                  />
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>TỔNG BUỔI HỌC</Typography>
+                  <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
+                  <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Buổi học</Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
+                  <Typography variant="h6" fontWeight={800}>
+                    {formatDateToDDMMYYYY(activeClass?.startDate)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">đến</Typography>
+                  <Typography variant="h6" fontWeight={800}>
+                    {formatDateToDDMMYYYY(activeClass?.endDate)}
+                  </Typography>
+                </Paper>
+              </Grid>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Buoi hoc
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {activeClass?.schedules?.length || 0}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Dang co {attendanceSummary.present}/{attendanceSummary.total} diem danh hom nay
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Tien trinh trang thai
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {getStatusLabel(activeClass?.status)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {activeClass?.status === 'ONGOING' ? 'Co the xem danh sach vang mat trong tung buoi' : 'Co the xem thong tin tuyensinh/hoc vien'}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
 
-          <Paper sx={{ mb: 2 }}>
-            <Tabs value={detailTab} onChange={(_, value) => setDetailTab(value)} variant="scrollable" scrollButtons="auto">
-              <Tab label="Lich hoc" />
-              <Tab label="Hoc vien" />
-              <Tab label="Diem danh hom nay" />
+            <Tabs
+              value={detailTab}
+              onChange={(_, value) => setDetailTab(value)}
+              sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+            >
+              <Tab label="Lịch học chi tiết" sx={{ fontWeight: 700 }} />
+              <Tab label="Danh sách học viên" sx={{ fontWeight: 700 }} />
+              <Tab label="Điểm danh hôm nay" sx={{ fontWeight: 700 }} />
             </Tabs>
-          </Paper>
 
-          {detailLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <CircularProgress />
-            </Box>
-          ) : detailTab === 0 ? (
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 5 }}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-                    {scheduleMode === 'edit' ? 'Chinh sua buoi hoc' : 'Them buoi hoc'}
-                  </Typography>
-                  <Stack spacing={2}>
-                    <TextField
-                      select
-                      label="Ngay trong tuan"
-                      value={scheduleForm.dayOfWeek}
-                      onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
+            {detailLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+                <CircularProgress />
+              </Box>
+            ) : detailTab === 0 ? (
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.01)' }}>
+                    <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5 }}>
+                      {scheduleMode === 'edit' ? 'Cập nhật lịch học' : 'Thêm lịch học mới'}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' },
+                        gap: 1.5,
+                        alignItems: { xs: 'stretch', md: 'flex-end' },
+                        p: 1.5,
+                        borderRadius: 3,
+                        bgcolor: 'rgba(25, 118, 210, 0.03)',
+                        border: '1px solid rgba(25, 118, 210, 0.10)',
+                      }}
                     >
-                      <MenuItem value="MONDAY">Thu Hai</MenuItem>
-                      <MenuItem value="TUESDAY">Thu Ba</MenuItem>
-                      <MenuItem value="WEDNESDAY">Thu Tu</MenuItem>
-                      <MenuItem value="THURSDAY">Thu Nam</MenuItem>
-                      <MenuItem value="FRIDAY">Thu Sau</MenuItem>
-                      <MenuItem value="SATURDAY">Thu Bay</MenuItem>
-                      <MenuItem value="SUNDAY">Chu Nhat</MenuItem>
-                    </TextField>
-                    <TextField
-                      type="time"
-                      label="Gio bat dau"
-                      value={scheduleForm.startTime}
-                      onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                    <TextField
-                      type="time"
-                      label="Gio ket thuc"
-                      value={scheduleForm.endTime}
-                      onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                    <Button variant="contained" disabled={scheduleSubmitting} onClick={() => void handleSaveSchedule()}>
-                      {scheduleMode === 'edit' ? 'Luu buoi hoc' : 'Them buoi hoc'}
-                    </Button>
-                  </Stack>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12, md: 7 }}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-                    Danh sach buoi hoc
-                  </Typography>
-                  {activeClass?.schedules?.length ? (
-                    <Stack spacing={1.5}>
-                      {activeClass.schedules.map((schedule) => (
-                        <Paper key={schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`} sx={{ p: 1.5, bgcolor: 'background.default' }}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                            <Box>
-                              <Typography fontWeight={700}>{schedule.dayOfWeek}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {formatTimeToHHMM(schedule.startTime)} - {formatTimeToHHMM(schedule.endTime)}
-                              </Typography>
-                            </Box>
-                            <Stack direction="row" spacing={1}>
-                              <IconButton size="small" onClick={() => openScheduleDialog(activeClass.id, schedule)}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              {schedule.id && (
-                                <IconButton size="small" color="error" onClick={() => void handleDeleteSchedule(activeClass.id, schedule.id!)}>
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              )}
-                            </Stack>
-                          </Stack>
-                        </Paper>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Alert severity="info">Chua co buoi hoc nao.</Alert>
-                  )}
-                </Paper>
-              </Grid>
-            </Grid>
-          ) : detailTab === 1 ? (
-            <Paper sx={{ p: 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Danh sach hoc vien ({enrollments.length})
-                </Typography>
-                <Button variant="outlined" startIcon={<PeopleIcon />}>
-                  Chuyen lop / xem chi tiet
-                </Button>
-              </Stack>
-              {enrollments.length === 0 ? (
-                <Alert severity="info">Chua co hoc vien trong lop nay.</Alert>
-              ) : (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Hoc vien</TableCell>
-                        <TableCell>Ngay dang ky</TableCell>
-                        <TableCell>Trang thai</TableCell>
-                        <TableCell align="right">Thao tac</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {enrollments.map((item) => (
-                        <TableRow key={item.id} hover>
-                          <TableCell>
-                            <Typography fontWeight={600}>{item.studentName}</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {item.studentId}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{formatDateToDDMMYYYY(item.enrollmentDate)}</TableCell>
-                          <TableCell>
-                            <Chip size="small" label={item.status || 'ACTIVE'} color={item.status === 'ACTIVE' ? 'success' : 'default'} />
-                          </TableCell>
-                          <TableCell align="right">
-                            <Button size="small" variant="outlined" onClick={() => void handleOpenStudent(item)}>
-                              Xem hoc vien
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </Paper>
-          ) : (
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-                    Diem danh hom nay
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Typography>
-                      Co mat: <strong>{attendanceSummary.present}</strong>
-                    </Typography>
-                    <Typography>
-                      Vang mat: <strong>{attendanceSummary.absent}</strong>
-                    </Typography>
-                    <Typography>
-                      Di muon: <strong>{attendanceSummary.late}</strong>
-                    </Typography>
-                    <Typography>
-                      Co phep: <strong>{attendanceSummary.excused}</strong>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Ngày trong tuần"
+                        value={scheduleForm.dayOfWeek}
+                        onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
+                        sx={{ flex: { md: '1.2 1 0%' }, minWidth: { md: 220 } }}
+                      >
+                        <MenuItem value="MONDAY">Thứ Hai</MenuItem>
+                        <MenuItem value="TUESDAY">Thứ Ba</MenuItem>
+                        <MenuItem value="WEDNESDAY">Thứ Tư</MenuItem>
+                        <MenuItem value="THURSDAY">Thứ Năm</MenuItem>
+                        <MenuItem value="FRIDAY">Thứ Sáu</MenuItem>
+                        <MenuItem value="SATURDAY">Thứ Bảy</MenuItem>
+                        <MenuItem value="SUNDAY">Chủ Nhật</MenuItem>
+                      </TextField>
+                      <TextField
+                        type="time"
+                        fullWidth
+                        label="Giờ bắt đầu"
+                        value={scheduleForm.startTime}
+                        onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ flex: { md: '0.9 1 0%' }, minWidth: { md: 170 } }}
+                      />
+                      <TextField
+                        type="time"
+                        fullWidth
+                        label="Giờ kết thúc"
+                        value={scheduleForm.endTime}
+                        onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ flex: { md: '0.9 1 0%' }, minWidth: { md: 170 } }}
+                      />
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={() => void handleSaveSchedule()}
+                        sx={{
+                          borderRadius: 2,
+                          py: 1.2,
+                          fontWeight: 800,
+                          minHeight: 56,
+                          whiteSpace: 'nowrap',
+                          px: 3,
+                          flex: { md: '0 0 180px' },
+                        }}
+                      >
+                        {scheduleMode === 'edit' ? 'Lưu thay đổi' : 'Thêm vào lịch'}
+                      </Button>
+                    </Box>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={8}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                      Tổng số: {scheduleSessionRows.length}
                     </Typography>
                   </Stack>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-                    Chi tiet diem danh
-                  </Typography>
-                  {attendance.length === 0 ? (
-                    <Alert severity="info">Chua co du lieu diem danh cho ngay hom nay.</Alert>
-                  ) : (
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
+                  {scheduleSessionRows.length ? (
+                    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
+                      <Table size="small" stickyHeader>
+                        <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
                           <TableRow>
-                            <TableCell>Hoc vien</TableCell>
-                            <TableCell>Ngay</TableCell>
-                            <TableCell>Trang thai</TableCell>
-                            <TableCell>Ghi chu</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>TT</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Ngày học</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Tiết học</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Phòng học</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Hình thức</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Điểm danh</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Giảng viên</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Tiêu đề</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Học liệu</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {attendance.map((row) => (
-                            <TableRow key={row.id}>
-                              <TableCell>{row.studentName}</TableCell>
-                              <TableCell>{formatDateToDDMMYYYY(row.attendanceDate)}</TableCell>
-                              <TableCell>
-                                <Chip size="small" label={row.status} />
+                          {scheduleSessionRows.map((session, index) => (
+                            <TableRow key={session.key} hover>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.dateLabel}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.timeLabel}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.roomLabel}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                <Chip
+                                  size="small"
+                                  label={session.formatLabel}
+                                  color={session.formatLabel === 'Trực tiếp' ? 'success' : 'info'}
+                                  variant="outlined"
+                                  sx={{ fontWeight: 700 }}
+                                />
                               </TableCell>
-                              <TableCell>{row.notes || '-'}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                <Chip
+                                  size="small"
+                                  label={session.attendanceLabel}
+                                  color="error"
+                                  variant="outlined"
+                                  sx={{ fontWeight: 700 }}
+                                />
+                              </TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.teacherLabel}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.titleLabel}</TableCell>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.materialLabel}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </TableContainer>
+                  ) : (
+                    <Alert severity="info" sx={{ borderRadius: 2 }}>Lớp học này chưa được xếp lịch.</Alert>
                   )}
-                </Paper>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSelectedClass(null)}>Dong</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Tao lop hoc moi</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Ten lop"
-            margin="normal"
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            select
-            label="Khoa hoc"
-            margin="normal"
-            value={form.courseId}
-            onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}
-          >
-            {courses.map((course) => (
-              <MenuItem value={course.id} key={course.id}>
-                {course.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            select
-            label="Giao vien"
-            margin="normal"
-            value={form.teacherId}
-            onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
-          >
-            {teachers.map((teacher) => (
-              <MenuItem value={teacher.id} key={teacher.id}>
-                {teacher.fullName || teacher.name || teacher.email}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            select
-            label="Phong hoc"
-            margin="normal"
-            value={form.roomId}
-            onChange={(e) => setForm((prev) => ({ ...prev, roomId: e.target.value }))}
-          >
-            {rooms.map((room) => (
-              <MenuItem value={room.id} key={room.id}>
-                {room.name} ({room.capacity || '-'} cho)
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            select
-            label="Chi nhanh"
-            margin="normal"
-            value={form.branchId}
-            onChange={(e) => setForm((prev) => ({ ...prev, branchId: e.target.value }))}
-          >
-            {branches.map((branch) => (
-              <MenuItem value={branch.id} key={branch.id}>
-                {branch.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            type="date"
-            label="Ngay bat dau"
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={form.startDate}
-            onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            type="date"
-            label="Ngay ket thuc"
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={form.endDate}
-            onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            type="number"
-            label="Si so toi da"
-            margin="normal"
-            value={form.maxStudents}
-            onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            select
-            label="Trang thai"
-            margin="normal"
-            value={form.status}
-            onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
-            helperText="Chon trang thai khoi tao va thay doi lop hoc"
-          >
-            <MenuItem value="UPCOMING">Vua tao</MenuItem>
-            <MenuItem value="ACCEPTING">Dang tuyen sinh</MenuItem>
-            <MenuItem value="ONGOING">Dang dien ra</MenuItem>
-            <MenuItem value="COMPLETED">Hoan thanh</MenuItem>
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Huy</Button>
-          <Button variant="contained" disabled={submitting} onClick={() => void handleCreate()}>
-            {submitting ? 'Dang tao...' : 'Tao lop'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={scheduleDialog.open} onClose={() => setScheduleDialog({ open: false, classId: '' })} maxWidth="xs" fullWidth>
-        <DialogTitle>{scheduleMode === 'edit' ? 'Chinh sua buoi hoc' : 'Them lich hoc'}</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            select
-            label="Ngay trong tuan"
-            margin="normal"
-            value={scheduleForm.dayOfWeek}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
-          >
-            <MenuItem value="MONDAY">Thu Hai</MenuItem>
-            <MenuItem value="TUESDAY">Thu Ba</MenuItem>
-            <MenuItem value="WEDNESDAY">Thu Tu</MenuItem>
-            <MenuItem value="THURSDAY">Thu Nam</MenuItem>
-            <MenuItem value="FRIDAY">Thu Sau</MenuItem>
-            <MenuItem value="SATURDAY">Thu Bay</MenuItem>
-            <MenuItem value="SUNDAY">Chu Nhat</MenuItem>
-          </TextField>
-          <TextField
-            fullWidth
-            type="time"
-            label="Gio bat dau"
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={scheduleForm.startTime}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
-          />
-          <TextField
-            fullWidth
-            type="time"
-            label="Gio ket thuc"
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={scheduleForm.endTime}
-            onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setScheduleDialog({ open: false, classId: '' })}>Huy</Button>
-          <Button variant="contained" disabled={scheduleSubmitting} onClick={() => void handleSaveSchedule()}>
-            {scheduleSubmitting ? 'Dang luu...' : 'Luu buoi hoc'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={studentDialogOpen} onClose={() => setStudentDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Thong tin hoc vien</DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Hoc vien
-                </Typography>
-                <Typography variant="h6" fontWeight={700}>
-                  {selectedStudent?.studentName || '-'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedStudent?.studentId}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Lop dang hoc
-                </Typography>
-                <Typography variant="h6" fontWeight={700}>
-                  {selectedStudent?.className || activeClass?.name || '-'}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Ty le chuyen can
-                </Typography>
-                <Typography variant="h6" fontWeight={700}>
-                  {studentReport?.attendanceRate != null ? `${Math.round(studentReport.attendanceRate)}%` : '-'}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
-              Ket qua hoc tap
-            </Typography>
-            {studentReport ? (
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-                  <Paper sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      {studentReport.totalSessions ?? 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Tong buoi
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-                  <Paper sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      {studentReport.presentCount ?? 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Co mat
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-                  <Paper sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      {studentReport.absentCount ?? 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Vang
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-                  <Paper sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      {studentReport.excusedCount ?? 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Co phep
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-                  <Paper sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={700}>
-                      {studentReport.lateCount ?? 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Di muon
-                    </Typography>
-                  </Paper>
                 </Grid>
               </Grid>
+            ) : detailTab === 1 ? (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6" fontWeight={800}>Học viên đang theo học ({enrollments.length})</Typography>
+                  <Button variant="outlined" startIcon={<PeopleIcon />} sx={{ borderRadius: 2 }}>Thêm học viên</Button>
+                </Box>
+                {enrollments.length === 0 ? (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>Chưa có học viên nào tham gia lớp học này.</Alert>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+                    <Table size="small">
+                      <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 800 }}>Họ và tên</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }}>Mã học viên</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }}>Ngày đăng ký</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 800 }}>Hành động</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {enrollments.map((item) => (
+                          <TableRow key={item.id} hover>
+                            <TableCell sx={{ fontWeight: 700 }}>{item.studentName}</TableCell>
+                            <TableCell sx={{ color: 'text.secondary' }}>{item.studentId}</TableCell>
+                            <TableCell>{formatDateToDDMMYYYY(item.enrollmentDate)}</TableCell>
+                            <TableCell>
+                              <Chip size="small" label={item.status === 'ACTIVE' ? 'Đang học' : 'Dừng học'} color={item.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Button size="small" variant="text" onClick={() => void handleOpenStudent(item)} sx={{ fontWeight: 700 }}>
+                                Xem kết quả
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
             ) : (
-              <Alert severity="info">Chua co du lieu ket qua hoc tap.</Alert>
+              <Box>
+                <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>Tình hình điểm danh ngày {formatDateToDDMMYYYY(todayIso)}</Typography>
+                {attendance.length === 0 ? (
+                  <Alert severity="warning" sx={{ borderRadius: 2 }}>Dữ liệu điểm danh ngày hôm nay chưa được cập nhật hoặc không có lịch học.</Alert>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+                    <Table size="small">
+                      <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }}>Ghi chú</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {attendance.map((row) => (
+                          <TableRow key={row.id}>
+                            <TableCell sx={{ fontWeight: 700 }}>{row.studentName}</TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                label={row.status === 'PRESENT' ? 'Có mặt' : row.status === 'ABSENT' ? 'Vắng mặt' : row.status === 'LATE' ? 'Đi muộn' : 'Có phép'}
+                                color={row.status === 'PRESENT' ? 'success' : row.status === 'ABSENT' ? 'error' : 'warning'}
+                                sx={{ fontWeight: 700 }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ color: 'text.secondary' }}>{row.notes || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
             )}
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStudentDialogOpen(false)}>Dong</Button>
+      </Dialog>
+
+      {/* Create Class Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>Tạo lớp học mới</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Tên lớp học"
+              placeholder="VD: IELTS-F-01"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Khóa học"
+                  value={form.courseId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}
+                >
+                  {courses.map((course) => (
+                    <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Giảng viên"
+                  value={form.teacherId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
+                >
+                  {teachers.map((teacher) => (
+                    <MenuItem value={teacher.id} key={teacher.id}>{teacher.fullName || teacher.email}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Phòng học"
+                  value={form.roomId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, roomId: e.target.value }))}
+                >
+                  {rooms.map((room) => (
+                    <MenuItem value={room.id} key={room.id}>{room.name} ({room.capacity} chỗ)</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Chi nhánh"
+                  value={form.branchId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, branchId: e.target.value }))}
+                >
+                  {branches.map((branch) => (
+                    <MenuItem value={branch.id} key={branch.id}>{branch.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Ngày khai giảng"
+                  InputLabelProps={{ shrink: true }}
+                  value={form.startDate}
+                  onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Ngày kết thúc (dự kiến)"
+                  InputLabelProps={{ shrink: true }}
+                  value={form.endDate}
+                  onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                />
+              </Grid>
+            </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Sĩ số tối đa"
+                  value={form.maxStudents}
+                  onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Trạng thái khởi tạo"
+                  value={form.status}
+                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+                >
+                  <MenuItem value="UPCOMING">Chờ khai giảng</MenuItem>
+                  <MenuItem value="ACCEPTING">Đang tuyển sinh</MenuItem>
+                </TextField>
+              </Grid>
+            </Grid>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setOpenDialog(false)} color="inherit" sx={{ fontWeight: 700 }}>Hủy</Button>
+          <Button variant="contained" disabled={submitting} onClick={() => void handleCreate()} sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}>
+            {submitting ? 'Đang xử lý...' : 'Xác nhận tạo lớp'}
+          </Button>
         </DialogActions>
       </Dialog>
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
-        <Alert severity={snackbar.severity} variant="filled">
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2, fontWeight: 600 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

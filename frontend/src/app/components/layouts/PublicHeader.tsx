@@ -29,8 +29,8 @@ export default function PublicHeader() {
   };
 
   return (
-    <AppBar position="static" elevation={1} sx={{ bgcolor: 'white', color: 'primary.main' }}>
-      <Container maxWidth="lg">
+    <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', color: 'primary.main', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+      <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
             variant="h6"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Alert,
@@ -17,11 +17,12 @@ import {
   TableRow,
   Typography,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { 
   Assignment as AssignmentIcon, 
   TrendingUp as TrendingUpIcon,
-  Grade as GradeIcon 
 } from '@mui/icons-material';
 import { enrollmentApi, resultApi, submissionApi, assignmentApi } from '../../../services/api';
 import { RootState } from '../../../store';
@@ -33,6 +34,8 @@ const getScoreColor = (score: number) => {
 };
 
 export default function GradebookPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state: RootState) => state.auth.user);
   const [results, setResults] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -74,14 +77,13 @@ export default function GradebookPage() {
               className: enrollment.className,
               midtermScore: null,
               finalScore: null,
-              finalGrade: 'Chưa có',
+              finalGrade: 'Chưa cập nhật',
               comments: '',
             };
           }
         })
       );
       
-      // Combine assignments and submissions
       const combinedSubmissions = allAssignments.map(assignment => {
         const submission = submissionsData.find(s => s.assignmentId === assignment.id);
         return {
@@ -98,161 +100,172 @@ export default function GradebookPage() {
 
       setSubmissions(combinedSubmissions);
       setResults(resultResponses);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Không thể tải bảng điểm');
+    } catch (err) {
+      console.error('Failed to fetch grades:', err);
+      setError('Không thể tải dữ liệu bảng điểm. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
     }
   };
 
-  const averageScore = useMemo(() => {
-    const scores = results
-      .flatMap((result) => [result.midtermScore, result.finalScore])
-      .concat(submissions.map(s => s.grade))
-      .map((score) => Number(score))
-      .filter((score) => Number.isFinite(score));
-    
-    if (scores.length === 0) return '-';
-    return (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1);
-  }, [results, submissions]);
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
-        Bảng điểm tổng quát
+    <Box sx={{ pb: 6 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
+          Bảng điểm chi tiết
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Theo dõi kết quả học tập và phản hồi từ giảng viên qua từng giai đoạn.
+        </Typography>
+      </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+
+      {/* Periodic Results */}
+      <Typography variant="h6" fontWeight={800} sx={{ mb: 3, mt: 4 }} display="flex" alignItems="center">
+        <TrendingUpIcon sx={{ mr: 1, color: 'primary.main' }} /> Kết quả học tập định kỳ
       </Typography>
-
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>Điểm trung bình</Typography>
-                <TrendingUpIcon color="primary" />
+      
+      <Grid container spacing={3} sx={{ mb: 6 }}>
+        {results.map((result, index) => (
+          <Grid item xs={12} md={6} key={index}>
+            <Card sx={{ 
+              borderRadius: 4, 
+              boxShadow: '0 8px 32px rgba(0,0,0,0.06)', 
+              border: '1px solid rgba(0,0,0,0.05)',
+              overflow: 'visible',
+              position: 'relative',
+              mt: 2
+            }}>
+              <Box sx={{ 
+                position: 'absolute', 
+                top: -15, 
+                left: 20, 
+                bgcolor: 'primary.main', 
+                color: 'white', 
+                px: 2, py: 0.5, 
+                borderRadius: 2,
+                fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                zIndex: 1
+              }}>
+                {result.className}
               </Box>
-              <Typography variant="h3" color="primary" fontWeight={800}>{loading ? '...' : averageScore}</Typography>
-              <Typography variant="body2" color="text.secondary">Quy mô hệ điểm 10</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>Khóa học</Typography>
-                <AssignmentIcon color="success" />
-              </Box>
-              <Typography variant="h3" color="success.main" fontWeight={800}>{loading ? '...' : results.length}</Typography>
-              <Typography variant="body2" color="text.secondary">Lớp đang theo học</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>Bài tập đã nộp</Typography>
-                <GradeIcon color="warning" />
-              </Box>
-              <Typography variant="h3" color="warning.main" fontWeight={800}>{loading ? '...' : submissions.filter(s => s.grade != null).length}</Typography>
-              <Typography variant="body2" color="text.secondary">Đã được chấm điểm</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+              <CardContent sx={{ pt: 4 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary" display="block">Điểm giữa kỳ</Typography>
+                    <Typography variant="h5" fontWeight={800} color={result.midtermScore ? getScoreColor(result.midtermScore) : 'text.disabled'}>
+                      {result.midtermScore ?? '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary" display="block">Điểm cuối kỳ</Typography>
+                    <Typography variant="h5" fontWeight={800} color={result.finalScore ? getScoreColor(result.finalScore) : 'text.disabled'}>
+                      {result.finalScore ?? '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 1.5, opacity: 0.5 }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="subtitle2" fontWeight={700}>Xếp loại chung:</Typography>
+                      <Chip 
+                        label={result.finalGrade || 'Chưa xếp loại'} 
+                        color="primary" 
+                        size="small" 
+                        sx={{ fontWeight: 800, borderRadius: 1.5 }} 
+                      />
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+        {results.length === 0 && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 4 }}>
+              <Typography color="text.secondary">Chưa có dữ liệu điểm định kỳ.</Typography>
+            </Paper>
+          </Grid>
+        )}
       </Grid>
 
-      <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
-        Điểm định kỳ (Giữa kỳ & Cuối kỳ)
+      {/* Assignment Submissions */}
+      <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }} display="flex" alignItems="center">
+        <AssignmentIcon sx={{ mr: 1, color: 'primary.main' }} /> Chi tiết bài tập về nhà
       </Typography>
-      <TableContainer component={Paper} sx={{ borderRadius: 3, mb: 5, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <Table>
-          <TableHead sx={{ bgcolor: 'grey.50' }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Lớp học</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Giữa kỳ</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Cuối kỳ</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Xếp loại</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Nhận xét</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={5} align="center"><CircularProgress size={24} /></TableCell></TableRow>
-            ) : results.length === 0 ? (
-              <TableRow><TableCell colSpan={5} align="center">Chưa có dữ liệu điểm định kỳ</TableCell></TableRow>
-            ) : results.map((result) => (
-              <TableRow key={result.enrollmentId || result.id} hover>
-                <TableCell><Typography variant="body2" fontWeight={700}>{result.className || '-'}</Typography></TableCell>
-                <TableCell>
-                  {result.midtermScore != null ? <Chip label={result.midtermScore} color={getScoreColor(Number(result.midtermScore))} sx={{ fontWeight: 700 }} /> : '-'}
-                </TableCell>
-                <TableCell>
-                  {result.finalScore != null ? <Chip label={result.finalScore} color={getScoreColor(Number(result.finalScore))} sx={{ fontWeight: 700 }} /> : '-'}
-                </TableCell>
-                <TableCell><Chip label={result.finalGrade || 'Chưa có'} size="small" variant="outlined" /></TableCell>
-                <TableCell><Typography variant="body2" color="text.secondary">{result.comments || '-'}</Typography></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
 
-      <Typography variant="h5" gutterBottom fontWeight={700}>
-        Chi tiết điểm bài tập
-      </Typography>
-      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <Table>
-          <TableHead sx={{ bgcolor: 'grey.50' }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', overflow: 'auto' }}>
+        <Table sx={{ minWidth: 800 }}>
+          <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Bài tập</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Ngày nộp</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Điểm</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Phản hồi</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Tên bài tập</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Hạn nộp</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Ngày nộp</TableCell>
+              <TableCell sx={{ fontWeight: 800 }} align="center">Điểm số</TableCell>
+              <TableCell sx={{ fontWeight: 800 }}>Nhận xét</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={5} align="center"><CircularProgress size={24} /></TableCell></TableRow>
-            ) : submissions.length === 0 ? (
-              <TableRow><TableCell colSpan={5} align="center">Bạn chưa nộp bài tập nào</TableCell></TableRow>
-            ) : submissions.map((sub) => (
-              <TableRow key={sub.id} hover>
+            {submissions.map((row) => (
+              <TableRow key={row.id} hover>
+                <TableCell sx={{ fontWeight: 600 }}>{row.assignmentTitle}</TableCell>
                 <TableCell>
-                  <Typography variant="body2" fontWeight={700}>{sub.assignmentTitle || 'Bài tập'}</Typography>
-                </TableCell>
-                <TableCell>
-                  {sub.submissionDate ? new Date(sub.submissionDate).toLocaleDateString('vi-VN') : '-'}
-                </TableCell>
-                <TableCell>
-                  <Chip 
+                  <Chip
                     label={
-                      sub.status === 'GRADED' ? 'Đã chấm' : 
-                      sub.status === 'SUBMITTED' ? 'Đã nộp' : 'Chưa nộp'
-                    } 
+                      row.status === 'GRADED' ? 'Đã chấm điểm' :
+                      row.status === 'SUBMITTED' ? 'Đã nộp bài' : 'Chưa nộp bài'
+                    }
+                    size="small"
                     color={
-                      sub.status === 'GRADED' ? 'success' : 
-                      sub.status === 'SUBMITTED' ? 'info' : 'error'
-                    } 
-                    size="small" 
+                      row.status === 'GRADED' ? 'success' :
+                      row.status === 'SUBMITTED' ? 'info' : 'error'
+                    }
+                    sx={{ fontWeight: 700, borderRadius: 1.5 }}
                   />
                 </TableCell>
-                <TableCell>
-                  {sub.grade != null ? (
-                    <Typography variant="body2" fontWeight={800} color={getScoreColor(sub.grade) + '.main'}>
-                      {sub.grade}/10
+                <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                  {new Date(row.dueDate).toLocaleDateString('vi-VN')}
+                </TableCell>
+                <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                  {row.submissionDate ? new Date(row.submissionDate).toLocaleDateString('vi-VN') : '-'}
+                </TableCell>
+                <TableCell align="center">
+                  {row.grade != null ? (
+                    <Typography fontWeight={800} color={getScoreColor(row.grade)}>
+                      {row.grade}/10
                     </Typography>
                   ) : '-'}
                 </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                    {sub.feedback || 'Chưa có phản hồi'}
-                  </Typography>
+                <TableCell sx={{ 
+                  fontStyle: row.feedback ? 'normal' : 'italic', 
+                  color: row.feedback ? 'text.primary' : 'text.disabled',
+                  maxWidth: 200,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {row.feedback || 'Chưa có nhận xét'}
                 </TableCell>
               </TableRow>
             ))}
+            {submissions.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 6, opacity: 0.5 }}>
+                  <Typography>Chưa có dữ liệu bài tập nào được ghi nhận</Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
