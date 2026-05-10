@@ -22,6 +22,15 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -33,6 +42,7 @@ import {
   Payment as PaymentIcon,
   School as SchoolIcon,
   Info as InfoIcon,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { classApi, courseApi, leadApi } from '../../../services/api';
 
@@ -83,6 +93,7 @@ export default function LeadManagementPage() {
   const [agreeLead, setAgreeLead] = useState<LeadItem | null>(null);
   const [agreeClassId, setAgreeClassId] = useState('');
   const [cashPaymentLead, setCashPaymentLead] = useState<LeadItem | null>(null);
+  const [expandedStage, setExpandedStage] = useState<string | false>(false);
   
   const [newLead, setNewLead] = useState({
     fullName: '',
@@ -258,185 +269,192 @@ export default function LeadManagementPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <Box sx={{ 
-          overflowX: 'auto', 
-          pb: 2, 
-          mx: { xs: -2, sm: 0 }, 
-          px: { xs: 2, sm: 0 },
-          display: 'flex',
-          gap: 2,
-          scrollSnapType: 'x mandatory'
-        }}>
-          {stages.map((stage) => (
-            <Box 
-              key={stage.id}
-              sx={{ 
-                minWidth: { xs: '85vw', sm: 300 }, 
-                width: { xs: '85vw', sm: 300 },
-                scrollSnapAlign: 'start'
-              }}
-            >
-              <Paper 
-                elevation={0}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {stages.map((stage) => {
+            const stageLeads = getLeadsByStatus(stage.id);
+            return (
+              <Accordion 
+                key={stage.id} 
+                expanded={expandedStage === stage.id} 
+                onChange={(_, isExpanded) => setExpandedStage(isExpanded ? stage.id : false)}
                 sx={{ 
-                  p: 2, 
-                  bgcolor: stage.color, 
-                  minHeight: '75vh', 
-                  borderRadius: 4,
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column'
+                  borderRadius: '16px !important', 
+                  mb: 1,
+                  '&:before': { display: 'none' },
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                  overflow: 'hidden',
+                  border: '1px solid',
+                  borderColor: 'divider'
                 }}
               >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, px: 0.5 }}>
-                  <Typography variant="subtitle1" fontWeight={800} color="text.primary">
-                    {stage.title}
-                  </Typography>
-                  <Chip 
-                    label={getLeadsByStatus(stage.id).length} 
-                    size="small" 
-                    sx={{ bgcolor: 'white', fontWeight: 800, border: '1px solid rgba(0,0,0,0.1)' }} 
-                  />
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {getLeadsByStatus(stage.id).length === 0 && (
-                    <Box sx={{ textAlign: 'center', py: 4, opacity: 0.5 }}>
-                      <Typography variant="body2" sx={{ fontStyle: 'italic' }}>Trống</Typography>
+                <AccordionSummary 
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{ 
+                    bgcolor: stage.color,
+                    px: 3,
+                    py: 1,
+                    '& .MuiAccordionSummary-content': {
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="h6" fontWeight={800} color="text.primary">
+                      {stage.title}
+                    </Typography>
+                    <Chip 
+                      label={stageLeads.length} 
+                      size="small" 
+                      sx={{ bgcolor: 'white', fontWeight: 800, border: '1px solid rgba(0,0,0,0.1)' }} 
+                    />
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 0 }}>
+                  {stageLeads.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 6, opacity: 0.5 }}>
+                      <Typography variant="body1" sx={{ fontStyle: 'italic' }}>Không có khách hàng ở trạng thái này</Typography>
                     </Box>
+                  ) : (
+                    <TableContainer component={Paper} elevation={0}>
+                      <Table sx={{ minWidth: 800 }}>
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+                            <TableCell sx={{ fontWeight: 700 }}>Họ và tên</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Liên hệ</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Nhu cầu quan tâm</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Ngày tạo</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }} align="right">Thao tác</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {stageLeads.map((lead) => (
+                            <TableRow key={lead.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                              <TableCell>
+                                <Typography variant="subtitle2" fontWeight={700}>{lead.fullName}</Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <PhoneIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                                    <Typography variant="body2">{lead.phone}</Typography>
+                                  </Box>
+                                  {lead.email && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                      <Typography variant="caption" color="text.secondary">{lead.email}</Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                {renderInterests(lead)}
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" color="text.secondary">
+                                  {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('vi-VN') : '---'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                                  {lead.status === 'INTERESTED' && (
+                                    <Tooltip title="Bắt đầu tư vấn">
+                                      <IconButton 
+                                        color="primary" 
+                                        onClick={() => void handleConsulting(lead)}
+                                        disabled={!!actionLoading}
+                                        size="small"
+                                        sx={{ bgcolor: 'primary.lighter' }}
+                                      >
+                                        <MessageIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+
+                                  {lead.status === 'CONSULTING' && (
+                                    <>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        color="success"
+                                        startIcon={<CheckCircleIcon />}
+                                        onClick={() => setAgreeLead(lead)}
+                                        sx={{ borderRadius: 2 }}
+                                      >
+                                        Đồng ý
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="error"
+                                        startIcon={<CancelIcon />}
+                                        onClick={() => void handleReject(lead)}
+                                        disabled={!!actionLoading}
+                                        sx={{ borderRadius: 2 }}
+                                      >
+                                        Hủy
+                                      </Button>
+                                    </>
+                                  )}
+
+                                  {lead.status === 'AGREED' && (
+                                    <>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        color="warning"
+                                        startIcon={<PaymentIcon />}
+                                        onClick={() => setCashPaymentLead(lead)}
+                                        disabled={!!actionLoading}
+                                        sx={{ borderRadius: 2, color: 'white' }}
+                                      >
+                                        Thu tiền mặt
+                                      </Button>
+                                      <IconButton 
+                                        color="info" 
+                                        onClick={() => setSelectedLead(lead)}
+                                        size="small"
+                                      >
+                                        <InfoIcon />
+                                      </IconButton>
+                                    </>
+                                  )}
+
+                                  {lead.status === 'PAID' && (
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="primary"
+                                      startIcon={<SchoolIcon />}
+                                      onClick={() => void handleConvert(lead)}
+                                      disabled={!!actionLoading}
+                                      sx={{ borderRadius: 2 }}
+                                    >
+                                      Nhập học
+                                    </Button>
+                                  )}
+
+                                  {lead.status === 'CONVERTED' && (
+                                    <Chip 
+                                      label="Đã nhập học" 
+                                      color="success" 
+                                      size="small"
+                                      sx={{ fontWeight: 700 }}
+                                    />
+                                  )}
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   )}
-                  {getLeadsByStatus(stage.id).map((lead) => (
-                    <Card 
-                      key={lead.id} 
-                      sx={{ 
-                        borderRadius: 3, 
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                        border: '1px solid rgba(0,0,0,0.04)',
-                        transition: 'all 0.2s',
-                        '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }
-                      }}
-                    >
-                      <CardContent sx={{ p: 2 }}>
-                        <Typography variant="subtitle1" fontWeight={700} noWrap gutterBottom>
-                          {lead.fullName}
-                        </Typography>
-                        
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PhoneIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-                            <Typography variant="body2" color="text.secondary" fontWeight={500}>{lead.phone}</Typography>
-                          </Box>
-                          {lead.email && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: '0.8rem' }}>{lead.email}</Typography>
-                            </Box>
-                          )}
-                        </Box>
-
-                        {renderInterests(lead)}
-
-                        <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
-
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {lead.status === 'INTERESTED' && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              fullWidth
-                              startIcon={<MessageIcon />}
-                              onClick={() => void handleConsulting(lead)}
-                              disabled={!!actionLoading}
-                              sx={{ borderRadius: 2 }}
-                            >
-                              Bắt đầu tư vấn
-                            </Button>
-                          )}
-
-                          {lead.status === 'CONSULTING' && (
-                            <>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                color="success"
-                                fullWidth
-                                startIcon={<CheckCircleIcon />}
-                                onClick={() => setAgreeLead(lead)}
-                                sx={{ borderRadius: 2 }}
-                              >
-                                Đã đồng ý học
-                              </Button>
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                fullWidth
-                                startIcon={<CancelIcon />}
-                                onClick={() => void handleReject(lead)}
-                                disabled={!!actionLoading}
-                                sx={{ borderRadius: 2 }}
-                              >
-                                Không có nhu cầu
-                              </Button>
-                            </>
-                          )}
-
-                          {lead.status === 'AGREED' && (
-                            <>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                color="warning"
-                                fullWidth
-                                startIcon={<PaymentIcon />}
-                                onClick={() => setCashPaymentLead(lead)}
-                                disabled={!!actionLoading}
-                                sx={{ borderRadius: 2, color: 'white' }}
-                              >
-                                Xác nhận thu tiền mặt
-                              </Button>
-                              <Button 
-                                size="small" 
-                                variant="text" 
-                                startIcon={<InfoIcon />}
-                                onClick={() => setSelectedLead(lead)}
-                              >
-                                Chi tiết thanh toán
-                              </Button>
-                            </>
-                          )}
-
-                          {lead.status === 'PAID' && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="primary"
-                              fullWidth
-                              startIcon={<SchoolIcon />}
-                              onClick={() => void handleConvert(lead)}
-                              disabled={!!actionLoading}
-                              sx={{ borderRadius: 2 }}
-                            >
-                              Nhập học chính thức
-                            </Button>
-                          )}
-
-                          {lead.status === 'CONVERTED' && (
-                            <Chip 
-                              label="Học viên chính thức" 
-                              color="primary" 
-                              sx={{ width: '100%', fontWeight: 700, borderRadius: 2 }}
-                              variant="outlined"
-                            />
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Box>
-              </Paper>
-            </Box>
-          ))}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
         </Box>
       )}
 
