@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Alert,
   Avatar,
@@ -22,8 +22,18 @@ import {
   Paper,
   Snackbar,
   Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,9 +45,11 @@ import {
   School as SchoolIcon,
   ArrowBack as ArrowBackIcon,
   Class as ClassIcon,
+  EventBusy as EventBusyIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
-import { AppUser, classApi, userApi, UserRole } from '../../../services/api';
-import { formatDateToDDMMYYYY } from '../../utils/dateFormatter';
+import { AppUser, classApi, userApi, UserRole, enrollmentApi, attendanceApi, resultApi } from '../../../services/api';
+import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 
 type ClassItem = {
   id: string;
@@ -50,6 +62,25 @@ type ClassItem = {
   roomName?: string;
   teacherName?: string;
   schedules?: Array<{ id?: string; dayOfWeek: string; startTime: string; endTime: string }>;
+};
+
+type ScheduleSessionRow = {
+  key: string;
+  sortTime: number;
+  dateLabel: string;
+  timeLabel: string;
+  roomLabel: string;
+  formatLabel: string;s
+  attendanceLabel: string;
+  teacherLabel: string;
+  titleLabel: string;
+  materialLabel: string;
+};
+
+type ScheduleForm = {
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
 };
 
 type TeacherForm = {
@@ -81,6 +112,21 @@ const getStatusLabel = (status?: string) => {
   }
 };
 
+const dayOfWeekIndexMap: Record<string, number> = {
+  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
+};
+
+const dayOfWeekLabelMap: Record<string, string> = {
+  SUNDAY: 'Chủ Nhật', MONDAY: 'Thứ Hai', TUESDAY: 'Thứ Ba', WEDNESDAY: 'Thứ Tư', THURSDAY: 'Thứ Năm', FRIDAY: 'Thứ Sáu', SATURDAY: 'Thứ Bảy',
+};
+
+const formatSessionDateLabel = (date: Date) => {
+  const raw = date.toLocaleDateString('vi-VN', {
+    weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+  });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
 export default function TeacherManagementPage() {
   const [teachers, setTeachers] = useState<AppUser[]>([]);
   const [filteredTeachers, setFilteredTeachers] = useState<AppUser[]>([]);
@@ -96,6 +142,19 @@ export default function TeacherManagementPage() {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
   });
+
+  const [selectedClassDetail, setSelectedClassDetail] = useState<ClassItem | null>(null);
+  const [classDetailTab, setClassDetailTab] = useState(0);
+  const [classEnrollments, setClassEnrollments] = useState<any[]>([]);
+  const [classAttendance, setClassAttendance] = useState<any[]>([]);
+  const [classDetailLoading, setClassDetailLoading] = useState(false);
+  
+  const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({ dayOfWeek: 'MONDAY', startTime: '18:00', endTime: '20:00' });
+  const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   useEffect(() => { void fetchTeachers(); }, []);
 
@@ -113,12 +172,93 @@ export default function TeacherManagementPage() {
     }
   };
 
+  const handleSaveSchedule = async () => {
+    if (!selectedClassDetail) return;
+    try {
+      setScheduleSubmitting(true);
+      await classApi.addSchedule(selectedClassDetail.id, scheduleForm);
+      setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
+      // Refresh teacher classes and detailed class
+      await fetchTeacherClasses(selectedTeacher?.id || '');
+      const updatedClass = (await classApi.getAll()).find(c => c.id === selectedClassDetail.id);
+      if (updatedClass) setSelectedClassDetail(updatedClass);
+    } catch (err: any) {
+      setSnackbar({ open: true, message: 'Không thể thêm lịch học', severity: 'error' });
+    } finally {
+      setScheduleSubmitting(false);
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!selectedClassDetail) return;
+    if (!window.confirm('Bạn có chắc chắn muốn xóa lịch học này?')) return;
+    try {
+      await classApi.deleteSchedule(selectedClassDetail.id, scheduleId);
+      setSnackbar({ open: true, message: 'Xóa lịch học thành công', severity: 'success' });
+      await fetchTeacherClasses(selectedTeacher?.id || '');
+      const updatedClass = (await classApi.getAll()).find(c => c.id === selectedClassDetail.id);
+      if (updatedClass) setSelectedClassDetail(updatedClass);
+    } catch (err: any) {
+      setSnackbar({ open: true, message: 'Không thể xóa lịch học', severity: 'error' });
+    }
+  };
+
+  const scheduleSessionRows = useMemo<ScheduleSessionRow[]>(() => {
+    if (!selectedClassDetail?.schedules?.length) return [];
+    const rows: ScheduleSessionRow[] = [];
+    const startDate = selectedClassDetail.startDate ? new Date(`${selectedClassDetail.startDate}T00:00:00`) : null;
+    const endDate = selectedClassDetail.endDate ? new Date(`${selectedClassDetail.endDate}T23:59:59`) : null;
+    const validRange = startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate;
+
+    if (validRange) {
+      selectedClassDetail.schedules.forEach((schedule) => {
+        const targetDay = dayOfWeekIndexMap[schedule.dayOfWeek?.toUpperCase()];
+        if (targetDay === undefined) return;
+        const firstOccurrence = new Date(startDate as Date);
+        const daysUntilFirstOccurrence = (targetDay - firstOccurrence.getDay() + 7) % 7;
+        firstOccurrence.setDate(firstOccurrence.getDate() + daysUntilFirstOccurrence);
+        for (let occurrence = new Date(firstOccurrence); occurrence <= (endDate as Date); occurrence.setDate(occurrence.getDate() + 7)) {
+          const occurrenceDateKey = occurrence.toISOString().slice(0, 10);
+          rows.push({
+            key: `${schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`}-${occurrenceDateKey}`,
+            sortTime: occurrence.getTime(),
+            dateLabel: formatSessionDateLabel(new Date(occurrence)),
+            timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+            roomLabel: selectedClassDetail.roomName || '-',
+            formatLabel: selectedClassDetail.roomName ? 'Trực tiếp' : 'Online',
+            attendanceLabel: 'Chưa điểm danh',
+            teacherLabel: selectedTeacher?.fullName || '-',
+            titleLabel: selectedClassDetail.name || '-',
+            materialLabel: '-',
+          });
+        }
+      });
+      return rows.sort((a, b) => a.sortTime - b.sortTime);
+    }
+
+    selectedClassDetail.schedules.forEach((schedule) => {
+      rows.push({
+        key: schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`,
+        sortTime: dayOfWeekIndexMap[schedule.dayOfWeek?.toUpperCase()] || 0,
+        dateLabel: dayOfWeekLabelMap[schedule.dayOfWeek?.toUpperCase()] || schedule.dayOfWeek,
+        timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+        roomLabel: selectedClassDetail.roomName || '-',
+        formatLabel: selectedClassDetail.roomName ? 'Trực tiếp' : 'Online',
+        attendanceLabel: 'Chưa điểm danh',
+        teacherLabel: selectedTeacher?.fullName || '-',
+        titleLabel: selectedClassDetail.name || '-',
+        materialLabel: '-',
+      });
+    });
+    return rows.sort((a, b) => a.sortTime - b.sortTime);
+  }, [selectedClassDetail, selectedTeacher]);
+
   const fetchTeacherClasses = async (teacherId: string) => {
     try {
       setDetailLoading(true);
       const allClasses = await classApi.getAll();
       const filtered = (allClasses || []).filter((cls: any) =>
-        cls.teacherId === teacherId || cls.teacherName === selectedTeacher?.name
+        cls.teacherId === teacherId || cls.teacherName === selectedTeacher?.fullName
       );
       setTeacherClasses(filtered);
     } catch (err: any) {
@@ -127,6 +267,28 @@ export default function TeacherManagementPage() {
       setDetailLoading(false);
     }
   };
+
+  const fetchClassDetailData = async (classId: string) => {
+    try {
+      setClassDetailLoading(true);
+      const [enrollmentResponse, attendanceResponse] = await Promise.all([
+        enrollmentApi.getByClass(classId),
+        attendanceApi.getByClass(classId, todayIso),
+      ]);
+      setClassEnrollments(Array.isArray(enrollmentResponse.data) ? enrollmentResponse.data : []);
+      setClassAttendance(Array.isArray(attendanceResponse.data) ? attendanceResponse.data : []);
+    } catch (err: any) {
+      setSnackbar({ open: true, message: 'Không thể tải chi tiết lớp học', severity: 'error' });
+    } finally {
+      setClassDetailLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClassDetail) {
+      void fetchClassDetailData(selectedClassDetail.id);
+    }
+  }, [selectedClassDetail]);
 
   useEffect(() => {
     if (selectedTeacher) {
@@ -154,7 +316,7 @@ export default function TeacherManagementPage() {
 
   const handleOpenEdit = (teacher: AppUser) => {
     setEditingTeacher(teacher);
-    setForm({ fullName: teacher.name, email: teacher.email, phone: teacher.phone || '', password: '' });
+    setForm({ fullName: teacher.fullName, email: teacher.email, phone: teacher.phone || '', password: '' });
     setOpenDialog(true);
   };
 
@@ -202,9 +364,9 @@ export default function TeacherManagementPage() {
               <CardContent>
                 <Stack alignItems="center" spacing={2} sx={{ py: 2 }}>
                   <Avatar sx={{ width: 80, height: 80, fontSize: 32, bgcolor: 'primary.main' }}>
-                    {selectedTeacher.name?.charAt(0)?.toUpperCase()}
+                    {selectedTeacher.fullName?.charAt(0)?.toUpperCase()}
                   </Avatar>
-                  <Typography variant="h5" fontWeight={700}>{selectedTeacher.name}</Typography>
+                  <Typography variant="h5" fontWeight={700}>{selectedTeacher.fullName}</Typography>
                   <Chip label={selectedTeacher.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'} color={selectedTeacher.status === 'ACTIVE' ? 'success' : 'default'} />
                 </Stack>
                 <Divider sx={{ my: 2 }} />
@@ -265,7 +427,18 @@ export default function TeacherManagementPage() {
                 <Grid container spacing={2}>
                   {teacherClasses.map((cls) => (
                     <Grid item xs={12} sm={6} key={cls.id}>
-                      <Card variant="outlined" sx={{ '&:hover': { boxShadow: 3 }, transition: 'box-shadow 0.2s' }}>
+                      <Card 
+                        variant="outlined" 
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': { boxShadow: 3, borderColor: 'primary.main' }, 
+                          transition: 'all 0.2s' 
+                        }}
+                        onClick={() => {
+                          setSelectedClassDetail(cls);
+                          setClassDetailTab(0);
+                        }}
+                      >
                         <CardContent>
                           <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                             <Box>
@@ -285,16 +458,6 @@ export default function TeacherManagementPage() {
                             <Typography variant="body2">
                               <strong>Sĩ số tối đa:</strong> {cls.maxStudents || 'N/A'}
                             </Typography>
-                            {cls.schedules && cls.schedules.length > 0 && (
-                              <Box sx={{ mt: 1 }}>
-                                <Typography variant="caption" color="text.secondary" fontWeight={600}>Lịch học:</Typography>
-                                {cls.schedules.map((s, idx) => (
-                                  <Typography key={idx} variant="caption" display="block" color="text.secondary">
-                                    {s.dayOfWeek}: {s.startTime} - {s.endTime}
-                                  </Typography>
-                                ))}
-                              </Box>
-                            )}
                           </Stack>
                         </CardContent>
                       </Card>
@@ -305,6 +468,249 @@ export default function TeacherManagementPage() {
             </Paper>
           </Grid>
         </Grid>
+
+        {/* Class Detail Dialog - Manager Style */}
+        <Dialog 
+          open={!!selectedClassDetail} 
+          onClose={() => setSelectedClassDetail(null)} 
+          maxWidth="lg" 
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 4 } }}
+        >
+          <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box>
+                <Typography variant="h5" fontWeight={900} color="primary.main">
+                  {selectedClassDetail?.name || 'Chi tiết lớp học'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                  {selectedClassDetail?.courseName} • GV: {selectedTeacher?.fullName}
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1}>
+                <Chip label={getStatusLabel(selectedClassDetail?.status)} color={getStatusColor(selectedClassDetail?.status)} sx={{ fontWeight: 800 }} />
+                <Button variant="outlined" size="small" onClick={() => setSelectedClassDetail(null)} sx={{ borderRadius: 2 }}>Đóng</Button>
+              </Stack>
+            </Stack>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            <Box sx={{ p: 3 }}>
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={4}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">HỌC VIÊN</Typography>
+                    <Typography variant="h4" fontWeight={900}>{classEnrollments.length} / {selectedClassDetail?.maxStudents || '-'}</Typography>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={selectedClassDetail?.maxStudents ? (classEnrollments.length / selectedClassDetail.maxStudents) * 100 : 0}
+                      sx={{ mt: 1, borderRadius: 2, height: 6 }}
+                    />
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">PHÒNG HỌC</Typography>
+                    <Typography variant="h4" fontWeight={900}>{selectedClassDetail?.roomName || 'N/A'}</Typography>
+                    <Typography variant="body2" color="primary" fontWeight={700}>Trực tiếp</Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">THỜI GIAN</Typography>
+                    <Typography variant="h6" fontWeight={800}>{formatDateToDDMMYYYY(selectedClassDetail?.startDate)}</Typography>
+                    <Typography variant="caption" color="text.secondary">đến</Typography>
+                    <Typography variant="h6" fontWeight={800}>{formatDateToDDMMYYYY(selectedClassDetail?.endDate)}</Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              <Tabs 
+                value={classDetailTab} 
+                onChange={(_, v) => setClassDetailTab(v)}
+                sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+              >
+                <Tab label="Lịch học & Buổi dạy" sx={{ fontWeight: 700 }} />
+                <Tab label="Danh sách học viên" sx={{ fontWeight: 700 }} />
+                <Tab label="Điểm danh hôm nay" sx={{ fontWeight: 700 }} />
+              </Tabs>
+
+              {classDetailLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+              ) : classDetailTab === 0 ? (
+                <Box>
+                  <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 3, bgcolor: 'rgba(25, 118, 210, 0.02)' }}>
+                    <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>Thêm lịch học mới</Typography>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          select
+                          fullWidth
+                          label="Ngày trong tuần"
+                          value={scheduleForm.dayOfWeek}
+                          onChange={(e) => setScheduleForm(prev => ({ ...prev, dayOfWeek: e.target.value }))}
+                          SelectProps={{ native: true }}
+                        >
+                          {Object.keys(dayOfWeekLabelMap).map(day => (
+                            <option key={day} value={day}>{dayOfWeekLabelMap[day]}</option>
+                          ))}
+                        </TextField>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <TextField
+                          fullWidth
+                          label="Giờ bắt đầu"
+                          type="time"
+                          value={scheduleForm.startTime}
+                          onChange={(e) => setScheduleForm(prev => ({ ...prev, startTime: e.target.value }))}
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <TextField
+                          fullWidth
+                          label="Giờ kết thúc"
+                          type="time"
+                          value={scheduleForm.endTime}
+                          onChange={(e) => setScheduleForm(prev => ({ ...prev, endTime: e.target.value }))}
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={2}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          disabled={scheduleSubmitting}
+                          onClick={() => void handleSaveSchedule()}
+                          sx={{ height: 56, borderRadius: 2, fontWeight: 700, whiteSpace: 'nowrap' }}
+                        >
+                          THÊM VÀO LỊCH
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  <Typography variant="subtitle1" fontWeight={800} gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    Lịch học chi tiết theo từng buổi
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>Tổng số: {scheduleSessionRows.length}</Typography>
+                  </Typography>
+                  
+                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 400 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>TT</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Ngày học</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Tiết học</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Phòng học</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Hình thức</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Điểm danh</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Giảng viên</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Tiêu đề</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }}>Học liệu</TableCell>
+                          <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', zIndex: 10 }} align="center">Thao tác</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {scheduleSessionRows.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={10} align="center" sx={{ py: 4, color: 'text.secondary' }}>Chưa có lịch học nào được thiết lập.</TableCell>
+                          </TableRow>
+                        ) : (
+                          scheduleSessionRows.map((row, idx) => (
+                            <TableRow key={row.key} hover>
+                              <TableCell>{idx + 1}</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>{row.dateLabel}</TableCell>
+                              <TableCell>{row.timeLabel}</TableCell>
+                              <TableCell>{row.roomLabel}</TableCell>
+                              <TableCell>
+                                <Chip size="small" label={row.formatLabel} color="success" variant="outlined" sx={{ fontWeight: 700 }} />
+                              </TableCell>
+                              <TableCell>
+                                <Chip size="small" label={row.attendanceLabel} color="error" variant="outlined" sx={{ fontWeight: 700 }} />
+                              </TableCell>
+                              <TableCell>{row.teacherLabel}</TableCell>
+                              <TableCell>{row.titleLabel}</TableCell>
+                              <TableCell>{row.materialLabel}</TableCell>
+                              <TableCell align="center">
+                                <IconButton size="small" color="error" onClick={() => {
+                                  const scheduleId = row.key.split('-')[0];
+                                  if (scheduleId) void handleDeleteSchedule(scheduleId);
+                                }}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              ) : classDetailTab === 1 ? (
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: '#f8f9fa' }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 800 }}>Họ tên</TableCell>
+                        <TableCell sx={{ fontWeight: 800 }}>Mã học viên</TableCell>
+                        <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {classEnrollments.map((en) => (
+                        <TableRow key={en.id} hover>
+                          <TableCell sx={{ fontWeight: 700 }}>{en.studentName}</TableCell>
+                          <TableCell>{en.studentId}</TableCell>
+                          <TableCell>
+                            <Chip size="small" label={en.status} color={en.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight={800}>Tình hình điểm danh ngày {formatDateToDDMMYYYY(todayIso)}</Typography>
+                    <Chip label={`${classAttendance.length} lượt điểm danh`} variant="outlined" color="primary" sx={{ fontWeight: 700 }} />
+                  </Stack>
+                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+                    <Table size="small">
+                      <TableHead sx={{ bgcolor: '#f8f9fa' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }} align="center">Trạng thái</TableCell>
+                          <TableCell sx={{ fontWeight: 800 }}>Ghi chú</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {classAttendance.length === 0 ? (
+                          <TableRow><TableCell colSpan={3} align="center" sx={{ py: 3, color: 'text.secondary' }}>Chưa có dữ liệu điểm danh hôm nay</TableCell></TableRow>
+                        ) : (
+                          classAttendance.map((att) => (
+                            <TableRow key={att.id} hover>
+                              <TableCell sx={{ fontWeight: 700 }}>{att.studentName}</TableCell>
+                              <TableCell align="center">
+                                <Chip 
+                                  size="small" 
+                                  label={att.status} 
+                                  color={att.status === 'PRESENT' ? 'success' : att.status === 'ABSENT' ? 'error' : 'warning'} 
+                                  sx={{ fontWeight: 700 }} 
+                                />
+                              </TableCell>
+                              <TableCell>{att.notes || '-'}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+        </Dialog>
 
         {/* Reuse dialog */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
@@ -358,9 +764,9 @@ export default function TeacherManagementPage() {
               <Card sx={{ cursor: 'pointer', transition: 'all 0.2s', '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 } }} onClick={() => setSelectedTeacher(teacher)}>
                 <CardContent>
                   <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>{teacher.name?.charAt(0)?.toUpperCase()}</Avatar>
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>{teacher.fullName?.charAt(0)?.toUpperCase()}</Avatar>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="subtitle1" fontWeight={700} noWrap>{teacher.name}</Typography>
+                      <Typography variant="subtitle1" fontWeight={700} noWrap>{teacher.fullName}</Typography>
                       <Typography variant="body2" color="text.secondary" noWrap>{teacher.email}</Typography>
                     </Box>
                   </Stack>

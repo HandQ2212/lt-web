@@ -73,7 +73,7 @@ type LeadItem = {
 
 const stages: Array<{ id: LeadStatus; title: string; color: string }> = [
   { id: 'NEW', title: 'Khách hàng mới', color: '#f8f9fa' },
-  { id: 'INTERESTED', title: 'Đã liên hệ', color: '#e3f2fd' },
+  { id: 'INTERESTED', title: 'Chờ tư vấn', color: '#e3f2fd' },
   { id: 'CONSULTING', title: 'Đang tư vấn', color: '#fff3e0' },
   { id: 'AGREED', title: 'Chờ thanh toán', color: '#fff9c4' },
   { id: 'PAID', title: 'Đã thanh toán', color: '#e8f5e9' },
@@ -83,7 +83,7 @@ const stages: Array<{ id: LeadStatus; title: string; color: string }> = [
 export default function LeadManagementPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ export default function LeadManagementPage() {
   const [agreeClassId, setAgreeClassId] = useState('');
   const [cashPaymentLead, setCashPaymentLead] = useState<LeadItem | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | false>(false);
-  
+
   const [newLead, setNewLead] = useState({
     fullName: '',
     email: '',
@@ -128,7 +128,7 @@ export default function LeadManagementPage() {
     try {
       setLoading(true);
       const response = await leadApi.getAll({ size: 100 });
-      
+
       let leadsData: LeadItem[] = [];
       if (Array.isArray(response)) {
         leadsData = response;
@@ -137,7 +137,7 @@ export default function LeadManagementPage() {
       } else if (response && Array.isArray((response as any).data)) {
         leadsData = (response as any).data;
       }
-      
+
       setLeads(leadsData);
     } catch (error: any) {
       console.error('Failed to fetch leads:', error);
@@ -177,10 +177,10 @@ export default function LeadManagementPage() {
     }
   };
 
-  const handleConsulting = (lead: LeadItem) => 
+  const handleConsulting = (lead: LeadItem) =>
     handleAction(lead.id, () => leadApi.moveToConsulting(lead.id), 'Đã chuyển sang trạng thái đang tư vấn');
 
-  const handleReject = (lead: LeadItem) => 
+  const handleReject = (lead: LeadItem) =>
     handleAction(lead.id, () => leadApi.reject(lead.id), 'Đã hủy trạng thái tư vấn');
 
   const handleAgree = async () => {
@@ -203,7 +203,7 @@ export default function LeadManagementPage() {
     }
   };
 
-  const handleConvert = (lead: LeadItem) => 
+  const handleConvert = (lead: LeadItem) =>
     handleAction(lead.id, () => leadApi.convert(lead.id), 'Đã chuyển đổi thành học viên chính thức');
 
   const handleConfirmCashPayment = async () => {
@@ -216,10 +216,10 @@ export default function LeadManagementPage() {
       setCashPaymentLead(null);
       await fetchLeads();
     } catch (error: any) {
-      setSnackbar({ 
-        open: true, 
-        message: error?.response?.data?.message || 'Lỗi khi xác nhận thanh toán tiền mặt', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Lỗi khi xác nhận thanh toán tiền mặt',
+        severity: 'error'
       });
     } finally {
       setActionLoading(null);
@@ -230,10 +230,10 @@ export default function LeadManagementPage() {
     <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
       {(lead.interests || []).map((interest) => (
         <Tooltip key={interest.id} title={interest.clazzName ? `Lớp: ${interest.clazzName}` : `Khóa: ${interest.courseName}`}>
-          <Chip 
-            label={interest.clazzName || interest.courseName || 'Khác'} 
-            size="small" 
-            variant="outlined" 
+          <Chip
+            label={interest.clazzName || interest.courseName || 'Khác'}
+            size="small"
+            variant="outlined"
             color={interest.clazzId ? "primary" : "default"}
             sx={{ fontSize: '0.75rem', borderRadius: 1, whiteSpace: 'nowrap', fontWeight: 600 }}
           />
@@ -253,9 +253,9 @@ export default function LeadManagementPage() {
             Theo dõi và chăm sóc học viên từ giai đoạn quan tâm đến khi nhập học chính thức.
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          startIcon={<PersonAddIcon />} 
+        <Button
+          variant="contained"
+          startIcon={<PersonAddIcon />}
           onClick={() => setOpenDialog(true)}
           sx={{ borderRadius: 3, px: 3, py: 1.2, boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)' }}
           fullWidth={isMobile}
@@ -273,12 +273,12 @@ export default function LeadManagementPage() {
           {stages.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.id);
             return (
-              <Accordion 
-                key={stage.id} 
-                expanded={expandedStage === stage.id} 
+              <Accordion
+                key={stage.id}
+                expanded={expandedStage === stage.id}
                 onChange={(_, isExpanded) => setExpandedStage(isExpanded ? stage.id : false)}
-                sx={{ 
-                  borderRadius: '16px !important', 
+                sx={{
+                  borderRadius: '16px !important',
                   mb: 1,
                   '&:before': { display: 'none' },
                   boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
@@ -287,9 +287,9 @@ export default function LeadManagementPage() {
                   borderColor: 'divider'
                 }}
               >
-                <AccordionSummary 
+                <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
-                  sx={{ 
+                  sx={{
                     bgcolor: stage.color,
                     px: 3,
                     py: 1,
@@ -304,10 +304,10 @@ export default function LeadManagementPage() {
                     <Typography variant="h6" fontWeight={800} color="text.primary">
                       {stage.title}
                     </Typography>
-                    <Chip 
-                      label={stageLeads.length} 
-                      size="small" 
-                      sx={{ bgcolor: 'white', fontWeight: 800, border: '1px solid rgba(0,0,0,0.1)' }} 
+                    <Chip
+                      label={stageLeads.length}
+                      size="small"
+                      sx={{ bgcolor: 'white', fontWeight: 800, border: '1px solid rgba(0,0,0,0.1)' }}
                     />
                   </Box>
                 </AccordionSummary>
@@ -360,8 +360,8 @@ export default function LeadManagementPage() {
                                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                                   {lead.status === 'INTERESTED' && (
                                     <Tooltip title="Bắt đầu tư vấn">
-                                      <IconButton 
-                                        color="primary" 
+                                      <IconButton
+                                        color="primary"
                                         onClick={() => void handleConsulting(lead)}
                                         disabled={!!actionLoading}
                                         size="small"
@@ -411,8 +411,8 @@ export default function LeadManagementPage() {
                                       >
                                         Thu tiền mặt
                                       </Button>
-                                      <IconButton 
-                                        color="info" 
+                                      <IconButton
+                                        color="info"
                                         onClick={() => setSelectedLead(lead)}
                                         size="small"
                                       >
@@ -436,9 +436,9 @@ export default function LeadManagementPage() {
                                   )}
 
                                   {lead.status === 'CONVERTED' && (
-                                    <Chip 
-                                      label="Đã nhập học" 
-                                      color="success" 
+                                    <Chip
+                                      label="Đã nhập học"
+                                      color="success"
                                       size="small"
                                       sx={{ fontWeight: 700 }}
                                     />
@@ -470,8 +470,8 @@ export default function LeadManagementPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
           <Button onClick={() => setOpenDialog(false)} color="inherit">Hủy bỏ</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             sx={{ borderRadius: 2, px: 4 }}
             onClick={() => void handleAction('CREATE', async () => leadApi.create(newLead), 'Đã thêm khách hàng mới thành công')}
           >
@@ -490,21 +490,21 @@ export default function LeadManagementPage() {
 
           <Grid container spacing={2}>
             <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Chọn lớp học & Chương trình đào tạo"
-                  value={agreeClassId}
-                  onChange={(e) => setAgreeClassId(e.target.value)}
-                  variant="outlined"
-                  SelectProps={{
-                    MenuProps: {
-                      PaperProps: {
-                        sx: { minWidth: 350, maxWidth: 500 }
-                      }
+              <TextField
+                fullWidth
+                select
+                label="Chọn lớp học & Chương trình đào tạo"
+                value={agreeClassId}
+                onChange={(e) => setAgreeClassId(e.target.value)}
+                variant="outlined"
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: { minWidth: 350, maxWidth: 500 }
                     }
-                  }}
-                >
+                  }
+                }}
+              >
                 {classes.map((cls) => (
                   <MenuItem key={cls.id} value={cls.id}>
                     {cls.name} — {cls.courseName}
@@ -544,9 +544,9 @@ export default function LeadManagementPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
           <Button onClick={() => setAgreeLead(null)} color="inherit">Để sau</Button>
-          <Button 
-            variant="contained" 
-            color="success" 
+          <Button
+            variant="contained"
+            color="success"
             disabled={!agreeClassId}
             onClick={() => void handleAgree()}
             startIcon={<CheckCircleIcon />}
@@ -566,14 +566,14 @@ export default function LeadManagementPage() {
               <Typography variant="h6" fontWeight={700}>{selectedLead.fullName}</Typography>
               <Typography variant="body2" color="text.secondary">Số điện thoại liên hệ: {selectedLead.phone}</Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>Trạng thái hiện tại: {selectedLead.status}</Typography>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Alert severity="info" sx={{ borderRadius: 3 }}>
                 <Typography variant="subtitle2" fontWeight={700}>Hướng dẫn quy trình thanh toán:</Typography>
                 <Typography variant="body2">
-                  1. Khách hàng nộp tiền mặt trực tiếp tại quầy kế toán.<br/>
-                  2. Kế toán kiểm đếm và in phiếu thu.<br/>
+                  1. Khách hàng nộp tiền mặt trực tiếp tại quầy kế toán.<br />
+                  2. Kế toán kiểm đếm và in phiếu thu.<br />
                   3. Quản lý xác nhận trạng thái "Đã thu tiền" trên hệ thống để hoàn tất hồ sơ.
                 </Typography>
               </Alert>
@@ -584,7 +584,7 @@ export default function LeadManagementPage() {
           <Button onClick={() => setSelectedLead(null)} variant="outlined" sx={{ borderRadius: 2 }}>Đóng cửa sổ</Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Dialog Xác nhận Thu tiền mặt */}
       <Dialog open={Boolean(cashPaymentLead)} onClose={() => setCashPaymentLead(null)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
         <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -606,8 +606,8 @@ export default function LeadManagementPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2.5, justifyContent: 'center', gap: 2 }}>
           <Button onClick={() => setCashPaymentLead(null)} color="inherit" sx={{ minWidth: 100 }}>Hủy</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             color="primary"
             onClick={() => void handleConfirmCashPayment()}
             disabled={!!actionLoading}

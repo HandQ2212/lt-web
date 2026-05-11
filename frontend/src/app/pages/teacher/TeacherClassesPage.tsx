@@ -180,7 +180,7 @@ export default function TeacherClassesPage() {
       ]);
 
       setEnrollments(Array.isArray(enrollmentResponse.data) ? enrollmentResponse.data : []);
-      
+
       // Group attendance by date for easier access
       const attendanceByDate: Record<string, AttendanceItem[]> = {};
       const attendanceList = Array.isArray(attendanceResponse.data) ? attendanceResponse.data : [];
