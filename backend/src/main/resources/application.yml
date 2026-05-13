@@ -43,6 +43,12 @@ payos:
   api-key: ${PAYOS_API_KEY:YOUR_API_KEY}
   checksum-key: ${PAYOS_CHECKSUM_KEY:YOUR_CHECKSUM_KEY}
 
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-5-mini}
+  responses-url: ${OPENAI_RESPONSES_URL:https://api.openai.com/v1/responses}
+  timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:20}
+
 server:
   address: localhost
   port: 8080
