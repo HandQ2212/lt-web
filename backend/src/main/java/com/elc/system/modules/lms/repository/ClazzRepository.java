@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface ClazzRepository extends JpaRepository<Clazz, UUID> {
     List<Clazz> findByBranchId(UUID branchId);
     List<Clazz> findByTeacherId(UUID teacherId);
-    List<Clazz> findByCourseId(UUID courseId);
+    List<Clazz> findByLevelId(UUID levelId);
+    List<Clazz> findByLevelCourseId(UUID courseId);
+    boolean existsByLevelId(UUID levelId);
     long countByBranchIdAndStatus(UUID branchId, com.elc.system.modules.lms.entity.ClassStatus status);
 }

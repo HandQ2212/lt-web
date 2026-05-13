@@ -6,6 +6,7 @@ import com.elc.system.modules.chatbot.dto.ChatbotDto.ChatMessageRequest;
 import com.elc.system.modules.chatbot.dto.ChatbotDto.ChatMessageResponse;
 import com.elc.system.modules.sms.entity.Branch;
 import com.elc.system.modules.sms.entity.Course;
+import com.elc.system.modules.sms.entity.Level;
 import com.elc.system.modules.sms.repository.BranchRepository;
 import com.elc.system.modules.sms.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
@@ -157,10 +158,9 @@ public class ChatbotService {
             return "- Chua co du lieu khoa hoc trong he thong.";
         }
         return courses.stream()
-                .map(course -> "- %s | level: %s | hoc phi: %s | mo ta: %s".formatted(
+                .map(course -> "- %s | cap do: %s | mo ta: %s".formatted(
                         blankToDefault(course.getName(), "Chua dat ten"),
-                        course.getLevel() == null ? "chua cap nhat" : course.getLevel().name(),
-                        formatPrice(course.getBasePrice()),
+                        summarizeLevels(course.getLevels()),
                         compact(course.getDescription(), 140)))
                 .collect(Collectors.joining("\n"));
     }
@@ -193,6 +193,19 @@ public class ChatbotService {
         return "Cac chi nhanh hien co: " + branches.stream()
                 .map(branch -> blankToDefault(branch.getName(), "ELC"))
                 .collect(Collectors.joining(", ")) + ".";
+    }
+
+    private String summarizeLevels(List<Level> levels) {
+        if (levels == null || levels.isEmpty()) {
+            return "chua cap nhat";
+        }
+
+        return levels.stream()
+                .map(level -> "%s (%s, %s)".formatted(
+                        blankToDefault(level.getName(), level.getCode()),
+                        formatPrice(level.getBasePrice()),
+                        level.getDurationWeeks() == null ? "chua cap nhat thoi luong" : level.getDurationWeeks() + " tuan"))
+                .collect(Collectors.joining("; "));
     }
 
     private boolean containsAny(String value, String... keywords) {

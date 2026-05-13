@@ -15,10 +15,11 @@ import com.elc.system.modules.sms.dto.ClassScheduleDto.*;
 import com.elc.system.modules.sms.entity.Branch;
 import com.elc.system.modules.sms.entity.ClassSchedule;
 import com.elc.system.modules.sms.entity.Course;
+import com.elc.system.modules.sms.entity.Level;
 import com.elc.system.modules.room.entity.Room;
 import com.elc.system.modules.sms.repository.BranchRepository;
 import com.elc.system.modules.sms.repository.ClassScheduleRepository;
-import com.elc.system.modules.sms.repository.CourseRepository;
+import com.elc.system.modules.sms.repository.LevelRepository;
 import com.elc.system.modules.room.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 public class ClazzService {
 
     private final ClazzRepository clazzRepository;
-    private final CourseRepository courseRepository;
+    private final LevelRepository levelRepository;
     private final RoomRepository roomRepository;
     private final BranchRepository branchRepository;
     private final UserRepository userRepository;
@@ -56,8 +57,11 @@ public class ClazzService {
 
     @Transactional
     public ClassResponse createClass(ClassRequest request) {
-        Course course = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        if (request.getLevelId() == null) {
+            throw new IllegalArgumentException("Level id is required");
+        }
+        Level level = levelRepository.findById(request.getLevelId())
+                .orElseThrow(() -> new RuntimeException("Level not found"));
 
         Room room = null;
         if (request.getRoomId() != null) {
@@ -78,7 +82,7 @@ public class ClazzService {
         }
 
         Clazz clazz = Clazz.builder()
-                .course(course)
+                .level(level)
                 .room(room)
                 .teacher(teacher)
                 .branch(branch)
@@ -98,10 +102,10 @@ public class ClazzService {
                 .orElseThrow(() -> new RuntimeException("Class not found"));
 
         // Update fields if provided
-        if (request.getCourseId() != null) {
-            Course course = courseRepository.findById(request.getCourseId())
-                    .orElseThrow(() -> new RuntimeException("Course not found"));
-            existingClass.setCourse(course);
+        if (request.getLevelId() != null) {
+            Level level = levelRepository.findById(request.getLevelId())
+                    .orElseThrow(() -> new RuntimeException("Level not found"));
+            existingClass.setLevel(level);
         }
 
         if (request.getRoomId() != null) {
@@ -438,15 +442,17 @@ public class ClazzService {
                 .map(this::mapToScheduleResponse)
                 .collect(Collectors.toList());
 
+        Level level = null;
         Course course = null;
         Room room = null;
         User teacher = null;
         Branch branch = null;
 
         try {
-            course = clazz.getCourse();
+            level = clazz.getLevel();
+            course = level != null ? level.getCourse() : null;
         } catch (RuntimeException ignored) {
-            // Keep the class visible even if imported data points to a missing course.
+            // Keep the class visible even if imported data points to a missing level.
         }
 
         try {
@@ -470,6 +476,8 @@ public class ClazzService {
         return ClassResponse.builder()
                 .id(clazz.getId())
                 .name(clazz.getName())
+                .levelId(level != null ? safeId(level::getId) : null)
+                .levelName(level != null ? safeString(level::getName) : null)
                 .courseId(course != null ? safeId(course::getId) : null)
                 .courseName(course != null ? safeString(course::getName) : null)
                 .roomId(room != null ? safeId(room::getId) : null)
@@ -482,6 +490,7 @@ public class ClazzService {
                 .startDate(clazz.getStartDate())
                 .endDate(clazz.getEndDate())
                 .maxStudents(clazz.getMaxStudents())
+                .currentStudents(clazz.getCurrentStudents())
                 .schedules(schedules)
                 .build();
     }

@@ -1,8 +1,10 @@
 package com.elc.system.modules.sms.service;
 
 import com.elc.system.modules.sms.dto.CourseDto.CourseRequest;
+import com.elc.system.modules.sms.dto.CourseDto.CourseLevelSummary;
 import com.elc.system.modules.sms.dto.CourseDto.CourseResponse;
 import com.elc.system.modules.sms.entity.Course;
+import com.elc.system.modules.sms.entity.Level;
 import com.elc.system.modules.sms.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,12 +20,14 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
 
+    @Transactional(readOnly = true)
     public List<CourseResponse> getAllCourses() {
         return courseRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public CourseResponse getCourseById(UUID id) {
         return courseRepository.findById(id)
                 .map(this::mapToResponse)
@@ -35,8 +39,6 @@ public class CourseService {
         Course course = Course.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .level(request.getLevel())
-                .basePrice(request.getBasePrice())
                 .build();
 
         return mapToResponse(courseRepository.save(course));
@@ -48,8 +50,6 @@ public class CourseService {
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         course.setName(request.getName());
         course.setDescription(request.getDescription());
-        course.setLevel(request.getLevel());
-        course.setBasePrice(request.getBasePrice());
         return mapToResponse(courseRepository.save(course));
     }
 
@@ -66,8 +66,23 @@ public class CourseService {
                 .id(course.getId())
                 .name(course.getName())
                 .description(course.getDescription())
-                .level(course.getLevel())
-                .basePrice(course.getBasePrice())
+                .levels(mapLevels(course.getLevels()))
                 .build();
+    }
+
+    private List<CourseLevelSummary> mapLevels(List<Level> levels) {
+        if (levels == null) {
+            return List.of();
+        }
+
+        return levels.stream()
+                .map(level -> CourseLevelSummary.builder()
+                        .id(level.getId())
+                        .code(level.getCode())
+                        .name(level.getName())
+                        .basePrice(level.getBasePrice())
+                        .durationWeeks(level.getDurationWeeks())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

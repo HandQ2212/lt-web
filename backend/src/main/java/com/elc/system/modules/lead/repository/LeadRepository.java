@@ -10,8 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface LeadRepository extends JpaRepository<Lead, UUID>, JpaSpecificationExecutor<Lead> {
-    Optional<Lead> findByUserId(UUID userId);
-
     Optional<Lead> findByEmailIgnoreCase(String email);
 
     Optional<Lead> findByPhone(String phone);

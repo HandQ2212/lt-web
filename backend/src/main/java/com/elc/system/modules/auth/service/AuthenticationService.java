@@ -195,7 +195,6 @@ public class AuthenticationService {
                 .or(() -> leadRepository.findByPhone(user.getPhone()))
                 .orElseGet(Lead::new);
 
-        lead.setUserId(user.getId());
         lead.setFullName(user.getFullName());
         lead.setEmail(user.getEmail());
         lead.setPhone(user.getPhone());

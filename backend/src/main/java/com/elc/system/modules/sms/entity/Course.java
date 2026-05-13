@@ -4,7 +4,8 @@ import com.elc.system.core.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entity representing a course offered by the school.
@@ -25,10 +26,7 @@ public class Course extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "level")
-    private CourseLevel level;
-
-    @Column(name = "base_price")
-    private BigDecimal basePrice;
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Level> levels = new ArrayList<>();
 }
