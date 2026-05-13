@@ -57,6 +57,8 @@ public class ChatbotService {
             } catch (RuntimeException ex) {
                 log.warn("OpenAI chatbot fallback activated: {}", ex.getMessage(), ex);
             }
+        } else {
+            log.warn("OpenAI chatbot fallback activated: OPENAI_API_KEY is not configured.");
         }
 
         if (answer == null || answer.isBlank()) {

@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Optional;
 
 @Component
@@ -35,8 +36,14 @@ public class OpenAiChatClient {
     @Value("${openai.timeout-seconds:20}")
     private int timeoutSeconds;
 
+    @Value("${openai.max-output-tokens:2000}")
+    private int maxOutputTokens;
+
+    @Value("${openai.reasoning-effort:low}")
+    private String reasoningEffort;
+
     public boolean isConfigured() {
-        return apiKey != null && !apiKey.isBlank();
+        return !normalizedApiKey().isBlank();
     }
 
     public Optional<String> createReply(String instructions, String input) {
@@ -50,11 +57,16 @@ public class OpenAiChatClient {
             payload.put("instructions", instructions);
             payload.put("input", input);
             payload.put("store", false);
-            payload.put("max_output_tokens", 500);
+            payload.put("max_output_tokens", Math.max(maxOutputTokens, 1));
+            if (supportsReasoningEffort()) {
+                ObjectNode reasoning = objectMapper.createObjectNode();
+                reasoning.put("effort", reasoningEffort.trim());
+                payload.set("reasoning", reasoning);
+            }
 
             HttpRequest request = HttpRequest.newBuilder(URI.create(responsesUrl))
                     .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 1)))
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + normalizedApiKey())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
                     .build();
@@ -65,13 +77,41 @@ public class OpenAiChatClient {
                         + response.statusCode() + ": " + compact(response.body(), 400));
             }
 
-            return extractText(response.body());
+            Optional<String> answer = extractText(response.body());
+            if (answer.isEmpty()) {
+                throw new IllegalStateException("OpenAI response did not include output_text: "
+                        + compact(response.body(), 700));
+            }
+            return answer;
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("OpenAI request interrupted", ex);
+        } catch (IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new IllegalStateException("OpenAI request failed", ex);
         }
+    }
+
+    private boolean supportsReasoningEffort() {
+        if (model == null || reasoningEffort == null || reasoningEffort.isBlank()) {
+            return false;
+        }
+        String normalizedModel = model.toLowerCase(Locale.ROOT).trim();
+        return normalizedModel.startsWith("gpt-5") || normalizedModel.startsWith("o");
+    }
+
+    private String normalizedApiKey() {
+        if (apiKey == null) {
+            return "";
+        }
+        String value = apiKey.trim();
+        if (value.length() >= 2
+                && ((value.startsWith("\"") && value.endsWith("\""))
+                || (value.startsWith("'") && value.endsWith("'")))) {
+            return value.substring(1, value.length() - 1).trim();
+        }
+        return value;
     }
 
     private Optional<String> extractText(String responseBody) throws Exception {

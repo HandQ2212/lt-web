@@ -10,6 +10,7 @@ import {
   Fade,
   Divider,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -118,7 +119,7 @@ export default function ChatWidget() {
         },
       ]);
     } catch {
-      setErrorText('Không gửi được tin nhắn. Vui lòng thử lại sau.');
+      setErrorText('Chưa kết nối được với trợ lý ELC. Vui lòng thử lại sau ít phút.');
       setMessages((prev) => [
         ...prev,
         {
@@ -185,9 +186,9 @@ export default function ChatWidget() {
 
           <Box sx={{ p: 2, bgcolor: 'white' }}>
             {errorText && (
-              <Typography variant="caption" color="error" sx={{ display: 'block', mb: 1 }}>
+              <Alert severity="warning" variant="outlined" sx={{ mb: 1.25, py: 0.25, borderRadius: 2 }}>
                 {errorText}
-              </Typography>
+              </Alert>
             )}
             <Box sx={{ display: 'flex', gap: 1 }}>
               <TextField

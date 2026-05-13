@@ -1,4 +1,8 @@
 spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:backend/.env[.properties]
   application:
     name: system
   profiles:
@@ -48,6 +52,8 @@ openai:
   model: ${OPENAI_MODEL:gpt-5-mini}
   responses-url: ${OPENAI_RESPONSES_URL:https://api.openai.com/v1/responses}
   timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:20}
+  max-output-tokens: ${OPENAI_MAX_OUTPUT_TOKENS:2000}
+  reasoning-effort: ${OPENAI_REASONING_EFFORT:low}
 
 server:
   address: localhost
