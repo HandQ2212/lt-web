@@ -15,7 +15,6 @@ import {
   Divider,
   Grid,
   IconButton,
-  LinearProgress,
   List,
   ListItem,
   ListItemText,
@@ -48,7 +47,7 @@ import {
   EventBusy as EventBusyIcon,
   People as PeopleIcon,
 } from '@mui/icons-material';
-import { AppUser, classApi, userApi, UserRole, enrollmentApi, attendanceApi, resultApi } from '../../../services/api';
+import { AppUser, classApi, userApi, enrollmentApi, attendanceApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 
 type ClassItem = {
@@ -70,7 +69,7 @@ type ScheduleSessionRow = {
   dateLabel: string;
   timeLabel: string;
   roomLabel: string;
-  formatLabel: string;s
+  formatLabel: string;
   attendanceLabel: string;
   teacherLabel: string;
   titleLabel: string;
@@ -211,7 +210,7 @@ export default function TeacherManagementPage() {
     const validRange = startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate <= endDate;
 
     if (validRange) {
-      selectedClassDetail.schedules.forEach((schedule) => {
+      selectedClassDetail.schedules?.forEach((schedule) => {
         const targetDay = dayOfWeekIndexMap[schedule.dayOfWeek?.toUpperCase()];
         if (targetDay === undefined) return;
         const firstOccurrence = new Date(startDate as Date);
@@ -236,7 +235,7 @@ export default function TeacherManagementPage() {
       return rows.sort((a, b) => a.sortTime - b.sortTime);
     }
 
-    selectedClassDetail.schedules.forEach((schedule) => {
+    selectedClassDetail.schedules?.forEach((schedule) => {
       rows.push({
         key: schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`,
         sortTime: dayOfWeekIndexMap[schedule.dayOfWeek?.toUpperCase()] || 0,
@@ -303,7 +302,7 @@ export default function TeacherManagementPage() {
     } else {
       const q = query.toLowerCase();
       setFilteredTeachers(teachers.filter((t) =>
-        t.name?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q) || t.phone?.includes(q)
+        t.fullName?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q) || t.phone?.includes(q)
       ));
     }
   };
@@ -427,7 +426,7 @@ export default function TeacherManagementPage() {
                 <Grid container spacing={2}>
                   {teacherClasses.map((cls) => (
                     <Grid item xs={12} sm={6} key={cls.id}>
-                      <Card 
+                      <Card
                         variant="outlined" 
                         sx={{ 
                           cursor: 'pointer',

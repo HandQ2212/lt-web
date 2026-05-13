@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -15,12 +16,6 @@ import {
   MenuItem,
   Paper,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
   Chip,
@@ -54,7 +49,7 @@ interface ProgramForm {
   description: string;
   level: string;
   duration: string;
-  basePrice: number;
+  basePrice: number | string;
 }
 
 const defaultForm: ProgramForm = {
@@ -62,12 +57,25 @@ const defaultForm: ProgramForm = {
   description: '',
   level: '',
   duration: '',
-  basePrice: 0,
+  basePrice: '',
 };
+
+const COURSE_LEVELS = [
+  { value: 'BEGINNER', label: 'Sơ cấp (Beginner)' },
+  { value: 'INTERMEDIATE', label: 'Trung cấp (Intermediate)' },
+  { value: 'ADVANCED', label: 'Nâng cao (Advanced)' },
+  { value: 'TOEIC', label: 'TOEIC' },
+  { value: 'IELTS', label: 'IELTS' },
+  { value: 'GENERAL', label: 'Tiếng Anh giao tiếp (General)' },
+  { value: 'KIDS', label: 'Tiếng Anh trẻ em (Kids)' },
+  { value: 'KIDS_PLUS', label: 'Tiếng Anh trẻ em+ (Kids Plus)' },
+  { value: 'TEENS', label: 'Tiếng Anh thiếu niên (Teens)' },
+];
 
 
 
 export default function ProgramManagementPage() {
+  const navigate = useNavigate();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,10 +168,10 @@ export default function ProgramManagementPage() {
       setSubmitting(true);
 
       if (editingId) {
-        await courseApi.update(editingId, { ...form });
+        await courseApi.update(editingId, { ...form, basePrice: Number(form.basePrice) });
         setSnackbar({ open: true, message: 'Cập nhật thành công', severity: 'success' });
       } else {
-        await courseApi.create({ ...form });
+        await courseApi.create({ ...form, basePrice: Number(form.basePrice) });
         setSnackbar({ open: true, message: 'Tạo chương trình thành công', severity: 'success' });
       }
 
@@ -315,7 +323,12 @@ export default function ProgramManagementPage() {
                           </Paper>
                         </Grid>
                         <Grid item xs={6} sm={3}>
-                          <Button variant="outlined" fullWidth size="small">
+                          <Button
+                            variant="outlined"
+                            fullWidth
+                            size="small"
+                            onClick={() => navigate(`/admin/classes?course=${encodeURIComponent(program.name)}`)}
+                          >
                             Xem lớp học
                           </Button>
                         </Grid>
@@ -354,13 +367,19 @@ export default function ProgramManagementPage() {
           />
 
           <TextField
+            select
             fullWidth
             label="Trình độ"
             margin="normal"
             value={form.level}
             onChange={(e) => setForm((prev) => ({ ...prev, level: e.target.value }))}
-            placeholder="VD: Sơ cấp, Trung cấp, Nâng cao"
-          />
+          >
+            {COURSE_LEVELS.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             fullWidth
@@ -377,7 +396,7 @@ export default function ProgramManagementPage() {
             margin="normal"
             type="number"
             value={form.basePrice}
-            onChange={(e) => setForm((prev) => ({ ...prev, basePrice: Number(e.target.value) }))}
+            onChange={(e) => setForm((prev) => ({ ...prev, basePrice: e.target.value }))}
             placeholder="VD: 5000000"
           />
         </DialogContent>

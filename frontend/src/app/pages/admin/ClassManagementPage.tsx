@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Avatar,
@@ -15,7 +16,6 @@ import {
   Divider,
   Grid,
   IconButton,
-  LinearProgress,
   MenuItem,
   Paper,
   Snackbar,
@@ -44,7 +44,7 @@ import {
   School as SchoolIcon,
   PlayCircleOutline as PlayCircleOutlineIcon,
 } from '@mui/icons-material';
-import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi, resultApi } from '../../../services/api';
+import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 
 type ClassItem = {
@@ -54,6 +54,7 @@ type ClassItem = {
   startDate?: string;
   endDate?: string;
   maxStudents?: number;
+  currentStudents?: number;
   courseName?: string;
   roomName?: string;
   teacherName?: string;
@@ -174,11 +175,18 @@ const formatSessionDateLabel = (date: Date) => {
 };
 
 export default function ClassManagementPage() {
+  const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [filteredClasses, setFilteredClasses] = useState<ClassItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('course') || '');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [courseFilter, setCourseFilter] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<string>('START_DATE');
+
+  const [statusDialogOpen, setStatusDialogOpen] = useState<boolean>(false);
+  const [targetClassForStatus, setTargetClassForStatus] = useState<ClassItem | null>(null);
+  const [selectedNewStatus, setSelectedNewStatus] = useState<string>('');
   const [courses, setCourses] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -217,8 +225,14 @@ export default function ClassManagementPage() {
   }, []);
 
   useEffect(() => {
-    handleSearch(searchQuery);
-  }, [classes]);
+    const courseQuery = searchParams.get('course');
+    if (courseQuery !== null) {
+      setSearchQuery(courseQuery);
+      if (courseQuery && courseFilter === 'ALL') {
+        // Option to pre-select course filter if exact match or keep search query
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (selectedClassId) {
@@ -287,20 +301,46 @@ export default function ClassManagementPage() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      setFilteredClasses(classes);
-      return;
+  };
+
+  const filteredClasses = useMemo(() => {
+    let result = [...classes];
+
+    if (searchQuery.trim()) {
+      const lowercaseQuery = searchQuery.toLowerCase();
+      result = result.filter(
+        (cls) =>
+          cls.name?.toLowerCase().includes(lowercaseQuery) ||
+          cls.id?.toLowerCase().includes(lowercaseQuery) ||
+          cls.courseName?.toLowerCase().includes(lowercaseQuery) ||
+          cls.status?.toLowerCase().includes(lowercaseQuery)
+      );
     }
 
-    const lowercaseQuery = query.toLowerCase();
-    const filtered = classes.filter(
-      (cls) =>
-        cls.name?.toLowerCase().includes(lowercaseQuery) ||
-        cls.id?.toLowerCase().includes(lowercaseQuery) ||
-        cls.status?.toLowerCase().includes(lowercaseQuery)
-    );
-    setFilteredClasses(filtered);
-  };
+    if (statusFilter !== 'ALL') {
+      result = result.filter((cls) => cls.status === statusFilter);
+    }
+
+    if (courseFilter !== 'ALL') {
+      result = result.filter((cls) => cls.courseName === courseFilter || cls.name?.includes(courseFilter));
+    }
+
+    if (sortBy === 'START_DATE') {
+      result.sort((a, b) => {
+        if (!a.startDate) return 1;
+        if (!b.startDate) return -1;
+        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime(); // Ngày khai giảng gần nhất (mới nhất)
+      });
+    } else if (sortBy === 'FILL_RATE') {
+      result.sort((a, b) => {
+        const fillA = ((a as any).students || a.currentStudents || 0) / (a.maxStudents || 15);
+        const fillB = ((b as any).students || b.currentStudents || 0) / (b.maxStudents || 15);
+        return fillA - fillB; // Tỷ lệ lấp đầy thấp nhất
+      });
+    }
+
+    return result;
+  }, [classes, searchQuery, statusFilter, courseFilter, sortBy]);
 
   const handleCreate = async () => {
     try {
@@ -583,19 +623,72 @@ export default function ClassManagementPage() {
         </Button>
       </Box>
 
-      <Box sx={{ mb: 4 }}>
-        <TextField
-          fullWidth
-          placeholder="Tìm kiếm lớp học theo tên, mã lớp, trạng thái..."
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-          }}
-          variant="outlined"
-          sx={{ bgcolor: 'white', borderRadius: 2, '& fieldset': { borderRadius: 2 } }}
-        />
-      </Box>
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={4}>
+          <TextField
+            fullWidth
+            placeholder="Tìm kiếm lớp học theo tên, mã lớp..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+            }}
+            variant="outlined"
+            size="small"
+            sx={{ bgcolor: 'white', borderRadius: 2, '& fieldset': { borderRadius: 2 } }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4} md={2.5}>
+          <TextField
+            select
+            fullWidth
+            label="Trạng thái"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            size="small"
+            sx={{ bgcolor: 'white', borderRadius: 2 }}
+          >
+            <MenuItem value="ALL">Tất cả trạng thái</MenuItem>
+            <MenuItem value="UPCOMING">Chờ khai giảng</MenuItem>
+            <MenuItem value="ACCEPTING">Đang tuyển sinh</MenuItem>
+            <MenuItem value="ONGOING">Đang diễn ra</MenuItem>
+            <MenuItem value="COMPLETED">Đã hoàn thành</MenuItem>
+            <MenuItem value="CANCELLED">Đã hủy</MenuItem>
+          </TextField>
+        </Grid>
+        <Grid item xs={12} sm={4} md={3}>
+          <TextField
+            select
+            fullWidth
+            label="Khóa học"
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            size="small"
+            sx={{ bgcolor: 'white', borderRadius: 2 }}
+          >
+            <MenuItem value="ALL">Tất cả khóa học</MenuItem>
+            {courses.map((c) => (
+              <MenuItem key={c.id} value={c.name}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+        <Grid item xs={12} sm={4} md={2.5}>
+          <TextField
+            select
+            fullWidth
+            label="Sắp xếp"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            size="small"
+            sx={{ bgcolor: 'white', borderRadius: 2 }}
+          >
+            <MenuItem value="START_DATE">Khai giảng gần nhất</MenuItem>
+            <MenuItem value="FILL_RATE">Tỷ lệ lấp đầy thấp nhất</MenuItem>
+          </TextField>
+        </Grid>
+      </Grid>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
@@ -701,21 +794,19 @@ export default function ClassManagementPage() {
                         Chi tiết
                       </Button>
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {cls.status && cls.status !== 'COMPLETED' && cls.status !== 'CANCELLED' && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const idx = statusOrder.indexOf(cls.status || 'UPCOMING');
-                              const nextStatus = statusOrder[Math.min(idx + 1, statusOrder.length - 1)] || 'ACCEPTING';
-                              void handleUpdateStatus(cls.id, nextStatus);
-                            }}
-                            sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
-                          >
-                            Tiếp theo
-                          </Button>
-                        )}
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTargetClassForStatus(cls);
+                            setSelectedNewStatus(cls.status || 'UPCOMING');
+                            setStatusDialogOpen(true);
+                          }}
+                          sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
+                        >
+                          Cập nhật trạng thái
+                        </Button>
                         <IconButton
                           color="error"
                           size="small"
@@ -1141,6 +1232,51 @@ export default function ClassManagementPage() {
           <Button onClick={() => setOpenDialog(false)} color="inherit" sx={{ fontWeight: 700 }}>Hủy</Button>
           <Button variant="contained" disabled={submitting} onClick={() => void handleCreate()} sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}>
             {submitting ? 'Đang xử lý...' : 'Xác nhận tạo lớp'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Update Status Dialog */}
+      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Typography variant="h6" fontWeight={800} color="primary.main">
+            Cập nhật trạng thái lớp học
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Chọn trạng thái mới cho lớp <strong>{targetClassForStatus?.name || targetClassForStatus?.id}</strong>:
+          </Typography>
+          <TextField
+            select
+            fullWidth
+            label="Trạng thái"
+            value={selectedNewStatus}
+            onChange={(e) => setSelectedNewStatus(e.target.value)}
+            sx={{ borderRadius: 2 }}
+          >
+            <MenuItem value="UPCOMING">Chờ khai giảng</MenuItem>
+            <MenuItem value="ACCEPTING">Đang tuyển sinh</MenuItem>
+            <MenuItem value="ONGOING">Đang diễn ra</MenuItem>
+            <MenuItem value="COMPLETED">Đã hoàn thành</MenuItem>
+            <MenuItem value="CANCELLED">Đã hủy</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setStatusDialogOpen(false)} sx={{ borderRadius: 2 }}>
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (targetClassForStatus) {
+                void handleUpdateStatus(targetClassForStatus.id, selectedNewStatus);
+              }
+              setStatusDialogOpen(false);
+            }}
+            sx={{ borderRadius: 2, fontWeight: 700 }}
+          >
+            Lưu
           </Button>
         </DialogActions>
       </Dialog>

@@ -114,7 +114,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
             aria-label="open drawer"
             onClick={onMenuClick}
             edge="start"
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, display: { md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
