@@ -56,52 +56,51 @@ export default function PersonalResumeCard({
         )}
       </Stack>
 
-      <Grid container spacing={4} alignItems="flex-start">
-        <Grid item xs={12} md={3}>
-          <Stack alignItems="center" spacing={2}>
-            <Avatar
-              src={avatarUrl}
-              alt={name}
-              sx={{
-                width: { xs: 140, sm: 180 },
-                height: { xs: 140, sm: 180 },
-                borderRadius: 0,
-                bgcolor: 'rgba(25, 118, 210, 0.08)',
-                color: 'primary.main',
-                fontSize: { xs: 52, sm: 64 },
-                fontWeight: 800,
-                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.10)',
-              }}
-              variant="rounded"
-            >
-              {avatarFallback || name?.charAt(0)?.toUpperCase() || 'U'}
-            </Avatar>
-            <Stack spacing={1} alignItems="center">
-              <Typography variant="h6" fontWeight={800} textAlign="center">
-                {name}
-              </Typography>
-              {statusLabel && (
-                <Chip
-                  label={statusLabel}
-                  color={statusColor}
-                  variant="outlined"
-                  sx={{ fontWeight: 700, borderRadius: 2 }}
-                />
-              )}
-            </Stack>
-          </Stack>
-        </Grid>
+      <Stack direction="row" spacing={{ xs: 2, sm: 4 }} alignItems="flex-start">
+        <Avatar
+          src={avatarUrl}
+          alt={name}
+          sx={{
+            width: { xs: 88, sm: 140 },
+            height: { xs: 88, sm: 140 },
+            borderRadius: 3,
+            bgcolor: 'rgba(25, 118, 210, 0.08)',
+            color: 'primary.main',
+            fontSize: { xs: 36, sm: 56 },
+            fontWeight: 800,
+            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.10)',
+            flexShrink: 0,
+          }}
+          variant="rounded"
+        >
+          {avatarFallback || name?.charAt(0)?.toUpperCase() || 'U'}
+        </Avatar>
 
-        <Grid item xs={12} md={9}>
+        <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ mb: 2.5 }}>
+            <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' }, overflowWrap: 'anywhere' }}>
+              {name}
+            </Typography>
+            {statusLabel && (
+              <Chip
+                label={statusLabel}
+                color={statusColor}
+                variant="filled"
+                size="small"
+                sx={{ fontWeight: 800, borderRadius: 1.5 }}
+              />
+            )}
+          </Stack>
+
           <Grid container spacing={2.5}>
             {leftFields.map((field) => (
               <Grid item xs={12} sm={6} lg={4} key={`${field.number}-${field.label}`}>
-                <Box sx={{ minHeight: 58 }}>
-                  <Typography variant="body1" sx={{ lineHeight: 1.75 }}>
-                    <Box component="span" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                      {field.number}. {field.label}:
-                    </Box>{' '}
-                    <Box component="span" sx={{ color: field.valueColor || 'text.primary', fontWeight: field.valueColor ? 700 : 400 }}>
+                <Box sx={{ minHeight: 48 }}>
+                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                    <Box component="span" sx={{ fontWeight: 800, display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'text.secondary', mb: 0.25 }}>
+                      {field.label}
+                    </Box>
+                    <Box component="span" sx={{ color: field.valueColor || 'text.primary', fontWeight: field.valueColor ? 700 : 600, fontSize: '0.9rem' }}>
                       {field.value}
                     </Box>
                   </Typography>
@@ -111,12 +110,12 @@ export default function PersonalResumeCard({
 
             {fullWidthFields.map((field) => (
               <Grid item xs={12} key={`${field.number}-${field.label}`}>
-                <Box sx={{ minHeight: 58 }}>
-                  <Typography variant="body1" sx={{ lineHeight: 1.75 }}>
-                    <Box component="span" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                      {field.number}. {field.label}:
-                    </Box>{' '}
-                    <Box component="span" sx={{ color: field.valueColor || 'text.primary', fontWeight: field.valueColor ? 700 : 400 }}>
+                <Box sx={{ minHeight: 48 }}>
+                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                    <Box component="span" sx={{ fontWeight: 800, display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'text.secondary', mb: 0.25 }}>
+                      {field.label}
+                    </Box>
+                    <Box component="span" sx={{ color: field.valueColor || 'text.primary', fontWeight: field.valueColor ? 700 : 600, fontSize: '0.9rem' }}>
                       {field.value}
                     </Box>
                   </Typography>
@@ -127,12 +126,12 @@ export default function PersonalResumeCard({
 
           {actions && (
             <>
-              <Divider sx={{ my: 3 }} />
+              <Divider sx={{ my: 2.5 }} />
               <Box>{actions}</Box>
             </>
           )}
-        </Grid>
-      </Grid>
+        </Box>
+      </Stack>
     </Paper>
   );
 }

@@ -33,6 +33,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 
 import ProfilePage from './pages/common/ProfilePage';
+import RoleNotificationsPage from './pages/common/RoleNotificationsPage';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagementPage from './pages/admin/UserManagementPage';
@@ -398,6 +399,7 @@ function AppRoutes() {
         />
 
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/notifications" element={<RoleNotificationsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

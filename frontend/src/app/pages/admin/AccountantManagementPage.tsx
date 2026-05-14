@@ -128,53 +128,65 @@ export default function AccountantManagementPage() {
         </Button>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <Card>
-              <CardContent>
-                <Stack alignItems="center" spacing={2} sx={{ py: 3 }}>
-                  <Avatar sx={{ width: 80, height: 80, fontSize: 32, bgcolor: 'info.main' }}>
+          <Grid item xs={12}>
+            <Card sx={{ borderRadius: 4, border: '1px solid rgba(15,23,42,0.06)', boxShadow: '0 10px 30px rgba(15,23,42,0.04)' }}>
+              <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3.5} alignItems="flex-start">
+                  <Avatar sx={{ width: { xs: 100, sm: 120 }, height: { xs: 100, sm: 120 }, fontSize: { xs: 40, sm: 48 }, fontWeight: 800, bgcolor: 'info.main', borderRadius: 3, flexShrink: 0 }} variant="rounded">
                     {selectedAccountant.name?.charAt(0)?.toUpperCase()}
                   </Avatar>
-                  <Typography variant="h5" fontWeight={700}>{selectedAccountant.name}</Typography>
-                  <Chip label={selectedAccountant.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'} color={selectedAccountant.status === 'ACTIVE' ? 'success' : 'default'} />
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack spacing={2}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <EmailIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Email</Typography>
-                      <Typography variant="body2">{selectedAccountant.email}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <PhoneIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Số điện thoại</Typography>
-                      <Typography variant="body2">{selectedAccountant.phone || 'Chưa cập nhật'}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <AccountBalanceIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Vai trò</Typography>
-                      <Typography variant="body2">Kế toán</Typography>
-                    </Box>
-                  </Stack>
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack direction="row" spacing={1}>
-                  <Button fullWidth variant="outlined" startIcon={<EditIcon />} onClick={() => handleOpenEdit(selectedAccountant)}>Sửa</Button>
-                  <Button fullWidth variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => void handleDelete(selectedAccountant.id)}>Xóa</Button>
+
+                  <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+                    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ mb: 2 }}>
+                      <Typography variant="h5" fontWeight={900}>{selectedAccountant.name}</Typography>
+                      <Chip label={selectedAccountant.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'} color={selectedAccountant.status === 'ACTIVE' ? 'success' : 'default'} size="small" sx={{ fontWeight: 800 }} />
+                    </Stack>
+
+                    <Grid container spacing={2.5} sx={{ mb: 1.5 }}>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <EmailIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Email</Typography>
+                            <Typography variant="body2" fontWeight={600} noWrap>{selectedAccountant.email}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <PhoneIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Số điện thoại</Typography>
+                            <Typography variant="body2" fontWeight={600}>{selectedAccountant.phone || 'Chưa cập nhật'}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <AccountBalanceIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Vai trò</Typography>
+                            <Typography variant="body2" fontWeight={600}>Kế toán</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                    </Grid>
+
+                    <Divider sx={{ my: 2 }} />
+                    <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                      <Button variant="outlined" startIcon={<EditIcon />} onClick={() => handleOpenEdit(selectedAccountant)} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>Sửa thông tin</Button>
+                      <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => void handleDelete(selectedAccountant.id)} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>Xóa</Button>
+                    </Stack>
+                  </Box>
                 </Stack>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={7}>
-            <Paper sx={{ p: 3 }}>
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, borderRadius: 4 }}>
               <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Thông tin bổ sung</Typography>
-              <Alert severity="info">
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
                 Kế toán có quyền truy cập vào Dashboard tài chính, Nghiệp vụ kế toán, Công nợ học viên, và Thanh toán giáo viên.
               </Alert>
             </Paper>

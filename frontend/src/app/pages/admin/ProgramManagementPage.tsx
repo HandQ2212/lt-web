@@ -13,7 +13,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
+  
   IconButton,
   LinearProgress,
   MenuItem,
@@ -32,6 +32,7 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -182,6 +183,24 @@ type ScheduleSessionRow = {
   startTime?: string;
   endTime?: string;
 };
+
+const getStatusLabel = (status?: string) => {
+    switch (status) {
+      case 'UPCOMING':
+        return 'Chờ khai giảng';
+      case 'ACCEPTING':
+        return 'Đang tuyển sinh';
+      case 'ONGOING':
+        return 'Đang diễn ra';
+      case 'COMPLETED':
+        return 'Đã hoàn thành';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      default:
+        return status || 'Không xác định';
+    }
+  };
+
 
 export default function ProgramManagementPage() {
   const theme = useTheme();
@@ -746,7 +765,7 @@ export default function ProgramManagementPage() {
           ) : (
             <Grid container spacing={3}>
               {filteredPrograms.map((program) => (
-                <Grid item xs={12} key={program.id}>
+                <Grid xs={12} key={program.id}>
                   <Card>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -861,7 +880,7 @@ export default function ProgramManagementPage() {
           ) : (
             <Grid container spacing={3}>
               {filteredLevels.map((level) => (
-                <Grid item xs={12} md={6} key={level.id}>
+                <Grid xs={12} md={6} key={level.id}>
                   <Card>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
@@ -1065,7 +1084,7 @@ export default function ProgramManagementPage() {
           />
 
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Học phí"
@@ -1074,7 +1093,7 @@ export default function ProgramManagementPage() {
                 onChange={(e) => setLevelForm((prev) => ({ ...prev, basePrice: e.target.value }))}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Số tuần"
@@ -1127,7 +1146,7 @@ export default function ProgramManagementPage() {
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: 3 }}>
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={4}>
+              <Grid xs={12} md={4}>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
                   <Typography variant="h4" fontWeight={900}>{enrollments.length} / {activeClass?.maxStudents || '-'}</Typography>
@@ -1138,14 +1157,14 @@ export default function ProgramManagementPage() {
                   />
                 </Paper>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid xs={12} md={4}>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>TỔNG BUỔI HỌC</Typography>
                   <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
                   <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Buổi học</Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid xs={12} md={4}>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
                   <Typography variant="h6" fontWeight={800}>

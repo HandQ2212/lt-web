@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Badge, Menu, MenuItem, Avatar, Box, useTheme } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Badge, Menu, MenuItem, Avatar, Box, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Chip } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,6 +27,8 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
   const [notifAnchorEl, setNotifAnchorEl] = useState<null | HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [selectedNotification, setSelectedNotification] = useState<any | null>(null);
+  const [notifDialogOpen, setNotifDialogOpen] = useState(false);
 
   useEffect(() => {
     void fetchNotifications();
@@ -64,6 +66,30 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
 
   const handleNotificationMenuClose = () => {
     setNotifAnchorEl(null);
+  };
+
+  const openNotificationDetail = async (notif: any) => {
+    let nextNotification = notif;
+    try {
+      // mark as read if not already
+      if (notif && !notif.read && notif.id) {
+        await notificationApi.markAsRead(notif.id);
+        nextNotification = { ...notif, read: true };
+        setUnreadCount((c) => Math.max(0, c - 1));
+        setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)));
+      }
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+
+    setSelectedNotification(nextNotification);
+    setNotifDialogOpen(true);
+    setNotifAnchorEl(null);
+  };
+
+  const closeNotificationDialog = () => {
+    setNotifDialogOpen(false);
+    setSelectedNotification(null);
   };
 
   const handleMarkAllAsRead = async () => {
@@ -159,11 +185,11 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
             >
               {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
             </Avatar>
-            <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
-              <Typography variant="subtitle2" fontWeight={700} lineHeight={1}>
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', minWidth: 0 }}>
+              <Typography variant="subtitle2" fontWeight={700} lineHeight={1.15} noWrap>
                 {user?.fullName}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" lineHeight={1.2} noWrap>
                 {user?.role}
               </Typography>
             </Box>
@@ -202,28 +228,59 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
               </Typography>
             )}
           </Box>
-          {notifications.length === 0 ? (
+              {notifications.length === 0 ? (
             <MenuItem disabled sx={{ py: 3, justifyContent: 'center' }}>
               <Typography variant="body2" color="text.secondary">Không có thông báo mới</Typography>
             </MenuItem>
           ) : (
             <>
               {notifications.slice(0, 5).map((notif, index) => (
-                <MenuItem key={index} onClick={handleNotificationMenuClose} sx={{ px: 2, py: 1.5, whiteSpace: 'normal', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={notif.read ? 400 : 700}>{notif.message || notif.title}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                <MenuItem key={index} onClick={() => openNotificationDetail(notif)} sx={{ px: 2, py: 1.5, whiteSpace: 'normal', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                  <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                    <Typography variant="body2" fontWeight={notif.read ? 500 : 800} color={notif.read ? 'text.secondary' : 'text.primary'} sx={{ mb: 0.5 }}>{notif.title || notif.message}</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
                       {new Date(notif.createdAt).toLocaleString('vi-VN')}
                     </Typography>
                   </Box>
+                  <Chip size="small" label={notif.read ? 'Đã xem' : 'Chưa xem'} color={notif.read ? 'default' : 'primary'} sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }} />
                 </MenuItem>
               ))}
-              <MenuItem onClick={() => navigate('/notifications')} sx={{ justifyContent: 'center', py: 1 }}>
-                <Typography variant="caption" fontWeight={700} color="primary">Xem tất cả thông báo</Typography>
+              <MenuItem onClick={() => { 
+                navigate('/notifications'); 
+                handleNotificationMenuClose(); 
+              }} sx={{ justifyContent: 'center', py: 1.5, bgcolor: 'rgba(29, 78, 216, 0.02)' }}>
+                <Typography variant="caption" fontWeight={800} color="primary.main">Xem tất cả thông báo</Typography>
               </MenuItem>
             </>
           )}
         </Menu>
+
+          {/* Notification Detail Dialog */}
+          <Dialog open={notifDialogOpen} onClose={closeNotificationDialog} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
+            <DialogTitle sx={{ fontWeight: 900, bgcolor: 'primary.main', color: 'white', pb: 2 }}>
+              {selectedNotification?.title || 'Chi tiết thông báo'}
+            </DialogTitle>
+            <DialogContent sx={{ p: 4 }}>
+              <Box sx={{ mb: 3 }}>
+                <Chip size="small" label={selectedNotification?.read ? 'Đã xem' : 'Chưa xem'} color={selectedNotification?.read ? 'default' : 'primary'} sx={{ fontWeight: 700, mb: 1.5 }} />
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-line', color: 'text.primary', lineHeight: 1.7, fontSize: '1.05rem' }}>
+                  {selectedNotification?.message || '-'}
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Gửi bởi: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{selectedNotification?.createdByFullName || 'Hệ thống'}</Box>
+                </Typography>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  {selectedNotification?.createdAt ? new Date(selectedNotification.createdAt).toLocaleString('vi-VN') : ''}
+                </Typography>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
+              <Button variant="contained" onClick={closeNotificationDialog} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>Đã hiểu</Button>
+            </DialogActions>
+          </Dialog>
 
         <Menu
           anchorEl={anchorEl}
