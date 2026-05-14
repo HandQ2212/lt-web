@@ -203,6 +203,14 @@ const getScheduleDateLabel = (scheduleDate?: string, dayOfWeek?: string) => {
   return dayOfWeekLabelMap[(dayOfWeek || '').toUpperCase()] || dayOfWeek || '-';
 };
 
+const getEnrollmentStatusDisplay = (status?: string) => {
+  if (status === 'ACTIVE' || status === 'APPROVED' || status === 'PENDING') {
+    return { label: 'Đang học', color: 'success' as const };
+  }
+
+  return { label: 'Dừng học', color: 'default' as const };
+};
+
 export default function ClassManagementPage() {
   const [searchParams] = useSearchParams();
   const theme = useTheme();
@@ -1126,13 +1134,15 @@ export default function ClassManagementPage() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {enrollments.map((item) => (
+                        {enrollments.map((item) => {
+                          const enrollmentStatusDisplay = getEnrollmentStatusDisplay(item.status);
+                          return (
                           <TableRow key={item.id} hover>
                             <TableCell sx={{ fontWeight: 700 }}>{item.studentName}</TableCell>
                             <TableCell sx={{ color: 'text.secondary' }}>{item.studentId}</TableCell>
                             <TableCell>{formatDateToDDMMYYYY(item.enrollmentDate)}</TableCell>
                             <TableCell>
-                              <Chip size="small" label={item.status === 'ACTIVE' ? 'Đang học' : 'Dừng học'} color={item.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                              <Chip size="small" label={enrollmentStatusDisplay.label} color={enrollmentStatusDisplay.color} sx={{ fontWeight: 700 }} />
                             </TableCell>
                             <TableCell align="right">
                               <Button size="small" variant="text" onClick={() => void handleOpenStudent(item)} sx={{ fontWeight: 700 }}>
@@ -1140,7 +1150,7 @@ export default function ClassManagementPage() {
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )})}
                       </TableBody>
                     </Table>
                   </TableContainer>

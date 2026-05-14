@@ -138,6 +138,14 @@ const getStatusLabel = (status?: string) => {
   }
 };
 
+const getEnrollmentStatusDisplay = (status?: string) => {
+  if (status === 'ACTIVE' || status === 'APPROVED' || status === 'PENDING') {
+    return { label: 'Đang học', color: 'success' as const };
+  }
+
+  return { label: 'Dừng học', color: 'default' as const };
+};
+
 const dayOfWeekIndexMap: Record<string, number> = {
   SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
 };
@@ -751,15 +759,17 @@ export default function TeacherManagementPage() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {classEnrollments.map((en) => (
+                      {classEnrollments.map((en) => {
+                        const enrollmentStatusDisplay = getEnrollmentStatusDisplay(en.status);
+                        return (
                         <TableRow key={en.id} hover>
                           <TableCell sx={{ fontWeight: 700 }}>{en.studentName}</TableCell>
                           <TableCell>{en.studentId}</TableCell>
                           <TableCell>
-                            <Chip size="small" label={en.status} color={en.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                            <Chip size="small" label={enrollmentStatusDisplay.label} color={enrollmentStatusDisplay.color} sx={{ fontWeight: 700 }} />
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                     </TableBody>
                   </Table>
                 </TableContainer>

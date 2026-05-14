@@ -12,7 +12,10 @@ import com.elc.system.modules.auth.exception.UserNotFoundException;
 import com.elc.system.modules.auth.repository.UserRepository;
 import com.elc.system.modules.lms.entity.ClassStatus;
 import com.elc.system.modules.lms.entity.Clazz;
+import com.elc.system.modules.lms.entity.Enrollment;
+import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import com.elc.system.modules.lms.repository.ClazzRepository;
+import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,6 +36,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ClazzRepository clazzRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final PasswordEncoder passwordEncoder;
 
     private UserResponse mapToUserResponse(User user) {
@@ -182,6 +186,7 @@ public class UserService {
         }
 
         User updatedUser = userRepository.save(user);
+        syncStudentEnrollmentsForStatus(updatedUser);
         log.info("User updated successfully: {}", updatedUser.getId());
         return mapToUserResponse(updatedUser);
     }
@@ -198,7 +203,28 @@ public class UserService {
 
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
+        syncStudentEnrollmentsForStatus(user);
 
         log.info("User deactivated successfully: {}", userId);
+    }
+
+    private void syncStudentEnrollmentsForStatus(User user) {
+        if (user.getRole() != UserRole.STUDENT || user.getStatus() == UserStatus.ACTIVE) {
+            return;
+        }
+
+        List<Enrollment> activeEnrollments = enrollmentRepository.findByStudentId(user.getId()).stream()
+                .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.PENDING
+                        || enrollment.getStatus() == EnrollmentStatus.APPROVED
+                        || enrollment.getStatus() == EnrollmentStatus.ACTIVE)
+                .toList();
+
+        if (activeEnrollments.isEmpty()) {
+            return;
+        }
+
+        activeEnrollments.forEach(enrollment -> enrollment.setStatus(EnrollmentStatus.DROPPED));
+        enrollmentRepository.saveAll(activeEnrollments);
+        log.info("Updated {} enrollments to DROPPED for student {}", activeEnrollments.size(), user.getId());
     }
 }
