@@ -68,12 +68,13 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ bgcolor: 'white', overflowX: 'hidden' }}>
+    <Box sx={{ bgcolor: '#FFFDF5', overflowX: 'hidden', color: '#1E293B' }}>
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-          color: 'white',
+          background:
+            'radial-gradient(circle at 18% 22%, rgba(251,191,36,0.46), transparent 18rem), radial-gradient(circle at 80% 18%, rgba(244,114,182,0.22), transparent 20rem), linear-gradient(180deg, #FFFDF5 0%, #FFF7DF 100%)',
+          color: '#1E293B',
           py: { xs: 10, md: 20 },
           position: 'relative',
           overflow: 'hidden'
@@ -86,8 +87,9 @@ export default function LandingPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            opacity: 0.1,
-            backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")',
+            opacity: 0.32,
+            backgroundImage: 'radial-gradient(circle, rgba(30,41,59,0.18) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
           }}
         />
         
@@ -102,13 +104,13 @@ export default function LandingPage() {
                     fontSize: { xs: '2.8rem', md: '4rem', lg: '5rem' },
                     lineHeight: 1.1,
                     mb: 3,
-                    color: '#f8fafc'
+                    color: '#1E293B'
                   }}
                 >
                   Học Tiếng Anh <br />
-                  <span style={{ color: '#38bdf8' }}>Hiệu Quả</span> Cùng ELC
+                  <span style={{ color: '#8B5CF6' }}>Hiệu Quả</span> Cùng ELC
                 </Typography>
-                <Typography variant="h5" sx={{ mb: 6, opacity: 0.8, maxWidth: 650, fontWeight: 300, lineHeight: 1.6 }}>
+                <Typography variant="h5" sx={{ mb: 6, color: '#475569', maxWidth: 650, fontWeight: 600, lineHeight: 1.6 }}>
                   Hệ thống đào tạo Anh ngữ chuẩn quốc tế với phương pháp cá nhân hóa, 
                   giúp bạn chinh phục mọi mục tiêu ngôn ngữ trong tầm tay.
                 </Typography>
@@ -120,11 +122,9 @@ export default function LandingPage() {
                     sx={{ 
                       px: 6, 
                       py: 2, 
-                      borderRadius: 4,
+                      borderRadius: 999,
                       fontSize: '1.1rem',
-                      fontWeight: 700,
-                      bgcolor: '#38bdf8',
-                      '&:hover': { bgcolor: '#0ea5e9' }
+                      fontWeight: 900,
                     }}
                   >
                     Bắt đầu ngay
@@ -136,12 +136,10 @@ export default function LandingPage() {
                     sx={{ 
                       px: 6, 
                       py: 2, 
-                      borderRadius: 4,
+                      borderRadius: 999,
                       fontSize: '1.1rem',
-                      fontWeight: 700,
-                      borderColor: 'rgba(255,255,255,0.3)',
-                      color: 'white',
-                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
+                      fontWeight: 900,
+                      bgcolor: '#FFFFFF',
                     }}
                   >
                     Xem khóa học
@@ -155,10 +153,11 @@ export default function LandingPage() {
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80"
                 sx={{ 
                   width: '100%', 
-                  borderRadius: 10,
-                  boxShadow: '0 40px 80px rgba(0,0,0,0.5)',
+                  borderRadius: '48px 48px 48px 8px',
+                  border: '2px solid #1E293B',
+                  boxShadow: '8px 8px 0 #1E293B',
                   display: { xs: 'none', md: 'block' },
-                  transform: 'perspective(1000px) rotateY(-5deg)',
+                  transform: 'rotate(2deg)',
                 }}
               />
             </Grid>
@@ -167,7 +166,7 @@ export default function LandingPage() {
       </Box>
 
       {/* Stats Section */}
-      <Box sx={{ py: 10, bgcolor: '#f8fafc' }}>
+      <Box sx={{ py: 10, bgcolor: '#FFF7DF' }}>
         <Container maxWidth="xl">
           <Grid container spacing={4}>
             {[
@@ -179,10 +178,11 @@ export default function LandingPage() {
                 <Paper sx={{ 
                   p: 6, 
                   textAlign: 'center', 
-                  borderRadius: 8,
-                  border: '1px solid rgba(0,0,0,0.05)',
+                  borderRadius: 5,
+                  border: '2px solid #1E293B',
+                  boxShadow: '5px 5px 0 #1E293B',
                   transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }
+                  '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' }
                 }}>
                   <Box sx={{ color: stat.color, mb: 2, '& svg': { fontSize: 48 } }}>{stat.icon}</Box>
                   <Typography variant="h3" fontWeight={900}>{stat.value}</Typography>
@@ -205,11 +205,12 @@ export default function LandingPage() {
             {courses.map((course) => (
               <Grid item xs={12} sm={6} md={4} key={course.id}>
                 <Card sx={{ 
-                  borderRadius: 6, 
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                  borderRadius: 5, 
+                  border: '2px solid #1E293B',
+                  boxShadow: '5px 5px 0 #1E293B',
                   overflow: 'hidden',
                   transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-10px)' }
+                  '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' }
                 }}>
                   <CardMedia component="img" height="250" image={course.image} />
                   <CardContent sx={{ p: 4 }}>
@@ -233,7 +234,7 @@ export default function LandingPage() {
       </Box>
 
       {/* Teachers Section */}
-      <Box sx={{ py: 15, bgcolor: '#f8fafc' }}>
+      <Box sx={{ py: 15, bgcolor: '#FFF7DF' }}>
         <Container maxWidth="xl">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHUYÊN GIA GIẢNG DẠY</Typography>
@@ -245,9 +246,10 @@ export default function LandingPage() {
                 <Paper sx={{ 
                   p: 5, 
                   textAlign: 'center', 
-                  borderRadius: 6,
+                  borderRadius: 5,
                   bgcolor: '#ffffff',
-                  border: '1px solid rgba(0,0,0,0.05)'
+                  border: '2px solid #1E293B',
+                  boxShadow: '5px 5px 0 #1E293B',
                 }}>
                   <Avatar 
                     src={teacher.avatar} 
@@ -257,7 +259,7 @@ export default function LandingPage() {
                       mx: 'auto', 
                       mb: 3, 
                       border: '4px solid white',
-                      boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                      boxShadow: '4px 4px 0 #1E293B'
                     }} 
                   />
                   <Typography variant="h5" fontWeight={800}>{teacher.name}</Typography>
@@ -271,7 +273,7 @@ export default function LandingPage() {
       </Box>
 
       {/* Testimonials */}
-      <Box sx={{ py: 15, bgcolor: '#0f172a', color: 'white' }}>
+      <Box sx={{ py: 15, bgcolor: '#1E293B', color: 'white', position: 'relative', overflow: 'hidden' }}>
         <Container maxWidth="xl">
           <Typography variant="h2" fontWeight={900} align="center" sx={{ mb: 10 }}>Cảm nhận học viên</Typography>
           <Grid container spacing={4}>
@@ -279,10 +281,11 @@ export default function LandingPage() {
               <Grid item xs={12} md={6} key={idx}>
                 <Paper sx={{ 
                   p: 6, 
-                  borderRadius: 6, 
-                  bgcolor: 'rgba(255,255,255,0.05)', 
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.1)'
+                  borderRadius: 5, 
+                  bgcolor: '#FFFFFF', 
+                  color: '#1E293B',
+                  border: '2px solid #1E293B',
+                  boxShadow: '6px 6px 0 #FBBF24',
                 }}>
                   <Rating value={item.rating} readOnly sx={{ mb: 3, color: '#f59e0b' }} />
                   <Typography variant="h5" sx={{ fontStyle: 'italic', mb: 4, fontWeight: 300, lineHeight: 1.6 }}>

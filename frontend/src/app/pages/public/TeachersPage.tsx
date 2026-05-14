@@ -66,24 +66,24 @@ const teachers = [
 export default function TeachersPage() {
   return (
     <Container maxWidth="xl" sx={{ py: 8 }}>
-      <Typography variant="h3" gutterBottom fontWeight={700} align="center">
+      <Typography variant="h3" gutterBottom fontWeight={900} align="center">
         Đội ngũ giảng viên
       </Typography>
-      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6 }}>
+      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
         Giảng viên giàu kinh nghiệm, tận tâm và chuyên nghiệp
       </Typography>
 
       <Grid container spacing={4}>
         {teachers.map((teacher) => (
           <Grid item xs={12} md={6} lg={4} key={teacher.id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 5, border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B' }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ textAlign: 'center', mb: 2 }}>
                   <Avatar
                     src={teacher.avatar}
-                    sx={{ width: 100, height: 100, mx: 'auto', mb: 2 }}
+                    sx={{ width: 100, height: 100, mx: 'auto', mb: 2, boxShadow: '4px 4px 0 #1E293B' }}
                   />
-                  <Typography variant="h6" fontWeight={600}>
+                  <Typography variant="h6" fontWeight={900}>
                     {teacher.name}
                   </Typography>
                   <Typography variant="body2" color="primary" gutterBottom>
@@ -103,12 +103,12 @@ export default function TeachersPage() {
                 </Typography>
 
                 <Box>
-                  <Typography variant="caption" fontWeight={600} display="block" gutterBottom>
+                  <Typography variant="caption" fontWeight={900} display="block" gutterBottom>
                     Chứng chỉ:
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {teacher.certifications.map((cert, idx) => (
-                      <Chip key={idx} label={cert} size="small" variant="outlined" />
+                      <Chip key={idx} label={cert} size="small" variant="outlined" sx={{ bgcolor: idx % 2 === 0 ? '#FFF7DF' : '#FCE7F3' }} />
                     ))}
                   </Box>
                 </Box>

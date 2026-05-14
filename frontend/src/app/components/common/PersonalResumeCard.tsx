@@ -40,12 +40,24 @@ export default function PersonalResumeCard({
       sx={{
         p: { xs: 2.5, sm: 4 },
         borderRadius: 4,
-        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
-        border: '1px solid rgba(15, 23, 42, 0.08)',
-        bgcolor: 'rgba(255,255,255,0.96)',
+        boxShadow: '6px 6px 0 #1E293B',
+        border: '2px solid #1E293B',
+        bgcolor: '#FFFFFF',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          width: 160,
+          height: 160,
+          borderRadius: '50%',
+          bgcolor: 'rgba(251, 191, 36, 0.28)',
+          right: -48,
+          top: -64,
+        },
       }}
     >
-      <Stack spacing={0.5} alignItems="center" sx={{ mb: 4 }}>
+      <Stack spacing={0.5} alignItems="center" sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
         <Typography variant="h5" fontWeight={800} letterSpacing={0.5} textAlign="center">
           {title}
         </Typography>
@@ -56,7 +68,7 @@ export default function PersonalResumeCard({
         )}
       </Stack>
 
-      <Stack direction="row" spacing={{ xs: 2, sm: 4 }} alignItems="flex-start">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 2, sm: 4 }} alignItems="flex-start" sx={{ position: 'relative', zIndex: 1 }}>
         <Avatar
           src={avatarUrl}
           alt={name}
@@ -64,11 +76,12 @@ export default function PersonalResumeCard({
             width: { xs: 88, sm: 140 },
             height: { xs: 88, sm: 140 },
             borderRadius: 3,
-            bgcolor: 'rgba(25, 118, 210, 0.08)',
+            bgcolor: '#FFF7DF',
             color: 'primary.main',
             fontSize: { xs: 36, sm: 56 },
             fontWeight: 800,
-            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.10)',
+            border: '2px solid #1E293B',
+            boxShadow: '4px 4px 0 #1E293B',
             flexShrink: 0,
           }}
           variant="rounded"

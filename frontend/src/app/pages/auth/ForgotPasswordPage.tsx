@@ -33,12 +33,14 @@ export default function ForgotPasswordPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: '#f5f5f5',
+        bgcolor: '#FFFDF5',
+        background:
+          'radial-gradient(circle at 20% 18%, rgba(251,191,36,0.34), transparent 18rem), radial-gradient(circle at 82% 18%, rgba(52,211,153,0.18), transparent 18rem), linear-gradient(180deg, #FFFDF5 0%, #FFF7DF 100%)',
       }}
     >
       <Container maxWidth="sm">
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" align="center" gutterBottom fontWeight={700} color="primary">
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 5, border: '2px solid #1E293B', boxShadow: '7px 7px 0 #1E293B' }}>
+          <Typography variant="h4" align="center" gutterBottom fontWeight={900} color="primary">
             Quên mật khẩu
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
@@ -75,7 +77,7 @@ export default function ForgotPasswordPage() {
                 fullWidth
                 variant="contained"
                 size="large"
-                sx={{ mt: 3, mb: 2 }}
+                sx={{ mt: 3, mb: 2, borderRadius: 999 }}
                 disabled={loading}
               >
                 {loading ? 'Đang gửi...' : 'Gửi link đặt lại'}

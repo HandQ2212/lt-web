@@ -118,26 +118,34 @@ export default function CourseDetailPage() {
             component="img"
             src={course.imageUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800'}
             alt={course.name}
-            sx={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 4, mb: 3, boxShadow: 3 }}
+            sx={{
+              width: '100%',
+              height: 400,
+              objectFit: 'cover',
+              borderRadius: '40px 40px 40px 8px',
+              mb: 3,
+              border: '2px solid #1E293B',
+              boxShadow: '7px 7px 0 #1E293B',
+            }}
           />
 
-          <Typography variant="h3" gutterBottom fontWeight={800} color="primary">
+          <Typography variant="h3" gutterBottom fontWeight={900} color="primary">
             {course.name}
           </Typography>
 
           <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
-            <Chip label={displayLevel} color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+            <Chip label={displayLevel} color="primary" variant="outlined" sx={{ fontWeight: 900, bgcolor: '#FFFFFF' }} />
             <Chip label={displayDuration} icon={<AccessTimeIcon />} variant="outlined" />
           </Box>
 
-          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom fontWeight={900} sx={{ mt: 4 }}>
             Giới thiệu khóa học
           </Typography>
           <Typography variant="body1" paragraph color="text.secondary" sx={{ lineHeight: 1.8 }}>
             {course.description || 'Khóa học chất lượng cao tại ELC System, giúp bạn làm chủ kiến thức và kỹ năng trong thời gian ngắn nhất.'}
           </Typography>
 
-          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom fontWeight={900} sx={{ mt: 4 }}>
             Lớp học sắp khai giảng
           </Typography>
           {classes.length === 0 ? (
@@ -146,9 +154,9 @@ export default function CourseDetailPage() {
             <Grid container spacing={2}>
               {classes.map((cls) => (
                 <Grid item xs={12} md={6} key={cls.id}>
-                  <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.05)', height: '100%' }}>
+                  <Card sx={{ borderRadius: 4, border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="h6" fontWeight={700} color="primary">{cls.name}</Typography>
+                      <Typography variant="h6" fontWeight={900} color="primary">{cls.name}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                         <AccessTimeIcon sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
                         {cls.startDate}
@@ -160,7 +168,7 @@ export default function CourseDetailPage() {
                         startIcon={<FavoriteIcon />}
                         onClick={() => void handleInterest(cls.id)}
                         disabled={actionLoading}
-                        sx={{ borderRadius: 2 }}
+                        sx={{ borderRadius: 999 }}
                       >
                         Quan tâm lớp này
                       </Button>
@@ -173,7 +181,18 @@ export default function CourseDetailPage() {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 4, position: 'sticky', top: 100, borderRadius: 4, boxShadow: 4, bgcolor: 'primary.main', color: 'white' }}>
+          <Paper
+            sx={{
+              p: 4,
+              position: 'sticky',
+              top: 100,
+              borderRadius: 5,
+              border: '2px solid #1E293B',
+              boxShadow: '7px 7px 0 #1E293B',
+              bgcolor: 'primary.main',
+              color: 'white',
+            }}
+          >
             <Typography variant="h4" fontWeight={800} gutterBottom>
               {displayPrice.toLocaleString('vi-VN')}đ
             </Typography>
@@ -198,14 +217,13 @@ export default function CourseDetailPage() {
               variant="contained" 
               fullWidth 
               size="large" 
-              bgcolor="white"
               sx={{ 
                 bgcolor: 'white', 
                 color: 'primary.main', 
-                fontWeight: 700,
+                fontWeight: 900,
                 py: 1.5,
-                borderRadius: 2,
-                '&:hover': { bgcolor: 'grey.100' }
+                borderRadius: 999,
+                '&:hover': { bgcolor: '#FBBF24', color: '#1E293B' }
               }}
               onClick={() => void handleInterest()}
               disabled={actionLoading}

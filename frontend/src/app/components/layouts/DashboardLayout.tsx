@@ -40,7 +40,7 @@ export default function DashboardLayout() {
         display: 'flex',
         minHeight: '100vh',
         background:
-          'radial-gradient(circle at top right, rgba(29, 78, 216, 0.08), transparent 30%), radial-gradient(circle at left top, rgba(15, 118, 110, 0.06), transparent 24%), linear-gradient(180deg, #f7faff 0%, #eef3f9 100%)',
+          'radial-gradient(circle at top right, rgba(139, 92, 246, 0.16), transparent 30%), radial-gradient(circle at left top, rgba(251, 191, 36, 0.18), transparent 24%), linear-gradient(180deg, #FFFDF5 0%, #FFF7DF 100%)',
       }}
     >
       <DashboardHeader 
@@ -97,7 +97,9 @@ export default function DashboardLayout() {
               inset: 0,
               pointerEvents: 'none',
               background:
-                'linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0)), radial-gradient(circle at 100% 0%, rgba(29, 78, 216, 0.06), transparent 20%)',
+                'radial-gradient(circle at 100% 0%, rgba(244, 114, 182, 0.12), transparent 20%), radial-gradient(circle, rgba(30,41,59,0.12) 1px, transparent 1px)',
+              backgroundSize: 'auto, 22px 22px',
+              opacity: 0.6,
             }}
           />
           <Box sx={{ position: 'relative', zIndex: 1 }}>

@@ -141,7 +141,19 @@ export default function ChatWidget() {
       <Fab
         color="primary"
         aria-label="chat"
-        sx={{ position: 'fixed', bottom: { xs: 20, sm: 30 }, right: { xs: 20, sm: 30 }, zIndex: 1000, boxShadow: 6 }}
+        sx={{
+          position: 'fixed',
+          bottom: { xs: 20, sm: 30 },
+          right: { xs: 20, sm: 30 },
+          zIndex: 1000,
+          border: '2px solid #1E293B',
+          boxShadow: '5px 5px 0 #1E293B',
+          '&:hover': {
+            bgcolor: 'secondary.main',
+            transform: 'translate(-2px, -2px)',
+            boxShadow: '7px 7px 0 #1E293B',
+          },
+        }}
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <CloseIcon /> : <ChatIcon />}
@@ -157,13 +169,15 @@ export default function ChatWidget() {
             width: { xs: 'calc(100vw - 32px)', sm: 380 },
             height: { xs: 480, sm: 520 },
             zIndex: 1000,
-            borderRadius: 3,
+            borderRadius: 4,
+            border: '2px solid #1E293B',
+            boxShadow: '8px 8px 0 #1E293B',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
           }}
         >
-          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', borderBottom: '2px solid #1E293B', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'white', color: 'primary.main', mr: 1 }}>
                 <BotIcon />
@@ -178,13 +192,22 @@ export default function ChatWidget() {
             </IconButton>
           </Box>
 
-          <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', bgcolor: '#f9fafb' }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              p: 2,
+              overflowY: 'auto',
+              bgcolor: '#FFFDF5',
+              backgroundImage: 'radial-gradient(circle, rgba(30,41,59,0.12) 1px, transparent 1px)',
+              backgroundSize: '18px 18px',
+            }}
+          >
             <ChatMessageList messages={messages} isSending={isSending} messagesEndRef={messagesEndRef} />
           </Box>
 
           <Divider />
 
-          <Box sx={{ p: 2, bgcolor: 'white' }}>
+          <Box sx={{ p: 2, bgcolor: 'white', borderTop: '2px solid #1E293B' }}>
             {errorText && (
               <Alert severity="warning" variant="outlined" sx={{ mb: 1.25, py: 0.25, borderRadius: 2 }}>
                 {errorText}
@@ -208,7 +231,12 @@ export default function ChatWidget() {
                 maxRows={3}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
               />
-              <IconButton color="primary" disabled={!inputText.trim() || isSending} onClick={handleSend}>
+              <IconButton
+                color="primary"
+                disabled={!inputText.trim() || isSending}
+                onClick={handleSend}
+                sx={{ border: '2px solid #1E293B', bgcolor: '#FBBF24', boxShadow: '3px 3px 0 #1E293B' }}
+              >
                 {isSending ? <CircularProgress size={22} /> : <SendIcon />}
               </IconButton>
             </Box>

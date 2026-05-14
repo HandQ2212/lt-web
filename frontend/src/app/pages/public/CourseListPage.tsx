@@ -155,15 +155,27 @@ export default function CourseListPage() {
   const getDisplayPrice = (course: Course) => Number(getPrimaryLevel(course)?.basePrice || course.price || 0);
 
   return (
-    <Container maxWidth="xl" sx={{ py: 8 }}>
-      <Typography variant="h3" gutterBottom fontWeight={700} align="center" sx={{ mb: 2 }}>
+    <Container maxWidth="xl" sx={{ py: 8, position: 'relative' }}>
+      <Typography variant="h3" gutterBottom fontWeight={900} align="center" sx={{ mb: 2, color: '#1E293B' }}>
         Khóa học
       </Typography>
-      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6 }}>
+      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
         Khám phá các khóa học tiếng Anh phù hợp với trình độ của bạn
       </Typography>
 
-      <Box sx={{ mb: 4, display: 'flex', gap: 2 }}>
+      <Box
+        sx={{
+          mb: 5,
+          display: 'flex',
+          gap: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          p: 2,
+          bgcolor: '#FFFFFF',
+          border: '2px solid #1E293B',
+          borderRadius: 4,
+          boxShadow: '5px 5px 0 #1E293B',
+        }}
+      >
         <TextField
           fullWidth
           placeholder="Tìm kiếm khóa học..."
@@ -190,7 +202,7 @@ export default function CourseListPage() {
           <CircularProgress />
         </Box>
       ) : filteredCourses.length === 0 ? (
-        <Typography align="center" color="text.secondary" sx={{ py: 6 }}>
+        <Typography align="center" color="text.secondary" sx={{ py: 6, fontWeight: 700 }}>
           Không tìm thấy khóa học phù hợp.
         </Typography>
       ) : (
@@ -203,8 +215,11 @@ export default function CourseListPage() {
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-8px)' },
+                border: '2px solid #1E293B',
+                borderRadius: 5,
+                boxShadow: '5px 5px 0 #1E293B',
+                transition: 'all 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' },
               }}
               onClick={() => navigate(`/courses/${course.id}`)}
             >
@@ -220,15 +235,16 @@ export default function CourseListPage() {
                     label={getLevelText(getDisplayLevel(course))}
                     color={getLevelColor(getPrimaryLevel(course)?.code || course.level || '')}
                     size="small"
+                    sx={{ border: '2px solid #1E293B', fontWeight: 900 }}
                   />
                 </Box>
-                <Typography variant="h6" gutterBottom fontWeight={600}>
+                <Typography variant="h6" gutterBottom fontWeight={900}>
                   {course.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {course.description}
                 </Typography>
-                <Typography variant="h6" color="primary" fontWeight={700}>
+                <Typography variant="h6" color="primary" fontWeight={900}>
                   {getDisplayPrice(course).toLocaleString('vi-VN')}đ
                 </Typography>
               </CardContent>

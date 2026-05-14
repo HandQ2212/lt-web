@@ -123,10 +123,11 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
       sx={{
         width: { md: `calc(100% - ${drawerWidth}px)` },
         ml: { md: `${drawerWidth}px` },
-        bgcolor: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(8px)',
+        bgcolor: 'rgba(255, 253, 245, 0.9)',
+        backdropFilter: 'blur(12px)',
         color: 'text.primary',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        boxShadow: '0 2px 0 #1E293B',
+        borderBottom: '2px solid #1E293B',
         transition: theme.transitions.create(['margin', 'width'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,
@@ -151,8 +152,10 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
 
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <IconButton onClick={handleNotificationMenuOpen} sx={{ 
-            bgcolor: 'rgba(0,0,0,0.03)',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+            bgcolor: '#FFFFFF',
+            border: '2px solid #1E293B',
+            boxShadow: '3px 3px 0 #1E293B',
+            '&:hover': { bgcolor: '#FBBF24' }
           }}>
             <Badge badgeContent={unreadCount} color="error">
               <NotificationsIcon fontSize="small" />
@@ -170,8 +173,9 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
               p: 0.5,
               pr: 1.5,
               borderRadius: 8,
+              border: '2px solid transparent',
               transition: 'all 0.2s',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' }
+              '&:hover': { bgcolor: '#FFFFFF', borderColor: '#1E293B', boxShadow: '3px 3px 0 #1E293B' }
             }}
           >
             <Avatar 
@@ -180,7 +184,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
                 width: 36, 
                 height: 36, 
                 border: '2px solid white',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)' 
+                boxShadow: '3px 3px 0 #1E293B' 
               }}
             >
               {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
@@ -209,7 +213,8 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
                 width: '320px',
                 borderRadius: '12px',
                 marginTop: '8px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.12)'
+                border: '2px solid #1E293B',
+                boxShadow: '6px 6px 0 #1E293B'
               },
             },
           }}
@@ -257,7 +262,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
 
           {/* Notification Detail Dialog */}
           <Dialog open={notifDialogOpen} onClose={closeNotificationDialog} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
-            <DialogTitle sx={{ fontWeight: 900, bgcolor: 'primary.main', color: 'white', pb: 2 }}>
+            <DialogTitle sx={{ fontWeight: 900, bgcolor: 'primary.main', color: 'white', pb: 2, borderBottom: '2px solid #1E293B' }}>
               {selectedNotification?.title || 'Chi tiết thông báo'}
             </DialogTitle>
             <DialogContent sx={{ p: 4 }}>
@@ -277,7 +282,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
                 </Typography>
               </Box>
             </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: '#FFF7DF', borderTop: '2px solid #1E293B' }}>
               <Button variant="contained" onClick={closeNotificationDialog} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>Đã hiểu</Button>
             </DialogActions>
           </Dialog>
@@ -294,7 +299,8 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
                 width: '200px',
                 borderRadius: '12px',
                 marginTop: '8px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.12)'
+                border: '2px solid #1E293B',
+                boxShadow: '6px 6px 0 #1E293B'
               },
             },
           }}

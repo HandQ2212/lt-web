@@ -104,8 +104,9 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
         flexDirection: 'column',
         alignItems: open ? 'flex-start' : 'center',
         justifyContent: 'center',
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
         color: 'white',
+        borderBottom: '2px solid #1E293B',
         minHeight: 100,
         transition: 'all 0.3s ease'
       }}>
@@ -144,21 +145,24 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
                     if (isMobile) onClose();
                   }}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 999,
                     py: 1.5,
                     minHeight: 48,
                     justifyContent: open ? 'initial' : 'center',
                     px: open ? 2.5 : 2.5,
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    border: '2px solid transparent',
+                    transition: 'all 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
                     '&.Mui-selected': {
                       bgcolor: 'primary.main',
                       color: 'white',
-                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.25)',
+                      borderColor: '#1E293B',
+                      boxShadow: '4px 4px 0 #1E293B',
                       '&:hover': { bgcolor: 'primary.main' },
                       '& .MuiListItemIcon-root': { color: 'white' }
                     },
                     '&:hover': {
-                      bgcolor: 'rgba(25, 118, 210, 0.08)',
+                      bgcolor: 'rgba(251, 191, 36, 0.35)',
+                      borderColor: '#1E293B',
                     }
                   }}
                 >
@@ -194,9 +198,11 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
           <IconButton 
             onClick={onToggle}
             sx={{ 
-              bgcolor: 'rgba(0,0,0,0.04)', 
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' },
-              borderRadius: 2
+              bgcolor: '#FFFFFF', 
+              border: '2px solid #1E293B',
+              boxShadow: '3px 3px 0 #1E293B',
+              '&:hover': { bgcolor: '#FBBF24' },
+              borderRadius: 3
             }}
           >
             {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
@@ -204,7 +210,7 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
         </Box>
       )}
 
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)', textAlign: 'center' }}>
+      <Box sx={{ p: 2, bgcolor: '#FFF7DF', borderTop: '2px solid #1E293B', textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
           {open ? 'VERSION 1.4.0' : 'V1.4'}
         </Typography>
@@ -230,7 +236,10 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
           }),
           overflowX: 'hidden',
           borderRight: '1px solid rgba(0,0,0,0.08)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.03)',
+          borderRightColor: '#1E293B',
+          borderRightWidth: 2,
+          bgcolor: '#FFFDF5',
+          boxShadow: '4px 0 0 #1E293B',
         },
       }}
     >

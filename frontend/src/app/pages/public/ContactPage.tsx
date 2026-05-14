@@ -61,18 +61,18 @@ export default function ContactPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography variant="h3" gutterBottom fontWeight={700} align="center">
+      <Typography variant="h3" gutterBottom fontWeight={900} align="center">
         Liên hệ với chúng tôi
       </Typography>
-      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6 }}>
+      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
         Chúng tôi luôn sẵn sàng hỗ trợ bạn
       </Typography>
 
       <Grid container spacing={4}>
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
-            <LocationIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom fontWeight={600}>Địa chỉ</Typography>
+          <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
+            <LocationIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#FFF7DF', border: '2px solid #1E293B', borderRadius: '50%' }} />
+            <Typography variant="h6" gutterBottom fontWeight={900}>Địa chỉ</Typography>
             <Typography variant="body2" color="text.secondary">
               123 Đường ABC, Quận 1
               <br />
@@ -82,9 +82,9 @@ export default function ContactPage() {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
-            <PhoneIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom fontWeight={600}>Điện thoại</Typography>
+          <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
+            <PhoneIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#FCE7F3', border: '2px solid #1E293B', borderRadius: '50%' }} />
+            <Typography variant="h6" gutterBottom fontWeight={900}>Điện thoại</Typography>
             <Typography variant="body2" color="text.secondary">
               Hotline: (028) 1234 5678
               <br />
@@ -94,9 +94,9 @@ export default function ContactPage() {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
-            <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom fontWeight={600}>Email</Typography>
+          <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
+            <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#D1FAE5', border: '2px solid #1E293B', borderRadius: '50%' }} />
+            <Typography variant="h6" gutterBottom fontWeight={900}>Email</Typography>
             <Typography variant="body2" color="text.secondary">
               info@elcenglish.edu.vn
               <br />
@@ -106,8 +106,8 @@ export default function ContactPage() {
         </Grid>
 
         <Grid item xs={12}>
-          <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 4 }}>
-            <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mb: 4 }}>
+          <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 5, border: '2px solid #1E293B', boxShadow: '7px 7px 0 #1E293B' }}>
+            <Typography variant="h5" gutterBottom fontWeight={900} sx={{ mb: 4 }}>
               Gửi tin nhắn cho chúng tôi
             </Typography>
             <form onSubmit={handleSubmit}>
@@ -191,7 +191,7 @@ export default function ContactPage() {
                     type="submit" 
                     variant="contained" 
                     size="large" 
-                    sx={{ px: 6, py: 1.5, borderRadius: 2, fontWeight: 600 }}
+                    sx={{ px: 6, py: 1.5, borderRadius: 999, fontWeight: 900 }}
                     disabled={submitting}
                   >
                     {submitting ? 'Đang gửi...' : 'Gửi tin nhắn'}

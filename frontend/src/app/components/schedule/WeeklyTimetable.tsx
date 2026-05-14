@@ -97,26 +97,27 @@ export default function WeeklyTimetable({
       variant="outlined"
       sx={{
         overflow: 'hidden',
-        borderRadius: 3,
-        borderColor: 'rgba(14, 165, 233, 0.28)',
-        boxShadow: '0 16px 40px rgba(15, 23, 42, 0.04)',
+        borderRadius: 4,
+        border: '2px solid #1E293B',
+        boxShadow: '5px 5px 0 #1E293B',
+        bgcolor: '#FFFFFF',
       }}
     >
       <Box
         sx={{
           px: 2,
           py: 1.5,
-          borderBottom: '1px solid rgba(14, 165, 233, 0.14)',
+          borderBottom: '2px solid #1E293B',
           display: 'flex',
           alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
           gap: 2,
           flexWrap: 'wrap',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,249,255,0.95))',
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7DF 100%)',
         }}
       >
         <Box>
-          <Typography variant="subtitle1" fontWeight={900} color="primary.main" sx={{ letterSpacing: 0.2 }}>
+          <Typography variant="subtitle1" fontWeight={900} color="primary.main" sx={{ letterSpacing: 0 }}>
             {title}
           </Typography>
           <Typography variant="body2" color="text.secondary" fontWeight={600}>
@@ -125,7 +126,7 @@ export default function WeeklyTimetable({
         </Box>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           {showControls && (
-            <ButtonGroup variant="outlined" size="small" sx={{ mr: 1 }}>
+            <ButtonGroup variant="outlined" size="small" sx={{ mr: 1, '& .MuiButtonGroup-grouped': { borderColor: '#1E293B' } }}>
               <IconButton size="small" onClick={gotoPrevWeek} aria-label="Tuần trước">
                 <ChevronLeftIcon />
               </IconButton>
@@ -140,7 +141,7 @@ export default function WeeklyTimetable({
           <Chip
             label={`Từ ${formatDateToDDMMYYYY(weekDates[0])} đến ${formatDateToDDMMYYYY(weekDates[6])}`}
             variant="outlined"
-            sx={{ fontWeight: 700, borderColor: 'rgba(14,165,233,0.18)', color: 'primary.main' }}
+            sx={{ fontWeight: 800, borderColor: '#1E293B', color: 'primary.main', bgcolor: '#FFFFFF' }}
           />
         </Box>
       </Box>
@@ -159,7 +160,7 @@ export default function WeeklyTimetable({
                 <TableCell
                   sx={{
                     width: 72,
-                    bgcolor: 'primary.main',
+                    bgcolor: '#8B5CF6',
                     color: '#fff',
                     fontWeight: 900,
                     textAlign: 'center',
@@ -174,7 +175,7 @@ export default function WeeklyTimetable({
                       textAlign: 'center',
                       fontWeight: 800,
                       py: 1.5,
-                      bgcolor: index === 0 ? 'rgba(14,165,233,0.04)' : '#fff',
+                      bgcolor: index === 0 ? 'rgba(251,191,36,0.22)' : '#fff',
                     }}
                   >
                     <Typography variant="subtitle2" fontWeight={900} sx={{ lineHeight: 1.2 }}>
@@ -188,7 +189,7 @@ export default function WeeklyTimetable({
                 <TableCell
                   sx={{
                     width: 78,
-                    bgcolor: 'primary.main',
+                    bgcolor: '#8B5CF6',
                     color: '#fff',
                     fontWeight: 900,
                     textAlign: 'center',
@@ -204,7 +205,7 @@ export default function WeeklyTimetable({
                   <TableRow key={startHour} hover>
                     <TableCell
                       sx={{
-                        bgcolor: 'primary.main',
+                        bgcolor: '#8B5CF6',
                         color: '#fff',
                         fontWeight: 800,
                         textAlign: 'center',
@@ -243,8 +244,8 @@ export default function WeeklyTimetable({
                           sx={{
                             p: 0.75,
                             verticalAlign: 'top',
-                            bgcolor: 'rgba(219, 234, 254, 0.9)',
-                            borderColor: 'rgba(59, 130, 246, 0.22)',
+                              bgcolor: 'rgba(251, 191, 36, 0.18)',
+                            borderColor: 'rgba(30, 41, 59, 0.24)',
                           }}
                         >
                           <Box
@@ -255,9 +256,9 @@ export default function WeeklyTimetable({
                               gap: 0.75,
                               p: 1,
                               borderRadius: 2,
-                              background: 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(219,234,254,0.85))',
-                              border: '1px solid rgba(59, 130, 246, 0.22)',
-                              boxShadow: '0 8px 22px rgba(59, 130, 246, 0.08)',
+                              background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,247,223,0.92))',
+                              border: '2px solid #1E293B',
+                              boxShadow: '3px 3px 0 #1E293B',
                               overflow: 'hidden',
                             }}
                           >
@@ -280,20 +281,20 @@ export default function WeeklyTimetable({
                                 sx={{
                                   p: 1,
                                   borderRadius: 1.5,
-                                  bgcolor: 'rgba(191, 219, 254, 0.8)',
-                                  border: '1px solid rgba(37, 99, 235, 0.18)',
+                                  bgcolor: 'rgba(139, 92, 246, 0.12)',
+                                  border: '2px solid rgba(30, 41, 59, 0.28)',
                                   cursor: onSessionClick ? 'pointer' : 'default',
                                   transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
                                   '&:hover': onSessionClick
                                     ? {
                                         transform: 'translateY(-1px)',
-                                        borderColor: 'rgba(37, 99, 235, 0.35)',
-                                        boxShadow: '0 10px 24px rgba(37, 99, 235, 0.12)',
+                                        borderColor: '#1E293B',
+                                        boxShadow: '3px 3px 0 #1E293B',
                                       }
                                     : undefined,
                                   '&:focus-visible': onSessionClick
                                     ? {
-                                        outline: '2px solid rgba(37, 99, 235, 0.55)',
+                                        outline: '3px solid rgba(139, 92, 246, 0.45)',
                                         outlineOffset: 2,
                                       }
                                     : undefined,
@@ -337,7 +338,7 @@ export default function WeeklyTimetable({
 
                     <TableCell
                       sx={{
-                        bgcolor: 'primary.main',
+                        bgcolor: '#8B5CF6',
                         color: '#fff',
                         fontWeight: 900,
                         textAlign: 'center',
