@@ -568,8 +568,11 @@ export default function TeacherManagementPage() {
           <DialogContent dividers sx={{ p: 0 }}>
             <Box sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
+                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' }, display: 'flex' }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                  >
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">HỌC VIÊN</Typography>
                     <Typography variant="h4" fontWeight={900}>{classEnrollments.length} / {selectedClassDetail?.maxStudents || '-'}</Typography>
                     <LinearProgress
@@ -579,15 +582,21 @@ export default function TeacherManagementPage() {
                     />
                   </Paper>
                 </Box>
-                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
+                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' }, display: 'flex' }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                  >
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">PHÒNG HỌC</Typography>
                     <Typography variant="h4" fontWeight={900}>{selectedClassDetail ? getClassRoomName(selectedClassDetail) || 'N/A' : 'N/A'}</Typography>
                     <Typography variant="body2" color="primary" fontWeight={700}>Trực tiếp</Typography>
                   </Paper>
                 </Box>
-                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
+                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' }, display: 'flex' }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                  >
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">THỜI GIAN</Typography>
                     <Typography variant="h6" fontWeight={800}>{formatDateToDDMMYYYY(selectedClassDetail?.startDate)}</Typography>
                     <Typography variant="caption" color="text.secondary">đến</Typography>

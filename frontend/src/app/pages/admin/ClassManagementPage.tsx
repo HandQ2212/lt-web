@@ -876,8 +876,11 @@ export default function ClassManagementPage() {
                 alignItems: 'stretch',
               }}
             >
-              <Box>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+              <Box sx={{ display: 'flex' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                >
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
                   <Typography variant="h4" fontWeight={900}>{enrollments.length} / {activeClass?.maxStudents || '-'}</Typography>
                   <LinearProgress
@@ -887,15 +890,21 @@ export default function ClassManagementPage() {
                   />
                 </Paper>
               </Box>
-              <Box>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+              <Box sx={{ display: 'flex' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                >
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>KHUNG LỊCH HỌC</Typography>
                   <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
                   <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Lịch/tuần</Typography>
                 </Paper>
               </Box>
-              <Box>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+              <Box sx={{ display: 'flex' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                >
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
                   <Typography variant="h6" fontWeight={800}>
                     {formatDateToDDMMYYYY(activeClass?.startDate)}
