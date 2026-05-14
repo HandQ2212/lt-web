@@ -6,7 +6,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Grid,
   Paper,
   Table,
   TableBody,
@@ -152,7 +151,7 @@ export default function StudentDebtPage() {
   }
 
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 6, maxWidth: 1240, mx: 'auto', px: { xs: 1, sm: 2, xl: 0 } }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
           Theo dõi Công nợ Học viên
@@ -168,7 +167,18 @@ export default function StudentDebtPage() {
         </Alert>
       )}
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: 'repeat(4, minmax(0, 1fr))',
+          },
+          gap: 2.5,
+          mb: 4,
+        }}
+      >
         <SummaryCard 
           title="Tổng học phí hệ thống" 
           value={formatCurrency(totals.totalAmount)} 
@@ -193,13 +203,13 @@ export default function StudentDebtPage() {
           icon={<StudentIcon sx={{ color: 'warning.main' }} />} 
           color="#fff8e1"
         />
-      </Grid>
+      </Box>
 
       <Typography variant="h6" fontWeight={800} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
         <LateIcon sx={{ mr: 1, color: 'error.main' }} /> Danh sách học viên còn nợ học phí
       </Typography>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.05)', mb: 5 }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 1.25, boxShadow: '0 8px 32px rgba(0,0,0,0.05)', mb: 5 }}>
         <Table>
           <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
             <TableRow>
@@ -243,7 +253,7 @@ export default function StudentDebtPage() {
         <SearchIcon sx={{ mr: 1, color: 'primary.main' }} /> Chi tiết các hóa đơn chưa hoàn tất
       </Typography>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 1.25, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
         <Table>
           <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
             <TableRow>
@@ -289,24 +299,45 @@ export default function StudentDebtPage() {
 
 function SummaryCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
   return (
-    <Grid item xs={12} sm={6} md={3}>
-      <Card sx={{ borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-            <Box>
-              <Typography variant="body2" color="text.secondary" fontWeight={600} gutterBottom>
-                {title}
-              </Typography>
-              <Typography variant="h5" fontWeight={800} color="text.primary">
-                {value}
-              </Typography>
-            </Box>
-            <Avatar sx={{ bgcolor: color, borderRadius: 3, width: 48, height: 48 }}>
-              {icon}
-            </Avatar>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Grid>
+    <Card
+      sx={{
+        height: '100%',
+        minHeight: 132,
+        borderRadius: 1.25,
+        border: '2px solid #1E293B',
+        boxShadow: '6px 6px 0 #1E293B',
+        bgcolor: '#FFFFFF',
+        overflow: 'hidden',
+      }}
+    >
+      <CardContent sx={{ height: '100%', p: { xs: 2.5, md: 3 } }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ height: '100%' }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={800} gutterBottom>
+              {title}
+            </Typography>
+            <Typography
+              variant="h5"
+              fontWeight={900}
+              color="text.primary"
+              sx={{ lineHeight: 1.15, wordBreak: 'break-word' }}
+            >
+              {value}
+            </Typography>
+          </Box>
+          <Avatar
+            sx={{
+              flex: '0 0 auto',
+              bgcolor: color,
+              border: '2px solid #1E293B',
+              width: 58,
+              height: 58,
+            }}
+          >
+            {icon}
+          </Avatar>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }

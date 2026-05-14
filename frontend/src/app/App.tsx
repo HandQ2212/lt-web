@@ -3,6 +3,7 @@ import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import '@fontsource/inter/800.css';
+import '@fontsource/inter/900.css';
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -100,19 +101,21 @@ let theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 16,
+    borderRadius: 8,
   },
   typography: {
-    fontFamily: '"Plus Jakarta Sans", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    h1: { fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif', fontWeight: 900, letterSpacing: 0 },
-    h2: { fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif', fontWeight: 900, letterSpacing: 0 },
-    h3: { fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif', fontWeight: 900, letterSpacing: 0 },
-    h4: { fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif', fontWeight: 800, letterSpacing: 0 },
-    h5: { fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif', fontWeight: 800, letterSpacing: 0 },
-    h6: { fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif', fontWeight: 800, letterSpacing: 0 },
+    fontFamily: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    h1: { fontFamily: '"Inter", "Segoe UI", sans-serif', fontWeight: 800, letterSpacing: 0, lineHeight: 1.18 },
+    h2: { fontFamily: '"Inter", "Segoe UI", sans-serif', fontWeight: 800, letterSpacing: 0, lineHeight: 1.2 },
+    h3: { fontFamily: '"Inter", "Segoe UI", sans-serif', fontWeight: 800, letterSpacing: 0, lineHeight: 1.22 },
+    h4: { fontFamily: '"Inter", "Segoe UI", sans-serif', fontWeight: 800, letterSpacing: 0, lineHeight: 1.25 },
+    h5: { fontFamily: '"Inter", "Segoe UI", sans-serif', fontWeight: 800, letterSpacing: 0, lineHeight: 1.3 },
+    h6: { fontFamily: '"Inter", "Segoe UI", sans-serif', fontWeight: 800, letterSpacing: 0, lineHeight: 1.35 },
     subtitle1: { fontWeight: 700 },
     subtitle2: { fontWeight: 700 },
-    button: { fontWeight: 800, textTransform: 'none', letterSpacing: 0 },
+    body1: { lineHeight: 1.65 },
+    body2: { lineHeight: 1.6 },
+    button: { fontWeight: 700, textTransform: 'none', letterSpacing: 0 },
   },
   components: {
     MuiCssBaseline: {
@@ -123,6 +126,7 @@ let theme = createTheme({
           minHeight: '100%',
         },
         body: {
+          fontFamily: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           background:
             'radial-gradient(circle at 12% 10%, rgba(251, 191, 36, 0.22), transparent 22rem), radial-gradient(circle at 90% 0%, rgba(139, 92, 246, 0.14), transparent 20rem), linear-gradient(180deg, #FFFDF5 0%, #FFF7DF 100%)',
           backgroundAttachment: 'fixed',
@@ -141,7 +145,7 @@ let theme = createTheme({
       styleOverrides: {
         root: {
           border: '2px solid #1E293B',
-          borderRadius: 24,
+          borderRadius: 10,
           boxShadow: '4px 4px 0 0 #1E293B',
           backgroundImage: 'none',
           overflow: 'hidden',
@@ -157,7 +161,7 @@ let theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          borderRadius: 20,
+          borderRadius: 10,
         },
         elevation1: {
           border: '2px solid #1E293B',
@@ -182,7 +186,7 @@ let theme = createTheme({
         root: {
           textTransform: 'none',
           fontWeight: 800,
-          borderRadius: 999,
+          borderRadius: 8,
           minHeight: 42,
           color: '#1E293B',
           '&.Mui-selected': {
@@ -196,6 +200,7 @@ let theme = createTheme({
       styleOverrides: {
         root: {
           minHeight: 46,
+          borderRadius: 8,
           '& .MuiTabs-indicator': {
             display: 'none',
           },
@@ -211,7 +216,7 @@ let theme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: 999,
+          borderRadius: 8,
           fontWeight: 800,
           minHeight: 42,
           transition: 'all 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -252,7 +257,7 @@ let theme = createTheme({
     MuiIconButton: {
       styleOverrides: {
         root: {
-          borderRadius: 14,
+          borderRadius: 8,
           transition: 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)',
           '&:hover': {
             backgroundColor: '#FBBF24',
@@ -273,7 +278,7 @@ let theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#FFFFFF',
-          borderRadius: 16,
+          borderRadius: 8,
           transition: 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)',
           '& .MuiOutlinedInput-notchedOutline': {
             borderColor: '#CBD5E1',
@@ -305,7 +310,7 @@ let theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: 999,
+          borderRadius: 6,
           fontWeight: 800,
         },
         outlined: {
@@ -317,7 +322,7 @@ let theme = createTheme({
     MuiTableContainer: {
       styleOverrides: {
         root: {
-          borderRadius: 20,
+          borderRadius: 10,
         },
       },
     },
@@ -326,7 +331,7 @@ let theme = createTheme({
         head: {
           backgroundColor: '#FFF7DF',
           color: '#1E293B',
-          fontWeight: 900,
+          fontWeight: 800,
           borderBottom: '2px solid #1E293B',
         },
         root: {
@@ -347,7 +352,7 @@ let theme = createTheme({
       styleOverrides: {
         paper: {
           border: '2px solid #1E293B',
-          borderRadius: 24,
+          borderRadius: 12,
           boxShadow: '8px 8px 0 0 #1E293B',
           backgroundImage: 'none',
         },
@@ -356,8 +361,8 @@ let theme = createTheme({
     MuiDialogTitle: {
       styleOverrides: {
         root: {
-          fontFamily: '"Outfit", "Plus Jakarta Sans", sans-serif',
-          fontWeight: 900,
+          fontFamily: '"Inter", "Segoe UI", sans-serif',
+          fontWeight: 800,
         },
       },
     },
@@ -365,7 +370,7 @@ let theme = createTheme({
       styleOverrides: {
         root: {
           border: '2px solid #1E293B',
-          borderRadius: 16,
+          borderRadius: 10,
           boxShadow: '3px 3px 0 0 #1E293B',
           fontWeight: 700,
         },
@@ -375,7 +380,7 @@ let theme = createTheme({
       styleOverrides: {
         root: {
           border: '2px solid #1E293B',
-          fontWeight: 900,
+          fontWeight: 800,
         },
       },
     },

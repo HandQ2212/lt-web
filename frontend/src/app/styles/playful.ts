@@ -37,7 +37,7 @@ export const pageShellSx: SxProps<Theme> = {
 export const stickerCardSx: SxProps<Theme> = {
   bgcolor: playfulColors.white,
   border: `2px solid ${playfulColors.ink}`,
-  borderRadius: 4,
+  borderRadius: 1.25,
   boxShadow: playfulShadow,
   backgroundImage: 'none',
   transition: playfulTransition,
@@ -54,7 +54,7 @@ export const metricCardSx: SxProps<Theme> = {
 };
 
 export const candyButtonSx: SxProps<Theme> = {
-  borderRadius: 999,
+  borderRadius: 1,
   border: `2px solid ${playfulColors.ink}`,
   bgcolor: playfulColors.violet,
   color: playfulColors.white,
@@ -75,7 +75,7 @@ export const candyButtonSx: SxProps<Theme> = {
 };
 
 export const secondaryButtonSx: SxProps<Theme> = {
-  borderRadius: 999,
+  borderRadius: 1,
   border: `2px solid ${playfulColors.ink}`,
   color: playfulColors.ink,
   bgcolor: playfulColors.white,
@@ -91,7 +91,7 @@ export const secondaryButtonSx: SxProps<Theme> = {
 
 export const tablePaperSx: SxProps<Theme> = {
   border: `2px solid ${playfulColors.ink}`,
-  borderRadius: 4,
+  borderRadius: 1.25,
   boxShadow: playfulShadow,
   overflow: 'hidden',
   backgroundImage: 'none',
@@ -99,7 +99,7 @@ export const tablePaperSx: SxProps<Theme> = {
 
 export const dialogPaperSx: SxProps<Theme> = {
   border: `2px solid ${playfulColors.ink}`,
-  borderRadius: 4,
+  borderRadius: 1.5,
   boxShadow: playfulShadowLg,
   backgroundImage: 'none',
 };
@@ -107,7 +107,7 @@ export const dialogPaperSx: SxProps<Theme> = {
 export const textFieldSx: SxProps<Theme> = {
   '& .MuiOutlinedInput-root': {
     bgcolor: playfulColors.white,
-    borderRadius: 3,
+    borderRadius: 1,
     transition: playfulTransition,
     '& fieldset': {
       borderColor: '#CBD5E1',
@@ -130,6 +130,6 @@ export const textFieldSx: SxProps<Theme> = {
 
 export const chipSx: SxProps<Theme> = {
   border: `2px solid ${playfulColors.ink}`,
-  borderRadius: 999,
+  borderRadius: 0.75,
   fontWeight: 800,
 };

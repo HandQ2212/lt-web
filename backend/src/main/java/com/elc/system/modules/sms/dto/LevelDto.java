@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 public class LevelDto {
@@ -45,5 +46,6 @@ public class LevelDto {
         private BigDecimal basePrice;
         private Integer durationWeeks;
         private Boolean isActive;
+        private ZonedDateTime createdAt;
     }
 }

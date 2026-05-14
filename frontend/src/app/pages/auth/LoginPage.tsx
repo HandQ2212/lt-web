@@ -121,7 +121,7 @@ export default function LoginPage() {
               fullWidth
               variant="contained"
               size="large"
-              sx={{ mt: 3, mb: 2, borderRadius: 999 }}
+              sx={{ mt: 3, mb: 2, borderRadius: 1 }}
               disabled={loading}
             >
               {loading ? 'Đang đăng nhập...' : t('common.login')}

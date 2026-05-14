@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -52,5 +53,17 @@ public class UserDto {
         private String fullName;
         private String phone;
         private String address;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PublicTeacherResponse {
+        private UUID id;
+        private String fullName;
+        private String avatarUrl;
+        private List<String> specialties;
+        private long activeClassCount;
     }
 }

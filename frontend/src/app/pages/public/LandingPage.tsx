@@ -1,8 +1,10 @@
-import { Box, Container, Typography, Button, Card, CardContent, CardMedia, Avatar, Rating, Paper } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Container, Typography, Button, Card, CardContent, CardMedia, Avatar, Rating, Paper, Chip, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SchoolIcon from '@mui/icons-material/School';
 import PeopleIcon from '@mui/icons-material/People';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { PublicTeacher, publicTeacherApi } from '../../../services/api';
 
 const courses = [
   {
@@ -28,27 +30,6 @@ const courses = [
   },
 ];
 
-const teachers = [
-  {
-    name: 'Ms. Sarah Johnson',
-    specialty: 'IELTS Expert',
-    rating: 4.9,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-  },
-  {
-    name: 'Mr. David Brown',
-    specialty: 'Business English',
-    rating: 4.8,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-  },
-  {
-    name: 'Ms. Emma Wilson',
-    specialty: 'Communication Skills',
-    rating: 5.0,
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
-  },
-];
-
 const testimonials = [
   {
     name: 'Nguyễn Văn A',
@@ -66,6 +47,29 @@ const testimonials = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [teachers, setTeachers] = useState<PublicTeacher[]>([]);
+  const [teachersLoading, setTeachersLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchTeachers = async () => {
+      try {
+        const data = await publicTeacherApi.getAll();
+        if (mounted) setTeachers(data.slice(0, 3));
+      } catch {
+        if (mounted) setTeachers([]);
+      } finally {
+        if (mounted) setTeachersLoading(false);
+      }
+    };
+
+    void fetchTeachers();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <Box sx={{ bgcolor: '#FFFDF5', overflowX: 'hidden', color: '#1E293B' }}>
@@ -106,7 +110,7 @@ export default function LandingPage() {
               <Box sx={{ position: 'relative', textAlign: { xs: 'center', md: 'left' }, maxWidth: { xs: 760, md: 'none' }, mx: { xs: 'auto', md: 0 } }}>
                 <Typography 
                   variant="h1" 
-                  fontWeight={900} 
+                  fontWeight={800} 
                   sx={{ 
                     fontSize: { xs: '2.5rem', sm: '3.2rem', md: '4rem', lg: '4.5rem' },
                     lineHeight: 1.1,
@@ -129,9 +133,9 @@ export default function LandingPage() {
                     sx={{ 
                       px: 6, 
                       py: 2, 
-                      borderRadius: 999,
+                      borderRadius: 1,
                       fontSize: '1.1rem',
-                      fontWeight: 900,
+                      fontWeight: 800,
                     }}
                   >
                     Bắt đầu ngay
@@ -143,9 +147,9 @@ export default function LandingPage() {
                     sx={{ 
                       px: 6, 
                       py: 2, 
-                      borderRadius: 999,
+                      borderRadius: 1,
                       fontSize: '1.1rem',
-                      fontWeight: 900,
+                      fontWeight: 800,
                       bgcolor: '#FFFFFF',
                     }}
                   >
@@ -199,7 +203,7 @@ export default function LandingPage() {
                   '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' }
                 }}>
                   <Box sx={{ color: stat.color, mb: 2, '& svg': { fontSize: 48 } }}>{stat.icon}</Box>
-                  <Typography variant="h3" fontWeight={900}>{stat.value}</Typography>
+                  <Typography variant="h3" fontWeight={800}>{stat.value}</Typography>
                   <Typography color="text.secondary" fontWeight={500}>{stat.label}</Typography>
                 </Paper>
               </Box>
@@ -213,7 +217,7 @@ export default function LandingPage() {
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHƯƠNG TRÌNH ĐÀO TẠO</Typography>
-            <Typography variant="h2" fontWeight={900} sx={{ mt: 1 }}>Khóa học nổi bật</Typography>
+            <Typography variant="h2" fontWeight={800} sx={{ mt: 1 }}>Khóa học nổi bật</Typography>
           </Box>
           <Box
             sx={{
@@ -235,7 +239,7 @@ export default function LandingPage() {
                   <CardMedia component="img" height="250" image={course.image} />
                   <CardContent sx={{ p: 4 }}>
                     <Typography variant="h5" fontWeight={800} gutterBottom>{course.name}</Typography>
-                    <Typography variant="h4" color="primary" fontWeight={900} sx={{ mb: 3 }}>{course.price}</Typography>
+                    <Typography variant="h4" color="primary" fontWeight={800} sx={{ mb: 3 }}>{course.price}</Typography>
                     <Button 
                       variant="contained" 
                       fullWidth 
@@ -258,50 +262,73 @@ export default function LandingPage() {
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHUYÊN GIA GIẢNG DẠY</Typography>
-            <Typography variant="h2" fontWeight={900} sx={{ mt: 1 }}>Đội ngũ giảng viên</Typography>
+            <Typography variant="h2" fontWeight={800} sx={{ mt: 1 }}>Đội ngũ giảng viên</Typography>
           </Box>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
-              gap: 4,
-            }}
-          >
-            {teachers.map((teacher, idx) => (
-              <Box key={idx}>
-                <Paper sx={{ 
-                  p: 5, 
-                  textAlign: 'center', 
-                  borderRadius: 5,
-                  bgcolor: '#ffffff',
-                  border: '2px solid #1E293B',
-                  boxShadow: '5px 5px 0 #1E293B',
-                }}>
-                  <Avatar 
-                    src={teacher.avatar} 
-                    sx={{ 
-                      width: 140, 
-                      height: 140, 
-                      mx: 'auto', 
-                      mb: 3, 
-                      border: '4px solid white',
-                      boxShadow: '4px 4px 0 #1E293B'
-                    }} 
-                  />
-                  <Typography variant="h5" fontWeight={800}>{teacher.name}</Typography>
-                  <Typography color="primary" fontWeight={600} sx={{ mb: 2 }}>{teacher.specialty}</Typography>
-                  <Rating value={teacher.rating} precision={0.1} readOnly sx={{ color: '#f59e0b' }} />
-                </Paper>
-              </Box>
-            ))}
-          </Box>
+          {teachersLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : teachers.length === 0 ? (
+            <Typography align="center" color="text.secondary" fontWeight={700}>
+              Chưa có giảng viên đang hoạt động.
+            </Typography>
+          ) : (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+                gap: 4,
+              }}
+            >
+              {teachers.map((teacher) => {
+                const primarySpecialty = teacher.specialties[0] || 'Giảng viên ELC';
+                const classLabel = teacher.activeClassCount > 0
+                  ? `${teacher.activeClassCount} lớp đang phụ trách`
+                  : 'Chưa có lớp đang phụ trách';
+
+                return (
+                  <Box key={teacher.id}>
+                    <Paper sx={{
+                      p: 5,
+                      textAlign: 'center',
+                      borderRadius: 5,
+                      bgcolor: '#ffffff',
+                      border: '2px solid #1E293B',
+                      boxShadow: '5px 5px 0 #1E293B',
+                      height: '100%',
+                    }}>
+                      <Avatar
+                        src={teacher.avatarUrl || undefined}
+                        sx={{
+                          width: 140,
+                          height: 140,
+                          mx: 'auto',
+                          mb: 3,
+                          border: '4px solid white',
+                          boxShadow: '4px 4px 0 #1E293B',
+                          bgcolor: 'primary.main',
+                          fontSize: 42,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {teacher.fullName.trim().charAt(0).toUpperCase() || 'G'}
+                      </Avatar>
+                      <Typography variant="h5" fontWeight={800}>{teacher.fullName}</Typography>
+                      <Typography color="primary" fontWeight={600} sx={{ mb: 2 }}>{primarySpecialty}</Typography>
+                      <Chip label={classLabel} size="small" color={teacher.activeClassCount > 0 ? 'primary' : 'default'} />
+                    </Paper>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
         </Container>
       </Box>
 
       {/* Testimonials */}
       <Box sx={{ py: 15, bgcolor: '#1E293B', color: 'white', position: 'relative', overflow: 'hidden' }}>
         <Container maxWidth="lg">
-          <Typography variant="h2" fontWeight={900} align="center" sx={{ mb: 10 }}>Cảm nhận học viên</Typography>
+          <Typography variant="h2" fontWeight={800} align="center" sx={{ mb: 10 }}>Cảm nhận học viên</Typography>
           <Box
             sx={{
               display: 'grid',

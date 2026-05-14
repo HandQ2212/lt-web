@@ -114,7 +114,7 @@ interface Program {
 interface LevelItem {
   id: string;
   courseId: string | null;
-  courseName: string;
+  courseName: string | null;
   code: string;
   name: string;
   description: string;
@@ -122,6 +122,7 @@ interface LevelItem {
   basePrice: number;
   durationWeeks: number | null;
   isActive: boolean;
+  createdAt?: string | null;
   classes?: Clazz[];
 }
 
@@ -155,6 +156,34 @@ const formatSessionDateLabel = (date: Date) => {
   });
 
   return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
+const getTimestamp = (value?: string | null) => {
+  if (!value) {
+    return 0;
+  }
+
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const formatLevelCreatedAt = (value?: string | null) => {
+  if (!value) {
+    return 'Chưa có ngày tạo';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Chưa có ngày tạo';
+  }
+
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const defaultLevelForm: LevelForm = {
@@ -254,6 +283,11 @@ export default function ProgramManagementPage() {
   SATURDAY: 6,
 };
 
+  const totalProgramLevels = programs.reduce((sum, program) => sum + program.levels.length, 0);
+  const programsWithoutLevels = programs.filter((program) => program.levels.length === 0).length;
+  const activeLevelCount = levels.filter((level) => level.isActive).length;
+  const levelsWithClassesCount = levels.filter((level) => (level.classes || []).length > 0).length;
+
   useEffect(() => {
     void fetchPrograms();
     void fetchLevels();
@@ -270,7 +304,7 @@ export default function ProgramManagementPage() {
       programs.filter(
         (program) =>
           program.name.toLowerCase().includes(query) ||
-          program.description.toLowerCase().includes(query) ||
+          (program.description || '').toLowerCase().includes(query) ||
           program.levels.some((level) => level.code.toLowerCase().includes(query) || level.name.toLowerCase().includes(query))
       )
     );
@@ -288,7 +322,7 @@ export default function ProgramManagementPage() {
         (level) =>
           level.code.toLowerCase().includes(query) ||
           level.name.toLowerCase().includes(query) ||
-          level.courseName.toLowerCase().includes(query)
+          (level.courseName || '').toLowerCase().includes(query)
       )
     );
   }, [levels, levelSearchQuery]);
@@ -301,7 +335,7 @@ export default function ProgramManagementPage() {
         (Array.isArray(data) ? data : []).map((course: any) => ({
           id: course.id,
           name: course.name,
-          description: course.description,
+          description: course.description || '',
           levels: Array.isArray(course.levels)
             ? course.levels.map((level: any) => ({
                 id: level.id,
@@ -331,7 +365,7 @@ export default function ProgramManagementPage() {
       const levelsWithClasses = levelsData.map((level: LevelItem) => ({
         ...level,
         classes: (classesData || []).filter((clazz: any) => clazz.levelId === level.id),
-      }));
+      })).sort((left: LevelItem, right: LevelItem) => getTimestamp(right.createdAt) - getTimestamp(left.createdAt));
       
       setLevels(levelsWithClasses);
     } catch (error) {
@@ -738,7 +772,15 @@ export default function ProgramManagementPage() {
 
       {activeTab === 0 && (
         <>
-          <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) auto' },
+              gap: 2,
+              alignItems: 'stretch',
+              mb: 3,
+            }}
+          >
             <TextField
               fullWidth
               placeholder="Tìm kiếm chương trình (tên, mô tả, mức độ...)"
@@ -749,7 +791,46 @@ export default function ProgramManagementPage() {
               }}
               variant="outlined"
               size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: 'background.paper',
+                  minHeight: 48,
+                },
+              }}
             />
+            <Stack
+              direction="row"
+              spacing={1.25}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ justifyContent: { xs: 'flex-start', md: 'flex-end' } }}
+            >
+              {[
+                { label: 'Chương trình', value: programs.length },
+                { label: 'Mức độ', value: totalProgramLevels },
+                { label: 'Chưa có mức độ', value: programsWithoutLevels },
+              ].map((item) => (
+                <Box
+                  key={item.label}
+                  sx={{
+                    minWidth: 128,
+                    px: 1.75,
+                    py: 1,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.25,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.15 }}>
+                    {item.value}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
           </Box>
 
           {loadingPrograms ? (
@@ -757,114 +838,298 @@ export default function ProgramManagementPage() {
               <CircularProgress />
             </Box>
           ) : filteredPrograms.length === 0 ? (
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 1.25 }}>
               <Typography color="text.secondary">
                 {programSearchQuery ? 'Không tìm thấy chương trình nào' : 'Chưa có chương trình nào'}
               </Typography>
             </Paper>
           ) : (
-            <Grid container spacing={3}>
-              {filteredPrograms.map((program) => (
-                <Grid xs={12} key={program.id}>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Box sx={{ flex: 1, cursor: 'pointer' }} onClick={() => handleToggleExpand(program.id)}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <IconButton size="small" onClick={() => handleToggleExpand(program.id)}>
-                              {expandedId === program.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                            </IconButton>
-                            <Box>
-                              <Typography variant="h6" fontWeight={700}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2.5,
+                alignItems: 'stretch',
+              }}
+            >
+              {filteredPrograms.map((program) => {
+                const isExpanded = expandedId === program.id;
+
+                return (
+                  <Card
+                    key={program.id}
+                    variant="outlined"
+                    sx={{
+                      height: '100%',
+                      borderColor: isExpanded ? 'primary.light' : 'divider',
+                      boxShadow: isExpanded
+                        ? '0 14px 30px rgba(15, 23, 42, 0.08)'
+                        : '0 6px 18px rgba(15, 23, 42, 0.04)',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
+                      gridColumn: { xs: 'auto', lg: isExpanded ? 'span 2' : 'auto' },
+                      '&:hover': {
+                        borderColor: isExpanded ? 'primary.main' : 'rgba(15, 23, 42, 0.22)',
+                        boxShadow: '0 14px 28px rgba(15, 23, 42, 0.08)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: { xs: 2, md: 2.5 }, '&:last-child': { pb: { xs: 2, md: 2.5 } } }}>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start" justifyContent="space-between">
+                        <Stack
+                          direction="row"
+                          spacing={1.25}
+                          alignItems="flex-start"
+                          sx={{ minWidth: 0, flex: 1, cursor: 'pointer' }}
+                          onClick={() => handleToggleExpand(program.id)}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleToggleExpand(program.id);
+                            }}
+                            sx={{ mt: 0.25, color: 'text.secondary' }}
+                          >
+                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          </IconButton>
+
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+                              <Typography
+                                variant="h6"
+                                fontWeight={800}
+                                sx={{ lineHeight: 1.25, overflowWrap: 'anywhere' }}
+                              >
                                 {program.name}
                               </Typography>
-                              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                                <Chip label={`${program.levels.length} mức độ`} size="small" variant="outlined" color="primary" />
-                              </Box>
-                            </Box>
+                              <Chip
+                                label={`${program.levels.length} mức độ`}
+                                size="small"
+                                variant="outlined"
+                                color={program.levels.length > 0 ? 'primary' : 'default'}
+                                sx={{ borderRadius: 0.75, fontWeight: 700 }}
+                              />
+                            </Stack>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{
+                                mt: 0.75,
+                                display: '-webkit-box',
+                                overflow: 'hidden',
+                                WebkitBoxOrient: 'vertical',
+                                WebkitLineClamp: isExpanded ? 2 : 1,
+                                overflowWrap: 'anywhere',
+                              }}
+                            >
+                              {program.description || 'Chưa có mô tả cho chương trình này.'}
+                            </Typography>
                           </Box>
-                        </Box>
+                        </Stack>
 
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <IconButton size="small" onClick={() => handleOpenEditProgram(program)}>
-                            <EditIcon />
+                        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                          <IconButton size="small" onClick={() => handleOpenEditProgram(program)} sx={{ color: 'text.secondary' }}>
+                            <EditIcon fontSize="small" />
                           </IconButton>
                           <IconButton size="small" color="error" onClick={() => handleDeleteProgram(program.id)}>
-                            <DeleteIcon />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
-                        </Box>
-                      </Box>
+                        </Stack>
+                      </Stack>
 
-                      <Collapse in={expandedId === program.id} timeout="auto">
-                        <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid #eee' }}>
-                          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                            Mô tả:
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            {program.description}
-                          </Typography>
-
-                          <Divider sx={{ mb: 2 }} />
-
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="subtitle2" fontWeight={600}>
-                              Các mức độ của chương trình
+                      <Collapse in={isExpanded} timeout="auto">
+                        <Box
+                          sx={{
+                            mt: 2.5,
+                            pt: 2.5,
+                            borderTop: '1px solid',
+                            borderColor: 'divider',
+                            display: 'grid',
+                            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 0.85fr) minmax(0, 1.15fr)' },
+                            gap: 2.5,
+                          }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontWeight={800}
+                              sx={{ textTransform: 'uppercase' }}
+                            >
+                              Mô tả
                             </Typography>
-                            <Button variant="outlined" size="small" onClick={() => handleOpenCreateLevel(program.id)}>
-                              Thêm mức độ
-                            </Button>
+                            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary', lineHeight: 1.7 }}>
+                              {program.description || 'Chưa có mô tả cho chương trình này.'}
+                            </Typography>
                           </Box>
 
-                          {program.levels.length === 0 ? (
-                            <Typography variant="body2" color="text.secondary">
-                              Chương trình này chưa có mức độ nào.
-                            </Typography>
-                          ) : (
-                            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                              {program.levels.map((level) => (
-                                <Chip
-                                  key={level.id}
-                                  label={`${level.code} - ${level.name}`}
-                                  variant="outlined"
-                                  onClick={() => setActiveTab(1)}
-                                />
-                              ))}
+                          <Box>
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1.5}
+                              alignItems={{ xs: 'stretch', sm: 'center' }}
+                              justifyContent="space-between"
+                              sx={{ mb: 1.5 }}
+                            >
+                              <Box>
+                                <Typography variant="subtitle2" fontWeight={800}>
+                                  Các mức độ của chương trình
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Bấm vào một mức độ để chuyển sang tab quản lý mức độ.
+                                </Typography>
+                              </Box>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleOpenCreateLevel(program.id)}
+                                sx={{ alignSelf: { xs: 'flex-start', sm: 'center' }, fontWeight: 700 }}
+                              >
+                                Thêm mức độ
+                              </Button>
                             </Stack>
-                          )}
+
+                            {program.levels.length === 0 ? (
+                              <Box
+                                sx={{
+                                  p: 2,
+                                  border: '1px dashed',
+                                  borderColor: 'divider',
+                                  borderRadius: 1.25,
+                                  bgcolor: 'rgba(15, 23, 42, 0.02)',
+                                }}
+                              >
+                                <Typography variant="body2" color="text.secondary">
+                                  Chương trình này chưa có mức độ nào.
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Box
+                                sx={{
+                                  display: 'grid',
+                                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(180px, 1fr))' },
+                                  gap: 1.25,
+                                }}
+                              >
+                                {program.levels.map((level) => (
+                                  <Box
+                                    key={level.id}
+                                    onClick={() => setActiveTab(1)}
+                                    sx={{
+                                      p: 1.5,
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      borderRadius: 1,
+                                      bgcolor: 'rgba(139, 92, 246, 0.05)',
+                                      cursor: 'pointer',
+                                      transition: 'border-color 0.2s ease, background-color 0.2s ease',
+                                      '&:hover': {
+                                        borderColor: 'primary.main',
+                                        bgcolor: 'rgba(139, 92, 246, 0.09)',
+                                      },
+                                    }}
+                                  >
+                                    <Typography variant="caption" color="primary" fontWeight={800}>
+                                      {level.code}
+                                    </Typography>
+                                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25, overflowWrap: 'anywhere' }}>
+                                      {level.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {level.durationWeeks ? `${level.durationWeeks} tuần` : 'Chưa đặt thời lượng'}
+                                    </Typography>
+                                  </Box>
+                                ))}
+                              </Box>
+                            )}
+                          </Box>
                         </Box>
                       </Collapse>
                     </CardContent>
                   </Card>
-                </Grid>
-              ))}
-            </Grid>
+                );
+              })}
+            </Box>
           )}
         </>
       )}
 
       {activeTab === 1 && (
         <>
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              placeholder="Tìm kiếm mức độ (mã, tên, chương trình...)"
-              value={levelSearchQuery}
-              onChange={(e) => setLevelSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-              variant="outlined"
-              size="small"
-            />
-          </Box>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) auto' },
+              gap: 2,
+              alignItems: 'stretch',
+              mb: 2.5,
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <TextField
+                fullWidth
+                placeholder="Tìm kiếm mức độ (mã, tên, chương trình...)"
+                value={levelSearchQuery}
+                onChange={(e) => setLevelSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                }}
+                variant="outlined"
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                    minHeight: 48,
+                  },
+                }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.25 }}>
+                Mức độ mới tạo được ưu tiên hiển thị trước. Tạo chương trình học trước, sau đó thêm mức độ cho chương trình đó.
+              </Typography>
+            </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Luồng đúng là tạo chương trình học trước, sau đó mới thêm mức độ cho chương trình đó.
-            </Typography>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenCreateLevel()}>
-              Tạo mức độ
-            </Button>
+            <Stack
+              direction="row"
+              spacing={1.25}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ justifyContent: { xs: 'flex-start', lg: 'flex-end' }, alignItems: 'flex-start' }}
+            >
+              {[
+                { label: 'Mức độ', value: levels.length },
+                { label: 'Đang hoạt động', value: activeLevelCount },
+                { label: 'Có lớp học', value: levelsWithClassesCount },
+              ].map((item) => (
+                <Box
+                  key={item.label}
+                  sx={{
+                    minWidth: 128,
+                    px: 1.75,
+                    py: 1,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.25,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.15 }}>
+                    {item.value}
+                  </Typography>
+                </Box>
+              ))}
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenCreateLevel()}
+                sx={{ minHeight: 48, px: 2.5, fontWeight: 800 }}
+              >
+                Tạo mức độ
+              </Button>
+            </Stack>
           </Box>
 
           {loadingLevels ? (
@@ -872,109 +1137,282 @@ export default function ProgramManagementPage() {
               <CircularProgress />
             </Box>
           ) : filteredLevels.length === 0 ? (
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 1.25 }}>
               <Typography color="text.secondary">
                 {levelSearchQuery ? 'Không tìm thấy mức độ nào' : 'Chưa có mức độ nào'}
               </Typography>
             </Paper>
           ) : (
-            <Grid container spacing={3}>
-              {filteredLevels.map((level) => (
-                <Grid xs={12} md={6} key={level.id}>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-                        <Box sx={{ flex: 1, cursor: 'pointer' }} onClick={() => setExpandedLevelId(expandedLevelId === level.id ? null : level.id)}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <IconButton size="small" onClick={(e) => {
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2.5,
+                alignItems: 'start',
+              }}
+            >
+              {filteredLevels.map((level) => {
+                const isExpanded = expandedLevelId === level.id;
+                const classCount = (level.classes || []).length;
+
+                return (
+                  <Card
+                    key={level.id}
+                    variant="outlined"
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderColor: isExpanded ? 'primary.light' : 'divider',
+                      boxShadow: isExpanded
+                        ? '0 14px 30px rgba(15, 23, 42, 0.08)'
+                        : '0 6px 18px rgba(15, 23, 42, 0.04)',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                      gridColumn: { xs: 'auto', lg: isExpanded ? 'span 2' : 'auto' },
+                      '&:hover': {
+                        borderColor: isExpanded ? 'primary.main' : 'rgba(15, 23, 42, 0.22)',
+                        boxShadow: '0 14px 28px rgba(15, 23, 42, 0.08)',
+                      },
+                    }}
+                  >
+                    <CardContent
+                      sx={{
+                        p: { xs: 2, md: 2.5 },
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '&:last-child': { pb: { xs: 2, md: 2.5 } },
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        alignItems="flex-start"
+                        justifyContent="space-between"
+                        sx={{ minHeight: { xs: 108, sm: 78 } }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.25}
+                          alignItems="flex-start"
+                          sx={{ minWidth: 0, flex: 1, cursor: 'pointer' }}
+                          onClick={() => setExpandedLevelId(isExpanded ? null : level.id)}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
                               e.stopPropagation();
-                              setExpandedLevelId(expandedLevelId === level.id ? null : level.id);
-                            }}>
-                              {expandedLevelId === level.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                            </IconButton>
-                            <Box>
-                              <Typography variant="h6" fontWeight={700}>
+                              setExpandedLevelId(isExpanded ? null : level.id);
+                            }}
+                            sx={{ mt: 0.25, color: 'text.secondary' }}
+                          >
+                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          </IconButton>
+
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Box
+                              sx={{
+                                display: 'grid',
+                                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                                gap: 1,
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Typography
+                                variant="h6"
+                                fontWeight={800}
+                                title={`${level.code} - ${level.name}`}
+                                sx={{
+                                  lineHeight: 1.25,
+                                  minWidth: 0,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
                                 {level.code} - {level.name}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              <Chip
+                                label={level.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                                size="small"
+                                color={level.isActive ? 'success' : 'default'}
+                                variant="outlined"
+                                sx={{ borderRadius: 0.75, fontWeight: 700, maxWidth: 140 }}
+                              />
+                            </Box>
+                            <Box
+                              sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', sm: 'minmax(0, 1fr) auto' },
+                                gap: { xs: 0.25, sm: 1 },
+                                mt: 0.75,
+                                minHeight: { xs: 44, sm: 22 },
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                title={level.courseName || 'Chưa gắn chương trình'}
+                                sx={{
+                                  minWidth: 0,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
                                 {level.courseName || 'Chưa gắn chương trình'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                                Tạo: {formatLevelCreatedAt(level.createdAt)}
                               </Typography>
                             </Box>
                           </Box>
-                        </Box>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <IconButton size="small" onClick={() => handleOpenEditLevel(level)}>
-                            <EditIcon />
+                        </Stack>
+
+                        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                          <IconButton size="small" onClick={() => handleOpenEditLevel(level)} sx={{ color: 'text.secondary' }}>
+                            <EditIcon fontSize="small" />
                           </IconButton>
                           <IconButton size="small" color="error" onClick={() => handleDeleteLevel(level.id)}>
-                            <DeleteIcon />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
-                        </Box>
+                        </Stack>
+                      </Stack>
+
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' },
+                          gap: 1,
+                          mt: 2,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {[
+                          { label: 'Học phí', value: `${level.basePrice.toLocaleString('vi-VN')}đ` },
+                          { label: 'Thời lượng', value: level.durationWeeks ? `${level.durationWeeks} tuần` : '-' },
+                          { label: 'Lớp học', value: classCount },
+                          { label: 'Thứ tự', value: level.displayOrder ?? '-' },
+                        ].map((item) => (
+                          <Box
+                            key={item.label}
+                            sx={{
+                              p: 1.25,
+                              bgcolor: 'rgba(15, 23, 42, 0.025)',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 1,
+                              minWidth: 0,
+                              minHeight: 70,
+                            }}
+                          >
+                            <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                              {item.label}
+                            </Typography>
+                            <Typography variant="body2" fontWeight={800} sx={{ overflowWrap: 'anywhere' }}>
+                              {item.value}
+                            </Typography>
+                          </Box>
+                        ))}
                       </Box>
 
-                      <Collapse in={expandedLevelId === level.id} timeout="auto">
-                        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
-                          <Typography variant="body2" sx={{ mb: 1 }}>
-                            {level.description || 'Không có mô tả'}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                            <Chip label={`Thứ tự: ${level.displayOrder ?? '-'}`} size="small" />
-                            <Chip label={`Học phí: ${level.basePrice.toLocaleString('vi-VN')}đ`} size="small" />
-                            <Chip label={`Số tuần: ${level.durationWeeks ?? '-'} tuần`} size="small" />
-                            <Chip
-                              label={level.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                              size="small"
-                              color={level.isActive ? 'success' : 'default'}
-                            />
+                      <Collapse in={isExpanded} timeout="auto">
+                        <Box
+                          sx={{
+                            mt: 2.5,
+                            pt: 2.5,
+                            borderTop: '1px solid',
+                            borderColor: 'divider',
+                            display: 'grid',
+                            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 0.8fr) minmax(0, 1.2fr)' },
+                            gap: 2.5,
+                          }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontWeight={800}
+                              sx={{ textTransform: 'uppercase' }}
+                            >
+                              Mô tả
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary', lineHeight: 1.7 }}>
+                              {level.description || 'Không có mô tả'}
+                            </Typography>
                           </Box>
 
-                          <Divider sx={{ my: 2 }} />
-
-                          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                            Các lớp học ({(level.classes || []).length})
-                          </Typography>
-
-                          {!level.classes || level.classes.length === 0 ? (
-                            <Typography variant="body2" color="text.secondary">
-                              Mức độ này chưa có lớp học nào.
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.25 }}>
+                              Các lớp học ({classCount})
                             </Typography>
-                          ) : (
-                            <Stack spacing={1}>
-                              {level.classes.map((clazz: Clazz) => (
-                                <Paper 
-                                  key={clazz.id} 
-                                  sx={{ p: 1.5, bgcolor: 'background.default', cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: 'action.hover', boxShadow: 2 } }}
-                                  onClick={() => handleOpenClassDetails(clazz)}
-                                >
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                    <Box sx={{ flex: 1 }}>
-                                      <Typography variant="body2" fontWeight={600}>
-                                        {clazz.name}
+
+                            {!level.classes || level.classes.length === 0 ? (
+                              <Box
+                                sx={{
+                                  p: 2,
+                                  border: '1px dashed',
+                                  borderColor: 'divider',
+                                  borderRadius: 1.25,
+                                  bgcolor: 'rgba(15, 23, 42, 0.02)',
+                                }}
+                              >
+                                <Typography variant="body2" color="text.secondary">
+                                  Mức độ này chưa có lớp học nào.
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Box
+                                sx={{
+                                  display: 'grid',
+                                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(220px, 1fr))' },
+                                  gap: 1,
+                                }}
+                              >
+                                {level.classes.map((clazz: Clazz) => (
+                                  <Paper
+                                    key={clazz.id}
+                                    variant="outlined"
+                                    sx={{
+                                      p: 1.5,
+                                      bgcolor: 'background.paper',
+                                      cursor: 'pointer',
+                                      transition: 'border-color 0.2s ease, background-color 0.2s ease',
+                                      '&:hover': {
+                                        bgcolor: 'rgba(25, 118, 210, 0.04)',
+                                        borderColor: 'primary.light',
+                                      },
+                                    }}
+                                    onClick={() => handleOpenClassDetails(clazz)}
+                                  >
+                                    <Typography variant="body2" fontWeight={800} sx={{ overflowWrap: 'anywhere' }}>
+                                      {clazz.name}
+                                    </Typography>
+                                    {clazz.teacherName && (
+                                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+                                        GV: {clazz.teacherName}
                                       </Typography>
-                                      {clazz.teacherName && (
-                                        <Typography variant="caption" color="text.secondary">
-                                          GV: {clazz.teacherName}
-                                        </Typography>
-                                      )}
-                                      <Chip
-                                        label={clazz.status || 'Chưa rõ'}
-                                        size="small"
-                                        sx={{ mt: 0.5 }}
-                                        color={clazz.status === 'ACCEPTING' ? 'success' : clazz.status === 'FULL' ? 'warning' : 'default'}
-                                      />
-                                    </Box>
-                                  </Box>
-                                </Paper>
-                              ))}
-                            </Stack>
-                          )}
+                                    )}
+                                    <Chip
+                                      label={getStatusLabel(clazz.status)}
+                                      size="small"
+                                      sx={{ mt: 1, borderRadius: 0.75, fontWeight: 700 }}
+                                      color={clazz.status === 'ACCEPTING' ? 'success' : clazz.status === 'FULL' ? 'warning' : 'default'}
+                                      variant="outlined"
+                                    />
+                                  </Paper>
+                                ))}
+                              </Box>
+                            )}
+                          </Box>
                         </Box>
                       </Collapse>
                     </CardContent>
                   </Card>
-                </Grid>
-              ))}
-            </Grid>
+                );
+              })}
+            </Box>
           )}
         </>
       )}

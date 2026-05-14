@@ -47,10 +47,12 @@ export default function RoleNotificationsPage() {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   const hasRoleUtilityPanel = Boolean(user?.role && ['MANAGER', 'TEACHER', 'ACCOUNTANT', 'STUDENT', 'LEAD'].includes(user.role));
+  const canSendAnnouncements = Boolean(user?.role && ['MANAGER', 'TEACHER', 'ACCOUNTANT'].includes(user.role));
   
   const [currentTab, setCurrentTab] = useState(0);
   const [personalNotifs, setPersonalNotifs] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [sentAnnouncements, setSentAnnouncements] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,15 +82,16 @@ export default function RoleNotificationsPage() {
 
   useEffect(() => {
     void fetchData();
-  }, []);
+  }, [user?.id, user?.role]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [notifsRes, annRes, clsRes] = await Promise.all([
+      const [notifsRes, annRes, clsRes, sentRes] = await Promise.all([
         notificationApi.getAll().catch(() => ({ data: [] })),
         announcementApi.getAll().catch(() => []),
         classApi.getAll().catch(() => []),
+        canSendAnnouncements ? announcementApi.getSent({ size: 100, sort: 'createdAt,desc' }).catch(() => []) : Promise.resolve([]),
       ]);
 
       const loadedNotifs = Array.isArray(notifsRes?.data) ? notifsRes.data : [];
@@ -103,8 +106,14 @@ export default function RoleNotificationsPage() {
         return false;
       });
       setAnnouncements(filteredAnns);
+      setSentAnnouncements(Array.isArray(sentRes) ? sentRes : []);
 
-      setClasses(Array.isArray(clsRes) ? clsRes : []);
+      const loadedClasses = Array.isArray(clsRes) ? clsRes : [];
+      setClasses(
+        user?.role === 'TEACHER'
+          ? loadedClasses.filter((cls: any) => !user?.id || cls.teacherId === user.id)
+          : loadedClasses
+      );
     } catch (err) {
       console.error('Lỗi khi tải thông báo:', err);
     } finally {
@@ -177,6 +186,24 @@ export default function RoleNotificationsPage() {
     (a.title || a.message || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredSentAnns = sentAnnouncements.filter((a) =>
+    (a.title || a.message || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getSenderName = (item: any) =>
+    item?.createdByFullName || item?.createdByEmail || (item?.type === 'ANNOUNCEMENT' ? 'Chưa xác định người gửi' : 'Hệ thống ELC');
+
+  const getScopeLabel = (item: any) => {
+    if (item?.scope === 'CENTER') return 'Toàn trung tâm';
+    if (item?.scope === 'ROLE') return `Vai trò ${item?.targetRole || ''}`.trim();
+    if (item?.scope === 'CLASS') {
+      const targetClass = classes.find((cls) => cls.id === item?.targetClassId);
+      return targetClass?.name ? `Lớp ${targetClass.name}` : 'Lớp học';
+    }
+    if (item?.scope === 'FINANCE') return 'Tài chính';
+    return 'Thông báo';
+  };
+
   const unreadCount = personalNotifs.filter((n) => !n.read).length;
 
   return (
@@ -205,8 +232,8 @@ export default function RoleNotificationsPage() {
         }}
       >
         <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={3}>
-            <Box>
+          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={3}>
+            <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
                 <CampaignIcon sx={{ fontSize: 36, color: 'secondary.main' }} />
                 <Typography variant="h4" fontWeight={900} letterSpacing={0.5}>
@@ -218,7 +245,17 @@ export default function RoleNotificationsPage() {
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              sx={{
+                flex: '0 0 auto',
+                alignSelf: { xs: 'stretch', md: 'center' },
+                '& > .MuiPaper-root': {
+                  minWidth: { sm: 190 },
+                },
+              }}
+            >
               <Paper sx={{ px: 2.5, py: 1.5, borderRadius: 3, bgcolor: '#FFFFFF', border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B' }}>
                 <Typography variant="caption" display="block" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
                   Thông báo chưa đọc
@@ -275,6 +312,19 @@ export default function RoleNotificationsPage() {
                   label="Bảng tin hệ thống"
                   sx={{ py: 2.5, fontWeight: 800, fontSize: '0.95rem' }}
                 />
+                {canSendAnnouncements && (
+                  <Tab
+                    icon={<SendIcon sx={{ mr: 1 }} />}
+                    iconPosition="start"
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>Thông báo đã gửi</span>
+                        {sentAnnouncements.length > 0 && <Chip size="small" label={sentAnnouncements.length} color="primary" sx={{ height: 18, minWidth: 18, fontSize: '0.65rem', fontWeight: 800 }} />}
+                      </Box>
+                    }
+                    sx={{ py: 2.5, fontWeight: 800, fontSize: '0.95rem' }}
+                  />
+                )}
               </Tabs>
             </Box>
 
@@ -335,13 +385,14 @@ export default function RoleNotificationsPage() {
                         />
                       </Stack>
                       <Typography variant="caption" color="text.secondary" display="block">
+                        Gửi bởi: {getSenderName(item)} •{' '}
                         {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}
                       </Typography>
                     </Box>
                   ))}
                 </Stack>
               )
-            ) : (
+            ) : currentTab === 1 ? (
               /* Danh sách bảng tin hệ thống */
               filteredSystemAnns.length === 0 ? (
                 <Box sx={{ p: 6, textAlign: 'center' }}>
@@ -376,7 +427,49 @@ export default function RoleNotificationsPage() {
                         {item.message}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block', fontWeight: 600 }}>
-                        Đăng bởi: {item.createdByFullName || 'Ban Quản trị'} • {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}
+                        Đăng bởi: {item.createdByFullName || item.createdByEmail || 'Ban Quản trị'} • {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              )
+            ) : (
+              /* Danh sách thông báo đã gửi */
+              filteredSentAnns.length === 0 ? (
+                <Box sx={{ p: 6, textAlign: 'center' }}>
+                  <Typography color="text.secondary" fontWeight={600}>Bạn chưa gửi thông báo nào</Typography>
+                </Box>
+              ) : (
+                <Stack divider={<Divider />}>
+                  {filteredSentAnns.map((item) => (
+                    <Box
+                      key={item.id}
+                      onClick={() => void handleOpenDetail({ ...item, isSent: true }, false)}
+                      sx={{
+                        p: 3,
+                        transition: 'all 0.2s',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                      }}
+                    >
+                      <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} alignItems="center" flexWrap="wrap">
+                        <Chip
+                          size="small"
+                          label={item.type === 'URGENT' ? 'Khẩn cấp' : item.type === 'PROMO' ? 'Khuyến mãi' : 'Thông tin'}
+                          color={item.type === 'URGENT' ? 'error' : item.type === 'PROMO' ? 'success' : 'info'}
+                          sx={{ fontWeight: 800, fontSize: '0.65rem' }}
+                        />
+                        <Chip size="small" label={getScopeLabel(item)} variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
+                        <Chip size="small" label={item.isDelivered ? 'Đã phát' : 'Đang xử lý'} color={item.isDelivered ? 'success' : 'warning'} variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
+                      </Stack>
+                      <Typography variant="h6" fontWeight={800} sx={{ mb: 0.5, color: 'text.primary', fontSize: '1.1rem' }}>
+                        {item.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {item.message}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block', fontWeight: 600 }}>
+                        Đã gửi tới: {getScopeLabel(item)} • {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}
                       </Typography>
                     </Box>
                   ))}
@@ -689,7 +782,7 @@ export default function RoleNotificationsPage() {
           <Divider sx={{ my: 2 }} />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="caption" color="text.secondary" fontWeight={600}>
-              Nguồn: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{selectedItem?.createdByFullName || 'Hệ thống ELC'}</Box>
+              Nguồn: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{getSenderName(selectedItem)}</Box>
             </Typography>
             <Typography variant="caption" color="text.secondary" fontWeight={600}>
               {selectedItem?.createdAt ? new Date(selectedItem.createdAt).toLocaleString('vi-VN') : ''}

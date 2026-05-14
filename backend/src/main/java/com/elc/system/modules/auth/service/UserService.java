@@ -2,12 +2,17 @@ package com.elc.system.modules.auth.service;
 
 import com.elc.system.modules.auth.dto.AuthDto.UserResponse;
 import com.elc.system.modules.auth.dto.UserDto.CreateUserRequest;
+import com.elc.system.modules.auth.dto.UserDto.PublicTeacherResponse;
 import com.elc.system.modules.auth.dto.UserDto.UpdateUserRequest;
 import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.auth.entity.UserStatus;
 import com.elc.system.modules.auth.exception.UserAlreadyExistsException;
 import com.elc.system.modules.auth.exception.UserNotFoundException;
 import com.elc.system.modules.auth.repository.UserRepository;
+import com.elc.system.modules.lms.entity.ClassStatus;
+import com.elc.system.modules.lms.entity.Clazz;
+import com.elc.system.modules.lms.repository.ClazzRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,6 +32,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ClazzRepository clazzRepository;
     private final PasswordEncoder passwordEncoder;
 
     private UserResponse mapToUserResponse(User user) {
@@ -67,9 +74,42 @@ public class UserService {
 
     public List<UserResponse> getActiveTeachers() {
         log.info("Fetching active teachers");
-        return userRepository.findActiveByRole(com.elc.system.modules.auth.entity.UserRole.TEACHER).stream()
+        return userRepository.findActiveByRole(UserRole.TEACHER).stream()
                 .map(this::mapToUserResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicTeacherResponse> getPublicTeachers() {
+        log.info("Fetching public teacher profiles");
+        return userRepository.findActiveByRole(UserRole.TEACHER).stream()
+                .sorted((left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.getFullName(), right.getFullName()))
+                .map(this::mapToPublicTeacherResponse)
+                .collect(Collectors.toList());
+    }
+
+    private PublicTeacherResponse mapToPublicTeacherResponse(User teacher) {
+        List<Clazz> classes = clazzRepository.findByTeacherId(teacher.getId());
+        List<String> specialties = classes.stream()
+                .map(clazz -> clazz.getLevel() != null && clazz.getLevel().getCourse() != null
+                        ? clazz.getLevel().getCourse().getName()
+                        : null)
+                .filter(Objects::nonNull)
+                .filter(name -> !name.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.toList());
+        long activeClassCount = classes.stream()
+                .filter(clazz -> clazz.getStatus() != ClassStatus.CANCELLED && clazz.getStatus() != ClassStatus.COMPLETED)
+                .count();
+
+        return PublicTeacherResponse.builder()
+                .id(teacher.getId())
+                .fullName(teacher.getFullName())
+                .avatarUrl(teacher.getAvatarUrl())
+                .specialties(specialties)
+                .activeClassCount(activeClassCount)
+                .build();
     }
 
     /**

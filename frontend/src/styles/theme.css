@@ -156,6 +156,7 @@
   h6 {
     font-family: var(--font-heading);
     color: var(--foreground);
+    letter-spacing: 0;
   }
 
   /**
@@ -228,13 +229,14 @@
 
 .MuiCard-root {
   border: 2px solid var(--playful-border) !important;
-  border-radius: 24px !important;
+  border-radius: 10px !important;
   box-shadow: var(--playful-shadow) !important;
   background-image: none !important;
 }
 
 .MuiPaper-root:not(.MuiDrawer-paper):not(.MuiAppBar-root):not(.MuiMenu-paper):not(.MuiPopover-paper) {
   background-image: none !important;
+  border-radius: 10px !important;
 }
 
 .MuiPaper-elevation1:not(.MuiDrawer-paper),
@@ -255,6 +257,7 @@
 
 .MuiTableContainer-root {
   border: 2px solid var(--playful-border);
+  border-radius: 10px !important;
   box-shadow: var(--playful-shadow);
   background: #fff;
 }
@@ -262,17 +265,28 @@
 .MuiTableHead-root .MuiTableCell-root {
   background: #fff7df !important;
   color: var(--playful-ink) !important;
-  font-weight: 900 !important;
+  font-weight: 800 !important;
 }
 
 .MuiDialog-paper {
   border: 2px solid var(--playful-border) !important;
-  border-radius: 24px !important;
+  border-radius: 12px !important;
   box-shadow: var(--playful-shadow-lg) !important;
 }
 
 .MuiTabs-root {
-  border-radius: 999px;
+  border-radius: 8px !important;
+}
+
+.MuiTab-root,
+.MuiButton-root,
+.MuiIconButton-root,
+.MuiOutlinedInput-root {
+  border-radius: 8px !important;
+}
+
+.MuiAlert-root {
+  border-radius: 10px !important;
 }
 
 .MuiTab-root.Mui-selected {
@@ -281,7 +295,8 @@
 }
 
 .MuiChip-root {
-  font-weight: 800 !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
 }
 
 .MuiButton-contained {

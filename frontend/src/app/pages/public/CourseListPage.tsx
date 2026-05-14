@@ -155,7 +155,7 @@ export default function CourseListPage() {
 
   return (
     <Container maxWidth="xl" sx={{ py: 8, position: 'relative' }}>
-      <Typography variant="h3" gutterBottom fontWeight={900} align="center" sx={{ mb: 2, color: '#1E293B' }}>
+      <Typography variant="h3" gutterBottom fontWeight={800} align="center" sx={{ mb: 2, color: '#1E293B' }}>
         Khóa học
       </Typography>
       <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
@@ -248,16 +248,16 @@ export default function CourseListPage() {
                     label={getLevelText(getDisplayLevel(course))}
                     color={getLevelColor(getPrimaryLevel(course)?.code || course.level || '')}
                     size="small"
-                    sx={{ border: '2px solid #1E293B', fontWeight: 900 }}
+                    sx={{ border: '2px solid #1E293B', fontWeight: 800 }}
                   />
                 </Box>
-                <Typography variant="h6" gutterBottom fontWeight={900} sx={{ fontSize: '1rem', lineHeight: 1.35 }}>
+                <Typography variant="h6" gutterBottom fontWeight={800} sx={{ fontSize: '1rem', lineHeight: 1.35 }}>
                   {course.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 40 }}>
                   {course.description}
                 </Typography>
-                <Typography variant="h6" color="primary" fontWeight={900} sx={{ fontSize: '1.05rem' }}>
+                <Typography variant="h6" color="primary" fontWeight={800} sx={{ fontSize: '1.05rem' }}>
                   {getDisplayPrice(course).toLocaleString('vi-VN')}đ
                 </Typography>
               </CardContent>

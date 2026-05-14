@@ -16,10 +16,13 @@ public class NotificationDto {
     @NoArgsConstructor
     public static class NotificationResponse {
         private UUID id;
+        private UUID announcementId;
         private String title;
         private String message;
         private boolean isRead;
         private String type; // PERSONAL, ANNOUNCEMENT, SYSTEM
+        private String createdByEmail;
+        private String createdByFullName;
         private ZonedDateTime createdAt;
     }
 

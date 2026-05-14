@@ -8,6 +8,7 @@ import com.elc.system.modules.sms.entity.Level;
 import com.elc.system.modules.sms.repository.CourseRepository;
 import com.elc.system.modules.sms.repository.LevelRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class LevelService {
 
     @Transactional(readOnly = true)
     public List<LevelResponse> getAllLevels() {
-        return levelRepository.findAll().stream()
+        return levelRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -148,6 +149,7 @@ public class LevelService {
                 .basePrice(level.getBasePrice())
                 .durationWeeks(level.getDurationWeeks())
                 .isActive(level.getIsActive())
+                .createdAt(level.getCreatedAt())
                 .build();
     }
 }

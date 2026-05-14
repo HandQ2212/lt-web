@@ -1,6 +1,9 @@
 package com.elc.system.modules.lms.repository;
 
+import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserStatus;
 import com.elc.system.modules.lms.entity.Enrollment;
+import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +20,27 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
     @Query("SELECT e FROM Enrollment e JOIN FETCH e.clazz c LEFT JOIN FETCH c.teacher WHERE c.id = :classId")
     List<Enrollment> findByClazzId(@Param("classId") UUID classId);
+
+    default List<User> findActiveStudentsByClassId(UUID classId) {
+        return findStudentsByClassIdAndStatuses(
+                classId,
+                List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE),
+                UserStatus.ACTIVE
+        );
+    }
+
+    @Query("""
+            SELECT DISTINCT e.student
+            FROM Enrollment e
+            WHERE e.clazz.id = :classId
+              AND e.status IN :statuses
+              AND e.student.status = :studentStatus
+            """)
+    List<User> findStudentsByClassIdAndStatuses(
+            @Param("classId") UUID classId,
+            @Param("statuses") List<EnrollmentStatus> statuses,
+            @Param("studentStatus") UserStatus studentStatus
+    );
     
     boolean existsByStudentIdAndClazzId(UUID studentId, UUID classId);
     Optional<Enrollment> findByStudentIdAndClazzId(UUID studentId, UUID classId);

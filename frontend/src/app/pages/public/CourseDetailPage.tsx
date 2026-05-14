@@ -129,23 +129,23 @@ export default function CourseDetailPage() {
             }}
           />
 
-          <Typography variant="h3" gutterBottom fontWeight={900} color="primary">
+          <Typography variant="h3" gutterBottom fontWeight={800} color="primary">
             {course.name}
           </Typography>
 
           <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
-            <Chip label={displayLevel} color="primary" variant="outlined" sx={{ fontWeight: 900, bgcolor: '#FFFFFF' }} />
+            <Chip label={displayLevel} color="primary" variant="outlined" sx={{ fontWeight: 800, bgcolor: '#FFFFFF' }} />
             <Chip label={displayDuration} icon={<AccessTimeIcon />} variant="outlined" />
           </Box>
 
-          <Typography variant="h5" gutterBottom fontWeight={900} sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom fontWeight={800} sx={{ mt: 4 }}>
             Giới thiệu khóa học
           </Typography>
           <Typography variant="body1" paragraph color="text.secondary" sx={{ lineHeight: 1.8 }}>
             {course.description || 'Khóa học chất lượng cao tại ELC System, giúp bạn làm chủ kiến thức và kỹ năng trong thời gian ngắn nhất.'}
           </Typography>
 
-          <Typography variant="h5" gutterBottom fontWeight={900} sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom fontWeight={800} sx={{ mt: 4 }}>
             Lớp học sắp khai giảng
           </Typography>
           {classes.length === 0 ? (
@@ -156,7 +156,7 @@ export default function CourseDetailPage() {
                 <Grid item xs={12} md={6} key={cls.id}>
                   <Card sx={{ borderRadius: 4, border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="h6" fontWeight={900} color="primary">{cls.name}</Typography>
+                      <Typography variant="h6" fontWeight={800} color="primary">{cls.name}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                         <AccessTimeIcon sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
                         {cls.startDate}
@@ -168,7 +168,7 @@ export default function CourseDetailPage() {
                         startIcon={<FavoriteIcon />}
                         onClick={() => void handleInterest(cls.id)}
                         disabled={actionLoading}
-                        sx={{ borderRadius: 999 }}
+                        sx={{ borderRadius: 1 }}
                       >
                         Quan tâm lớp này
                       </Button>
@@ -220,9 +220,9 @@ export default function CourseDetailPage() {
               sx={{ 
                 bgcolor: 'white', 
                 color: 'primary.main', 
-                fontWeight: 900,
+                fontWeight: 800,
                 py: 1.5,
-                borderRadius: 999,
+                borderRadius: 1,
                 '&:hover': { bgcolor: '#FBBF24', color: '#1E293B' }
               }}
               onClick={() => void handleInterest()}

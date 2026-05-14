@@ -18,6 +18,14 @@ export interface AppUser {
   branchId?: string;
 }
 
+export interface PublicTeacher {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+  specialties: string[];
+  activeClassCount: number;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
@@ -193,6 +201,7 @@ export const levelApi = {
       basePrice: Number(level.basePrice || 0),
       durationWeeks: level.durationWeeks ?? null,
       isActive: Boolean(level.isActive),
+      createdAt: level.createdAt,
     }));
   },
   getById: async (id: string) => {
@@ -209,6 +218,7 @@ export const levelApi = {
       basePrice: Number(level.basePrice || 0),
       durationWeeks: level.durationWeeks ?? null,
       isActive: Boolean(level.isActive),
+      createdAt: level.createdAt,
     };
   },
   create: (data: any) => api.post('levels', data),
@@ -330,6 +340,20 @@ export const userApi = {
   },
 };
 
+export const publicTeacherApi = {
+  getAll: async (): Promise<PublicTeacher[]> => {
+    const response = await api.get('public/teachers');
+    const raw = Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
+    return raw.map((teacher: any) => ({
+      id: teacher.id || '',
+      fullName: teacher.fullName || 'Giảng viên',
+      avatarUrl: teacher.avatarUrl,
+      specialties: Array.isArray(teacher.specialties) ? teacher.specialties : [],
+      activeClassCount: Number(teacher.activeClassCount || 0),
+    }));
+  },
+};
+
 export const profileApi = {
   update: async (payload: {
     fullName: string;
@@ -437,6 +461,11 @@ export const announcementApi = {
     const response = await api.get('announcements', { params });
     const raw = response.data;
     // Always return a flat array regardless of paginated or direct response
+    return Array.isArray(raw) ? raw : (raw?.content ?? raw?.data ?? []);
+  },
+  getSent: async (params?: any): Promise<any[]> => {
+    const response = await api.get('announcements/sent', { params });
+    const raw = response.data;
     return Array.isArray(raw) ? raw : (raw?.content ?? raw?.data ?? []);
   },
   create: (payload: any) => api.post('announcements', payload),

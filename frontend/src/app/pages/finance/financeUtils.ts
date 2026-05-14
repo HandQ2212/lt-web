@@ -55,6 +55,11 @@ export const debtStatuses = new Set(['UNPAID', 'PARTIAL', 'PENDING']);
 export const formatCurrency = (value: number | string | undefined | null) =>
   `${Number(value || 0).toLocaleString('vi-VN')}đ`;
 
+export const getUserDisplayName = (
+  user?: { fullName?: string; name?: string; email?: string } | null,
+  fallback = '-'
+) => user?.fullName || user?.name || user?.email || fallback;
+
 export const formatDate = (value?: string) => {
   if (!value) {
     return '-';

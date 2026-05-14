@@ -19,10 +19,7 @@ import {
   TableHead,
   TableRow,
   Typography,
-  useTheme,
-  useMediaQuery,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
@@ -39,8 +36,6 @@ import { RootState } from '../../../store';
 import { Link as RouterLink } from 'react-router-dom';
 
 export default function StudentInvoicesPage() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state: RootState) => state.auth.user);
   
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -116,7 +111,7 @@ export default function StudentInvoicesPage() {
   };
 
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 6, width: '100%', maxWidth: 1180, mx: 'auto' }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
           Hóa đơn & Học phí
@@ -126,51 +121,64 @@ export default function StudentInvoicesPage() {
         </Typography>
       </Box>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+          gap: 3,
+          mb: 4,
+          maxWidth: 860,
+          mx: 'auto',
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Card sx={{ 
-            borderRadius: 4, 
-            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)', 
-            color: 'white',
-            boxShadow: '0 8px 32px rgba(25, 118, 210, 0.2)'
+            height: '100%',
+            minHeight: 180,
+            borderRadius: 4,
+            bgcolor: '#DBEAFE',
+            color: '#1E293B',
+            borderColor: '#2563EB',
+            boxShadow: '5px 5px 0 #1E293B',
           }}>
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 2 }}>
+                <Avatar sx={{ bgcolor: '#2563EB', color: '#FFFFFF', border: '2px solid #1E293B', mr: 2 }}>
                   <ReceiptIcon />
                 </Avatar>
-                <Typography variant="h6" fontWeight={600}>Hóa đơn của tôi</Typography>
+                <Typography variant="h6" fontWeight={900}>Hóa đơn của tôi</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
-                <Typography variant="h3" fontWeight={900}>{invoices.length}</Typography>
-                <Typography variant="subtitle1" sx={{ ml: 1, opacity: 0.8 }}>Hóa đơn tổng cộng</Typography>
+                <Typography variant="h3" fontWeight={900} color="#1D4ED8">{invoices.length}</Typography>
+                <Typography variant="subtitle1" sx={{ ml: 1, color: 'text.secondary', fontWeight: 800 }}>Hóa đơn tổng cộng</Typography>
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
           <Card sx={{ 
-            borderRadius: 4, 
-            background: totalDebt > 0 
-              ? 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)' 
-              : 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)', 
-            color: 'white',
-            boxShadow: totalDebt > 0 ? '0 8px 32px rgba(211, 47, 47, 0.2)' : '0 8px 32px rgba(46, 125, 50, 0.2)'
+            height: '100%',
+            minHeight: 180,
+            borderRadius: 4,
+            bgcolor: totalDebt > 0 ? '#FFE4E6' : '#DCFCE7',
+            color: '#1E293B',
+            borderColor: totalDebt > 0 ? '#E11D48' : '#16A34A',
+            boxShadow: '5px 5px 0 #1E293B',
           }}>
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 2 }}>
+                <Avatar sx={{ bgcolor: totalDebt > 0 ? '#E11D48' : '#16A34A', color: '#FFFFFF', border: '2px solid #1E293B', mr: 2 }}>
                   <PaymentIcon />
                 </Avatar>
-                <Typography variant="h6" fontWeight={600}>Số dư học phí cần nộp</Typography>
+                <Typography variant="h6" fontWeight={900}>Số dư học phí cần nộp</Typography>
               </Box>
-              <Typography variant="h3" fontWeight={900}>
+              <Typography variant="h3" fontWeight={900} sx={{ color: totalDebt > 0 ? '#BE123C' : '#15803D', wordBreak: 'break-word' }}>
                 {formatCurrency(totalDebt)}
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>{error}</Alert>}
 
@@ -321,63 +329,124 @@ export default function StudentInvoicesPage() {
         onClose={() => setDetailOpen(false)} 
         maxWidth="md" 
         fullWidth 
-        PaperProps={{ sx: { borderRadius: 4, p: 2 } }}
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            p: 0,
+            overflow: 'hidden',
+            maxHeight: 'calc(100vh - 48px)',
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }}
       >
-        <Box id="printable-invoice">
-          <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>
-            <Typography variant="h5" fontWeight={900} color="primary">BIÊN LAI HỌC PHÍ</Typography>
-            <Typography variant="caption" color="text.secondary">Mã hóa đơn: #{selectedInvoice?.id?.substring(0, 8)?.toUpperCase()}</Typography>
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ my: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">Họ tên học viên:</Typography>
-                  <Typography variant="body1" fontWeight={700}>{user?.fullName}</Typography>
-                </Grid>
-                <Grid item xs={6} textAlign="right">
-                  <Typography variant="caption" color="text.secondary">Ngày xuất hóa đơn:</Typography>
-                  <Typography variant="body1" fontWeight={700}>{formatDate(selectedInvoice?.createdAt || selectedInvoice?.issueDate)}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                </Grid>
-                <Grid item xs={8}>
-                  <Typography variant="subtitle1" fontWeight={800}>{selectedInvoice?.className || 'Học phí lớp học'}</Typography>
-                  <Typography variant="body2" color="text.secondary">{selectedInvoice?.description || 'Thanh toán học phí định kỳ'}</Typography>
-                </Grid>
-                <Grid item xs={4} textAlign="right">
-                  <Typography variant="subtitle1" fontWeight={800}>{formatCurrency(selectedInvoice?.finalAmount || selectedInvoice?.totalAmount || 0)}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Box sx={{ mt: 4, p: 2, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Tổng cộng:</Typography>
-                      <Typography variant="body2" fontWeight={700}>{formatCurrency(selectedInvoice?.totalAmount || 0)}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Giảm giá:</Typography>
-                      <Typography variant="body2" fontWeight={700}>-{formatCurrency(selectedInvoice?.discountAmount || 0)}</Typography>
-                    </Box>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="h6" fontWeight={800}>Thành tiền:</Typography>
-                      <Typography variant="h6" fontWeight={900} color="primary">{formatCurrency(selectedInvoice?.finalAmount || 0)}</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Typography variant="caption" color="text.secondary" fontStyle="italic">
-                    * Đây là hóa đơn điện tử được trích xuất từ hệ thống ELC System.
+        <Box id="printable-invoice" sx={{ bgcolor: '#FFFFFF', color: '#1E293B', overflowY: 'auto', flex: '1 1 auto' }}>
+          <Box sx={{ bgcolor: '#8B5CF6', color: '#FFFFFF', px: { xs: 3, md: 4 }, py: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+              <Box>
+                <Typography variant="overline" sx={{ color: '#FEF3C7', fontWeight: 900, letterSpacing: 1.2 }}>
+                  ELC System
+                </Typography>
+                <Typography variant="h4" fontWeight={900} sx={{ lineHeight: 1.1 }}>
+                  Biên lai học phí
+                </Typography>
+              </Box>
+              <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                <Typography variant="caption" sx={{ display: 'block', color: 'rgba(255,255,255,0.78)', fontWeight: 700 }}>
+                  Mã hóa đơn
+                </Typography>
+                <Typography variant="h6" fontWeight={900}>
+                  #{selectedInvoice?.id?.substring(0, 8)?.toUpperCase() || 'N/A'}
+                </Typography>
+                {selectedInvoice?.status && (
+                  <Chip
+                    size="small"
+                    label={getStatusLabel(selectedInvoice.status)}
+                    color={getStatusColor(selectedInvoice.status)}
+                    sx={{ mt: 1, fontWeight: 900, border: '2px solid #1E293B' }}
+                  />
+                )}
+              </Box>
+            </Box>
+          </Box>
+
+          <DialogContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 2, mb: 3 }}>
+              <Box sx={{ p: 2, borderRadius: 3, bgcolor: '#F8FAFC', border: '2px solid #E2E8F0' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={800}>Học viên</Typography>
+                <Typography variant="h6" fontWeight={900}>{user?.fullName || user?.name || 'Học viên'}</Typography>
+              </Box>
+              <Box sx={{ p: 2, borderRadius: 3, bgcolor: '#FFF7DF', border: '2px solid #FBBF24' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={800}>Ngày xuất hóa đơn</Typography>
+                <Typography variant="h6" fontWeight={900}>{formatDate(selectedInvoice?.createdAt || selectedInvoice?.issueDate)}</Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ border: '2px solid #1E293B', borderRadius: 3, overflow: 'hidden', mb: 3 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'minmax(0, 1fr) 180px' }, bgcolor: '#F8FAFC' }}>
+                <Box sx={{ p: 2.5 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={800}>Nội dung học phí</Typography>
+                  <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
+                    {selectedInvoice?.className || 'Học phí lớp học'}
                   </Typography>
-                </Grid>
-              </Grid>
+                  <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                    {selectedInvoice?.description || 'Thanh toán học phí định kỳ'}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 2.5, bgcolor: '#EEF2FF', borderLeft: { sm: '2px solid #1E293B' }, textAlign: { xs: 'left', sm: 'right' } }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={800}>Số tiền</Typography>
+                  <Typography variant="h6" fontWeight={900} color="primary.main" sx={{ mt: 0.5 }}>
+                    {formatCurrency(selectedInvoice?.finalAmount || selectedInvoice?.totalAmount || 0)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 340px' }, gap: 3, alignItems: 'start' }}>
+              <Box sx={{ p: 2.5, borderRadius: 3, bgcolor: '#F8FAFC', border: '2px dashed #CBD5E1' }}>
+                <Typography variant="subtitle2" fontWeight={900} sx={{ mb: 1 }}>Ghi chú</Typography>
+                <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                  Biên lai điện tử được trích xuất từ hệ thống ELC System. Vui lòng kiểm tra thông tin học phí và mã hóa đơn khi đối chiếu thanh toán.
+                </Typography>
+              </Box>
+
+              <Box sx={{ p: 2.5, borderRadius: 3, bgcolor: '#FFF7DF', border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary" fontWeight={800}>Tổng cộng</Typography>
+                  <Typography variant="body2" fontWeight={900}>{formatCurrency(selectedInvoice?.totalAmount || 0)}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary" fontWeight={800}>Giảm giá</Typography>
+                  <Typography variant="body2" fontWeight={900}>-{formatCurrency(selectedInvoice?.discountAmount || 0)}</Typography>
+                </Box>
+                <Divider sx={{ my: 1.5, borderColor: '#1E293B' }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'baseline' }}>
+                  <Typography variant="subtitle1" fontWeight={900}>Thành tiền</Typography>
+                  <Typography variant="h5" fontWeight={900} color="primary.main">
+                    {formatCurrency(selectedInvoice?.finalAmount || selectedInvoice?.totalAmount || 0)}
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
           </DialogContent>
         </Box>
-        <DialogActions sx={{ p: 3, display: 'flex', gap: 2, '@media print': { display: 'none' } }}>
-          <Button onClick={() => setDetailOpen(false)} color="inherit">Đóng</Button>
-          <Button variant="contained" startIcon={<DownloadIcon />} onClick={handlePrint}>Tải về / In</Button>
+        <DialogActions
+          sx={{
+            p: 2.5,
+            display: 'flex',
+            gap: 2,
+            justifyContent: 'flex-end',
+            flexShrink: 0,
+            bgcolor: '#FFFFFF',
+            borderTop: '2px solid #1E293B',
+            boxShadow: '0 -4px 0 rgba(30,41,59,0.08)',
+            '@media print': { display: 'none' },
+          }}
+        >
+          <Button onClick={() => setDetailOpen(false)} color="inherit" sx={{ fontWeight: 900, borderRadius: 2 }}>Đóng</Button>
+          <Button variant="contained" startIcon={<DownloadIcon />} onClick={handlePrint} sx={{ borderRadius: 1, fontWeight: 900 }}>
+            Tải về / In
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

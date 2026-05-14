@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button, ButtonGroup, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -30,7 +30,7 @@ type WeeklyTimetableProps = {
 };
 
 const PERIOD_START_HOUR = 7;
-const PERIOD_COUNT = 11;
+const MIN_PERIOD_END_HOUR = 18;
 
 export default function WeeklyTimetable({
   sessions,
@@ -42,15 +42,43 @@ export default function WeeklyTimetable({
   showControls = true,
 }: WeeklyTimetableProps) {
   const [refDate, setRefDate] = useState<Date>(() => (referenceDate ? new Date(referenceDate) : new Date()));
+  const onWeekChangeRef = useRef(onWeekChange);
+
   useEffect(() => {
-    if (referenceDate) setRefDate(new Date(referenceDate));
+    onWeekChangeRef.current = onWeekChange;
+  }, [onWeekChange]);
+
+  useEffect(() => {
+    if (!referenceDate) {
+      return;
+    }
+
+    setRefDate((current) => (
+      toIsoDate(current) === toIsoDate(referenceDate) ? current : new Date(referenceDate)
+    ));
   }, [referenceDate]);
 
   const weekDates = useMemo(() => getWeekDates(refDate), [refDate]);
+  const weekRange = useMemo(() => ({
+    startIso: toIsoDate(weekDates[0]),
+    endIso: toIsoDate(weekDates[6]),
+  }), [weekDates]);
+  const periodHours = useMemo(() => {
+    const latestEndHour = sessions.reduce((latest, session) => {
+      const startMinutes = timeToMinutes(session.startTime);
+      const endMinutes = timeToMinutes(session.endTime);
+      const safeEndMinutes = Math.max(endMinutes, startMinutes + 60);
+      return Math.max(latest, Math.ceil(safeEndMinutes / 60));
+    }, MIN_PERIOD_END_HOUR);
+
+    const periodCount = Math.max(1, latestEndHour - PERIOD_START_HOUR);
+    return Array.from({ length: periodCount }, (_, index) => PERIOD_START_HOUR + index);
+  }, [sessions]);
 
   const board = useMemo(() => {
     const cells: Record<string, { span: number; items: WeeklyTimetableSession[] }> = {};
     const coveredCells = new Set<string>();
+    const periodCount = periodHours.length;
 
     sessions.forEach((session) => {
       const dayIndex = dayOfWeekIndexMap[session.dayOfWeek.toUpperCase()];
@@ -60,8 +88,8 @@ export default function WeeklyTimetable({
 
       const startMinutes = timeToMinutes(session.startTime);
       const endMinutes = timeToMinutes(session.endTime);
-      const startRow = Math.max(0, Math.min(PERIOD_COUNT - 1, Math.floor(startMinutes / 60) - PERIOD_START_HOUR));
-      const span = Math.max(1, Math.min(PERIOD_COUNT - startRow, Math.ceil(Math.max(endMinutes - startMinutes, 60) / 60)));
+      const startRow = Math.max(0, Math.min(periodCount - 1, Math.floor(startMinutes / 60) - PERIOD_START_HOUR));
+      const span = Math.max(1, Math.min(periodCount - startRow, Math.ceil(Math.max(endMinutes - startMinutes, 60) / 60)));
       const cellKey = `${dayIndex}-${startRow}`;
       const existing = cells[cellKey];
 
@@ -78,15 +106,11 @@ export default function WeeklyTimetable({
     });
 
     return { cells, coveredCells };
-  }, [sessions]);
+  }, [sessions, periodHours.length]);
 
   useEffect(() => {
-    if (onWeekChange) {
-      const startIso = toIsoDate(weekDates[0]);
-      const endIso = toIsoDate(weekDates[6]);
-      onWeekChange(startIso, endIso);
-    }
-  }, [weekDates, onWeekChange]);
+    onWeekChangeRef.current?.(weekRange.startIso, weekRange.endIso);
+  }, [weekRange.startIso, weekRange.endIso]);
 
   const gotoPrevWeek = () => setRefDate((d) => new Date(d.getTime() - 7 * 24 * 3600 * 1000));
   const gotoNextWeek = () => setRefDate((d) => new Date(d.getTime() + 7 * 24 * 3600 * 1000));
@@ -199,8 +223,7 @@ export default function WeeklyTimetable({
               </TableRow>
             </TableHead>
             <TableBody>
-              {Array.from({ length: PERIOD_COUNT }, (_, periodIndex) => {
-                const startHour = PERIOD_START_HOUR + periodIndex;
+              {periodHours.map((startHour, periodIndex) => {
                 return (
                   <TableRow key={startHour} hover>
                     <TableCell

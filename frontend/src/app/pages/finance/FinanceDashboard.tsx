@@ -5,7 +5,6 @@ import {
   Card, 
   CardContent, 
   CircularProgress, 
-  Grid, 
   Paper, 
   Stack, 
   Typography, 
@@ -144,7 +143,7 @@ export default function FinanceDashboard() {
   }
 
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 6, maxWidth: 1240, mx: 'auto', px: { xs: 1, sm: 2, xl: 0 } }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
           Báo cáo Tài chính
@@ -161,12 +160,35 @@ export default function FinanceDashboard() {
       )}
 
       {unusualExpenses.length > 0 && (
-        <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3, borderRadius: 3 }}>
+        <Alert
+          severity="warning"
+          icon={<WarningIcon />}
+          sx={{
+            mb: 3,
+            borderRadius: 4,
+            border: '2px solid #1E293B',
+            boxShadow: '5px 5px 0 #1E293B',
+            bgcolor: '#FFF7DF',
+            alignItems: 'center',
+            '& .MuiAlert-message': { fontWeight: 800 },
+          }}
+        >
           Có {unusualExpenses.length} khoản chi phí cao bất thường cần được đối soát lại.
         </Alert>
       )}
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: 'repeat(4, minmax(0, 1fr))',
+          },
+          gap: { xs: 2, md: 2.5 },
+          mb: 4,
+        }}
+      >
         <SummaryCard 
           title="Doanh thu tháng này" 
           value={formatCurrency(summary.monthRevenue)} 
@@ -191,13 +213,33 @@ export default function FinanceDashboard() {
           icon={<ReceiptLongIcon sx={{ color: 'warning.main' }} />} 
           color="#fff8e1"
         />
-      </Grid>
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} lg={8}>
-          <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', height: '100%' }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            lg: 'minmax(0, 1.35fr) minmax(360px, 0.85fr)',
+          },
+          gap: { xs: 3, lg: 3.5 },
+          alignItems: 'stretch',
+        }}
+      >
+        <Paper
+          sx={{
+            p: { xs: 2.5, md: 3.5 },
+            borderRadius: 4,
+            border: '2px solid #1E293B',
+            boxShadow: '6px 6px 0 #1E293B',
+            height: '100%',
+            minHeight: { xs: 420, md: 500 },
+            overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+          }}
+        >
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Avatar sx={{ bgcolor: 'primary.light', mr: 2 }}>
+              <Avatar sx={{ bgcolor: '#EDE9FE', mr: 2, border: '2px solid #1E293B' }}>
                 <BarChartIcon sx={{ color: 'primary.main' }} />
               </Avatar>
               <Typography variant="h6" fontWeight={800}>
@@ -205,9 +247,9 @@ export default function FinanceDashboard() {
               </Typography>
             </Box>
             <Divider sx={{ mb: 4 }} />
-            <Box sx={{ width: '100%', height: 350 }}>
-              <ResponsiveContainer>
-                <BarChart data={monthlyData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <Box sx={{ width: '100%', height: { xs: 320, md: 380 } }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData} margin={{ top: 12, right: 18, left: 4, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="month" 
@@ -243,13 +285,22 @@ export default function FinanceDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </Box>
-          </Paper>
-        </Grid>
+        </Paper>
 
-        <Grid item xs={12} lg={4}>
-          <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', height: '100%' }}>
+        <Paper
+          sx={{
+            p: { xs: 2.5, md: 3.5 },
+            borderRadius: 4,
+            border: '2px solid #1E293B',
+            boxShadow: '6px 6px 0 #1E293B',
+            height: '100%',
+            minHeight: { xs: 420, md: 500 },
+            overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+          }}
+        >
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Avatar sx={{ bgcolor: 'warning.light', mr: 2 }}>
+              <Avatar sx={{ bgcolor: '#FEF3C7', mr: 2, border: '2px solid #1E293B' }}>
                 <PieChartIcon sx={{ color: 'warning.main' }} />
               </Avatar>
               <Typography variant="h6" fontWeight={800}>
@@ -257,70 +308,114 @@ export default function FinanceDashboard() {
               </Typography>
             </Box>
             <Divider sx={{ mb: 4 }} />
-            <Box sx={{ width: '100%', height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <ResponsiveContainer width="100%" height="70%">
-                <PieChart>
-                  <Pie 
-                    data={expenseBreakdown} 
-                    dataKey="value" 
-                    nameKey="name" 
-                    cx="50%" 
-                    cy="50%" 
-                    innerRadius={60}
-                    outerRadius={80} 
-                    paddingAngle={5}
-                    stroke="none"
+            <Box sx={{ width: '100%', minHeight: { xs: 320, md: 380 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {expenseBreakdown.length === 0 ? (
+                <Box sx={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'text.secondary', fontWeight: 700 }}>
+                  Chưa có dữ liệu chi phí
+                </Box>
+              ) : (
+                <>
+                  <Box sx={{ width: '100%', height: { xs: 220, md: 260 } }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={expenseBreakdown}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="48%"
+                          outerRadius="72%"
+                          paddingAngle={5}
+                          stroke="none"
+                        >
+                          {expenseBreakdown.map((entry, index) => (
+                            <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                          formatter={(value: number) => formatCurrency(value)}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: '100%',
+                      mt: 2,
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: '1fr' },
+                      gap: 1,
+                    }}
                   >
-                    {expenseBreakdown.map((entry, index) => (
-                      <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <Box sx={{ width: '100%', mt: 2 }}>
-                <Grid container spacing={1}>
                   {expenseBreakdown.map((entry, index) => (
-                    <Grid item xs={6} key={entry.name}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                    <Box key={entry.name} sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
                         <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: CHART_COLORS[index % CHART_COLORS.length], mr: 1 }} />
                         <Typography variant="caption" fontWeight={600} noWrap>{entry.name}</Typography>
                       </Box>
-                    </Grid>
                   ))}
-                </Grid>
-              </Box>
+                  </Box>
+                </>
+              )}
             </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+        </Paper>
+      </Box>
     </Box>
   );
 }
 
 function SummaryCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
   return (
-    <Grid item xs={12} sm={6} md={3}>
-      <Card sx={{ borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-            <Box>
-              <Typography variant="body2" color="text.secondary" fontWeight={600} gutterBottom>
-                {title}
-              </Typography>
-              <Typography variant="h5" fontWeight={800} color="text.primary">
-                {value}
-              </Typography>
-            </Box>
-            <Avatar sx={{ bgcolor: color, borderRadius: 3, width: 48, height: 48 }}>
-              {icon}
-            </Avatar>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Grid>
+    <Card
+      sx={{
+        borderRadius: 4,
+        border: '2px solid #1E293B',
+        boxShadow: '5px 5px 0 #1E293B',
+        minHeight: 126,
+        background: `linear-gradient(135deg, #FFFFFF 0%, ${color} 100%)`,
+      }}
+    >
+      <CardContent sx={{ p: 2.75, height: '100%' }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="flex-start"
+          spacing={1.5}
+          sx={{ height: '100%', minWidth: 0 }}
+        >
+          <Box sx={{ minWidth: 0, flex: '1 1 auto', pr: 1 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={800} gutterBottom>
+              {title}
+            </Typography>
+            <Typography
+              variant="h5"
+              fontWeight={800}
+              color="text.primary"
+              sx={{
+                fontSize: { xs: '1.45rem', sm: '1.55rem', lg: '1.45rem', xl: '1.65rem' },
+                lineHeight: 1.15,
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
+              }}
+            >
+              {value}
+            </Typography>
+          </Box>
+          <Avatar
+            sx={{
+              bgcolor: '#FFFFFF',
+              border: '2px solid #1E293B',
+              width: { xs: 52, lg: 48, xl: 56 },
+              height: { xs: 52, lg: 48, xl: 56 },
+              flex: '0 0 auto',
+              '& svg': { fontSize: { xs: 26, lg: 24, xl: 28 } },
+            }}
+          >
+            {icon}
+          </Avatar>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }

@@ -147,7 +147,7 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
                   sx={{
                     cursor: 'pointer',
                     pointerEvents: 'auto',
-                    borderRadius: 999,
+                    borderRadius: 1,
                     py: 1.5,
                     minHeight: 48,
                     justifyContent: open ? 'initial' : 'center',

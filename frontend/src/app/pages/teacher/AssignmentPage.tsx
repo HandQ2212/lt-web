@@ -306,7 +306,7 @@ export default function AssignmentPage() {
                     alignItems: 'center',
                     gap: 1,
                     p: 1,
-                    borderRadius: 999,
+                    borderRadius: 1,
                     border: '1px solid rgba(30,41,59,0.25)',
                     bgcolor: '#FFFDF5',
                   }}

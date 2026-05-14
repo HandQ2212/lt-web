@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
                 fullWidth
                 variant="contained"
                 size="large"
-                sx={{ mt: 3, mb: 2, borderRadius: 999 }}
+                sx={{ mt: 3, mb: 2, borderRadius: 1 }}
                 disabled={loading}
               >
                 {loading ? 'Đang gửi...' : 'Gửi link đặt lại'}

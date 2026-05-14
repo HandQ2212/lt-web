@@ -103,6 +103,9 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
     }
   };
 
+  const getNotificationSender = (notification: any) =>
+    notification?.createdByFullName || notification?.createdByEmail || (notification?.type === 'ANNOUNCEMENT' ? 'Chưa xác định người gửi' : 'Hệ thống');
+
   const handleLogout = async () => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
@@ -245,6 +248,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
                   <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                     <Typography variant="body2" fontWeight={notif.read ? 500 : 800} color={notif.read ? 'text.secondary' : 'text.primary'} sx={{ mb: 0.5 }}>{notif.title || notif.message}</Typography>
                     <Typography variant="caption" color="text.secondary" display="block">
+                      Gửi bởi: {getNotificationSender(notif)} •{' '}
                       {new Date(notif.createdAt).toLocaleString('vi-VN')}
                     </Typography>
                   </Box>
@@ -276,7 +280,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
               <Divider sx={{ my: 2 }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  Gửi bởi: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{selectedNotification?.createdByFullName || 'Hệ thống'}</Box>
+                  Gửi bởi: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{getNotificationSender(selectedNotification)}</Box>
                 </Typography>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
                   {selectedNotification?.createdAt ? new Date(selectedNotification.createdAt).toLocaleString('vi-VN') : ''}

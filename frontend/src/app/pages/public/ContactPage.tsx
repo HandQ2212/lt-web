@@ -60,7 +60,7 @@ export default function ContactPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography variant="h3" gutterBottom fontWeight={900} align="center">
+      <Typography variant="h3" gutterBottom fontWeight={800} align="center">
         Liên hệ với chúng tôi
       </Typography>
       <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
@@ -79,7 +79,7 @@ export default function ContactPage() {
         <Box>
           <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
             <LocationIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#FFF7DF', border: '2px solid #1E293B', borderRadius: '50%' }} />
-            <Typography variant="h6" gutterBottom fontWeight={900}>Địa chỉ</Typography>
+            <Typography variant="h6" gutterBottom fontWeight={800}>Địa chỉ</Typography>
             <Typography variant="body2" color="text.secondary">
               123 Đường ABC, Quận 1
               <br />
@@ -91,7 +91,7 @@ export default function ContactPage() {
         <Box>
           <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
             <PhoneIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#FCE7F3', border: '2px solid #1E293B', borderRadius: '50%' }} />
-            <Typography variant="h6" gutterBottom fontWeight={900}>Điện thoại</Typography>
+            <Typography variant="h6" gutterBottom fontWeight={800}>Điện thoại</Typography>
             <Typography variant="body2" color="text.secondary">
               Hotline: (028) 1234 5678
               <br />
@@ -103,7 +103,7 @@ export default function ContactPage() {
         <Box>
           <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
             <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#D1FAE5', border: '2px solid #1E293B', borderRadius: '50%' }} />
-            <Typography variant="h6" gutterBottom fontWeight={900}>Email</Typography>
+            <Typography variant="h6" gutterBottom fontWeight={800}>Email</Typography>
             <Typography variant="body2" color="text.secondary">
               info@elcenglish.edu.vn
               <br />
@@ -115,7 +115,7 @@ export default function ContactPage() {
 
       <Box sx={{ maxWidth: 980, mx: 'auto' }}>
           <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 5, border: '2px solid #1E293B', boxShadow: '7px 7px 0 #1E293B' }}>
-            <Typography variant="h5" gutterBottom fontWeight={900} align="center" sx={{ mb: 4 }}>
+            <Typography variant="h5" gutterBottom fontWeight={800} align="center" sx={{ mb: 4 }}>
               Gửi tin nhắn cho chúng tôi
             </Typography>
             <form onSubmit={handleSubmit}>
@@ -199,7 +199,7 @@ export default function ContactPage() {
                     type="submit" 
                     variant="contained" 
                     size="large" 
-                    sx={{ px: 6, py: 1.5, borderRadius: 999, fontWeight: 900 }}
+                    sx={{ px: 6, py: 1.5, borderRadius: 1, fontWeight: 800 }}
                     disabled={submitting}
                   >
                     {submitting ? 'Đang gửi...' : 'Gửi tin nhắn'}

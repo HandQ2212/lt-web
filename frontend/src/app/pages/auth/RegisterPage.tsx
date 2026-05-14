@@ -140,7 +140,7 @@ export default function RegisterPage() {
               fullWidth
               variant="contained"
               size="large"
-              sx={{ mt: 3, mb: 2, borderRadius: 999 }}
+              sx={{ mt: 3, mb: 2, borderRadius: 1 }}
               disabled={loading}
             >
               {loading ? 'Đang đăng ký...' : t('common.register')}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, LinearProgress, Paper, Chip, CircularProgress, Alert, Avatar, Divider, Button, useTheme, useMediaQuery, Dialog, DialogTitle, DialogContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Snackbar, Stack } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, LinearProgress, Paper, Chip, CircularProgress, Alert, Avatar, Divider, Button, Dialog, DialogTitle, DialogContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Snackbar, Stack } from '@mui/material';
 import {
   School as SchoolIcon,
   Event as EventIcon,
@@ -47,8 +47,6 @@ const formatSessionDateLabel = (date: Date) => {
 };
 
 export default function StudentDashboard() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state: RootState) => state.auth.user);
   const [dashboardData, setDashboardData] = useState<StudentDashboardState>({
     grades: [],
@@ -281,7 +279,7 @@ export default function StudentDashboard() {
   const { currentCourse, upcomingAssignments, averageScore, lecturer } = dashboardData;
 
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: 4, width: '100%', maxWidth: 1240, mx: 'auto' }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
           Bảng điều khiển
@@ -293,35 +291,43 @@ export default function StudentDashboard() {
 
       {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+          gap: 3,
+          mb: 4,
+          alignItems: 'stretch',
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Card 
             onClick={currentCourse ? fetchSessions : undefined}
             sx={{
               height: '100%',
+              minHeight: 224,
               borderRadius: 4,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              color: 'white',
+              bgcolor: '#FFFFFF',
+              color: 'text.primary',
               cursor: currentCourse ? 'pointer' : 'default',
-              transition: 'transform 0.3s ease-in-out',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               '&:hover': currentCourse ? {
-                transform: 'scale(1.02)',
+                transform: 'translate(-2px, -2px)',
               } : {}
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 1.5 }}><SchoolIcon /></Avatar>
-                <Typography variant="h6" fontWeight={700}>Khóa học hiện tại</Typography>
+                <Avatar sx={{ bgcolor: 'rgba(139, 92, 246, 0.14)', color: 'primary.main', border: '2px solid #1E293B', mr: 1.5 }}><SchoolIcon /></Avatar>
+                <Typography variant="h6" fontWeight={800}>Khóa học hiện tại</Typography>
               </Box>
-              <Typography variant="h5" fontWeight={800} gutterBottom>
+              <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ lineHeight: 1.2 }}>
                 {currentCourse?.name || 'Chưa tham gia lớp'}
               </Typography>
-              <Box sx={{ mt: 3 }}>
+              <Box sx={{ mt: 'auto', pt: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>Tiến độ học tập</Typography>
-                  <Typography variant="body2" fontWeight={700}>{currentCourse?.progress || 0}%</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 800 }}>Tiến độ học tập</Typography>
+                  <Typography variant="body2" fontWeight={900} color="primary.main">{currentCourse?.progress || 0}%</Typography>
                 </Box>
                 <LinearProgress
                   variant="determinate"
@@ -329,18 +335,19 @@ export default function StudentDashboard() {
                   sx={{
                     height: 8,
                     borderRadius: 4,
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    '& .MuiLinearProgress-bar': { bgcolor: 'white' }
+                    bgcolor: 'rgba(30, 41, 59, 0.10)',
+                    '& .MuiLinearProgress-bar': { bgcolor: 'primary.main' }
                   }}
                 />
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
+        <Box sx={{ minWidth: 0 }}>
           <Card sx={{
             height: '100%',
+            minHeight: 224,
             borderRadius: 4,
             boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
             border: '1px solid rgba(0,0,0,0.05)'
@@ -363,11 +370,12 @@ export default function StudentDashboard() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
+        <Box sx={{ minWidth: 0 }}>
           <Card sx={{
             height: '100%',
+            minHeight: 224,
             borderRadius: 4,
             boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
             border: '1px solid rgba(0,0,0,0.05)'
@@ -384,11 +392,18 @@ export default function StudentDashboard() {
               <Typography variant="body2" color="text.secondary">Kết quả dựa trên các bài tập đã nộp</Typography>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} lg={4}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(280px, 0.85fr) minmax(0, 1.65fr)' },
+          gap: 3,
+          alignItems: 'stretch',
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Paper sx={{ p: 3, borderRadius: 4, height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
             <Typography variant="h6" gutterBottom fontWeight={800} display="flex" alignItems="center">
               <PersonIcon sx={{ mr: 1, color: 'primary.main' }} /> Giảng viên của tôi
@@ -446,9 +461,9 @@ export default function StudentDashboard() {
               </Box>
             </Box>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} lg={8}>
+        <Box sx={{ minWidth: 0 }}>
           <Paper sx={{ p: 3, borderRadius: 4, height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" fontWeight={800} display="flex" alignItems="center">
@@ -552,8 +567,8 @@ export default function StudentDashboard() {
               </Box>
             )}
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
       
       <Dialog
         open={teacherDialogOpen}
