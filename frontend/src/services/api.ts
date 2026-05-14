@@ -131,11 +131,12 @@ export const authApi = {
 export const courseApi = {
   getAll: async () => {
     const response = await api.get('courses');
-    return (response.data as any[]).map((course) => ({
+    const list = Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
+    return list.map((course: any) => ({
       id: course.id,
       name: course.name,
       level: course.level,
-      price: Number(course.basePrice || 0),
+      price: Number(course.basePrice || course.price || 0),
       status: 'ACTIVE',
       description: course.description,
       imageUrl: course.imageUrl,
@@ -162,21 +163,21 @@ export const courseApi = {
 export const branchApi = {
   getAll: async () => {
     const response = await api.get('branches');
-    return response.data as any[];
+    return Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
   },
 };
 
 export const roomApi = {
   getAll: async () => {
     const response = await api.get('rooms');
-    return response.data as any[];
+    return Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
   },
 };
 
 export const classApi = {
   getAll: async () => {
     const response = await api.get('classes');
-    return response.data;
+    return Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
   },
   getById: (id: string) => api.get(`classes/${id}`),
   create: (data: any) => api.post('classes', data),
@@ -237,10 +238,16 @@ export const leadApi = {
 export const userApi = {
   getAll: async (params?: any) => {
     const response = await api.get('users', { params });
-    const page = response.data as PageResponse<BackendUser>;
+    const raw = response.data;
+    // Handle both paginated ({content:[], page:{}}}) and flat array responses
+    const content = Array.isArray(raw) ? raw : (raw?.content ?? []);
+    const normalized = content.map(normalizeUser);
     return {
-      ...page,
-      content: page.content.map(normalizeUser),
+      content: normalized,
+      totalElements: raw?.totalElements ?? raw?.page?.totalElements ?? normalized.length,
+      totalPages: raw?.totalPages ?? raw?.page?.totalPages ?? 1,
+      number: raw?.number ?? raw?.page?.number ?? 0,
+      size: raw?.size ?? raw?.page?.size ?? normalized.length,
     };
   },
   create: async (payload: {
@@ -363,12 +370,11 @@ export const notificationApi = {
 };
 
 export const announcementApi = {
-  getAll: async (params?: any) => {
+  getAll: async (params?: any): Promise<any[]> => {
     const response = await api.get('announcements', { params });
-    return {
-      ...response,
-      data: Array.isArray(response.data) ? response.data : response.data?.content || [],
-    };
+    const raw = response.data;
+    // Always return a flat array regardless of paginated or direct response
+    return Array.isArray(raw) ? raw : (raw?.content ?? raw?.data ?? []);
   },
   create: (payload: any) => api.post('announcements', payload),
 };

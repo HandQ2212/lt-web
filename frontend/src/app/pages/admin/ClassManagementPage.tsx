@@ -16,6 +16,7 @@ import {
   Divider,
   Grid,
   IconButton,
+  LinearProgress,
   MenuItem,
   Paper,
   Snackbar,
@@ -38,13 +39,12 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   ExpandMore as ExpandMoreIcon,
-  Search as SearchIcon,
   EventBusy as EventBusyIcon,
+  Search as SearchIcon,
   People as PeopleIcon,
   School as SchoolIcon,
-  PlayCircleOutline as PlayCircleOutlineIcon,
 } from '@mui/icons-material';
-import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi } from '../../../services/api';
+import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi, resultApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 
 type ClassItem = {
@@ -121,6 +121,10 @@ type ScheduleSessionRow = {
   teacherLabel: string;
   titleLabel: string;
   materialLabel: string;
+  scheduleId?: string;
+  dayOfWeek?: string;
+  startTime?: string;
+  endTime?: string;
 };
 
 const defaultForm: ClassForm = {
@@ -244,7 +248,7 @@ export default function ClassManagementPage() {
     try {
       setLoading(true);
       const data = await classApi.getAll();
-      setClasses(data || []);
+      setClasses(Array.isArray(data) ? data : []);
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -265,9 +269,9 @@ export default function ClassManagementPage() {
         userApi.getAll({ size: 200, sort: 'fullName,asc' }),
       ]);
 
-      setCourses(courseList || []);
-      setRooms(roomList || []);
-      setBranches(branchList || []);
+      setCourses(Array.isArray(courseList) ? courseList : []);
+      setRooms(Array.isArray(roomList) ? roomList : []);
+      setBranches(Array.isArray(branchList) ? branchList : []);
       setTeachers((userPage?.content || []).filter((user: any) => user.role === 'TEACHER'));
     } catch (error: any) {
       setSnackbar({
@@ -580,6 +584,10 @@ export default function ClassManagementPage() {
             teacherLabel: activeClass.teacherName || '-',
             titleLabel: activeClass.name || activeClass.courseName || '-',
             materialLabel: '-',
+            scheduleId: schedule.id,
+            dayOfWeek: schedule.dayOfWeek,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
           });
         }
       });
@@ -601,6 +609,10 @@ export default function ClassManagementPage() {
         teacherLabel: activeClass.teacherName || '-',
         titleLabel: activeClass.name || activeClass.courseName || '-',
         materialLabel: '-',
+        scheduleId: schedule.id,
+        dayOfWeek: schedule.dayOfWeek,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
       });
     });
 
@@ -901,7 +913,7 @@ export default function ClassManagementPage() {
               </Box>
             ) : detailTab === 0 ? (
               <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.01)' }}>
                     <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5 }}>
                       {scheduleMode === 'edit' ? 'Cập nhật lịch học' : 'Thêm lịch học mới'}
@@ -971,7 +983,7 @@ export default function ClassManagementPage() {
                     </Box>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} md={9}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                     <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
                     <Typography variant="body2" color="text.secondary" fontWeight={600}>
@@ -995,35 +1007,68 @@ export default function ClassManagementPage() {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {scheduleSessionRows.map((session, index) => (
-                            <TableRow key={session.key} hover>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.dateLabel}</TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.timeLabel}</TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.roomLabel}</TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                                <Chip
-                                  size="small"
-                                  label={session.formatLabel}
-                                  color={session.formatLabel === 'Trực tiếp' ? 'success' : 'info'}
-                                  variant="outlined"
-                                  sx={{ fontWeight: 700 }}
-                                />
-                              </TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                                <Chip
-                                  size="small"
-                                  label={session.attendanceLabel}
-                                  color="error"
-                                  variant="outlined"
-                                  sx={{ fontWeight: 700 }}
-                                />
-                              </TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.teacherLabel}</TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.titleLabel}</TableCell>
-                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.materialLabel}</TableCell>
-                            </TableRow>
-                          ))}
+                                  {scheduleSessionRows.map((session, index) => (
+                                      <TableRow key={session.key} hover>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.dateLabel}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.timeLabel}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.roomLabel}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                          <Chip
+                                            size="small"
+                                            label={session.formatLabel}
+                                            color={session.formatLabel === 'Trực tiếp' ? 'success' : 'info'}
+                                            variant="outlined"
+                                            sx={{ fontWeight: 700 }}
+                                          />
+                                        </TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                          <Chip
+                                            size="small"
+                                            label={session.attendanceLabel}
+                                            color="error"
+                                            variant="outlined"
+                                            sx={{ fontWeight: 700 }}
+                                          />
+                                        </TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.teacherLabel}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.titleLabel}</TableCell>
+                                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.materialLabel}</TableCell>
+                                        <TableCell align="center">
+                                          <Stack direction="row" spacing={1} justifyContent="center">
+                                            <IconButton
+                                              size="small"
+                                              color="primary"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openScheduleDialog(selectedClassId || activeClass?.id || '', {
+                                                  id: session.scheduleId,
+                                                  dayOfWeek: session.dayOfWeek || 'MONDAY',
+                                                  startTime: session.startTime || '18:00',
+                                                  endTime: session.endTime || '20:00',
+                                                });
+                                              }}
+                                            >
+                                              <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                              size="small"
+                                              color="error"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                const idToDelete = session.scheduleId || String(session.key).split('-')[0];
+                                                if (!idToDelete) return;
+                                                if (window.confirm('Bạn có chắc chắn muốn xóa buổi học này?')) {
+                                                  void handleDeleteSchedule(idToDelete);
+                                                }
+                                              }}
+                                            >
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          </Stack>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
                         </TableBody>
                       </Table>
                     </TableContainer>

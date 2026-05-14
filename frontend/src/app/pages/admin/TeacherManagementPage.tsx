@@ -8,6 +8,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  LinearProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -42,13 +43,13 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   School as SchoolIcon,
+  People as PeopleIcon,
   ArrowBack as ArrowBackIcon,
   Class as ClassIcon,
-  EventBusy as EventBusyIcon,
-  People as PeopleIcon,
 } from '@mui/icons-material';
 import { AppUser, classApi, userApi, enrollmentApi, attendanceApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
+import PersonalResumeCard from '../../components/common/PersonalResumeCard';
 
 type ClassItem = {
   id: string;
@@ -147,10 +148,10 @@ export default function TeacherManagementPage() {
   const [classEnrollments, setClassEnrollments] = useState<any[]>([]);
   const [classAttendance, setClassAttendance] = useState<any[]>([]);
   const [classDetailLoading, setClassDetailLoading] = useState(false);
-  
+
   const [scheduleForm, setScheduleForm] = useState<ScheduleForm>({ dayOfWeek: 'MONDAY', startTime: '18:00', endTime: '20:00' });
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
-  
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -256,7 +257,8 @@ export default function TeacherManagementPage() {
     try {
       setDetailLoading(true);
       const allClasses = await classApi.getAll();
-      const filtered = (allClasses || []).filter((cls: any) =>
+      const clsList = Array.isArray(allClasses) ? allClasses : [];
+      const filtered = clsList.filter((cls: any) =>
         cls.teacherId === teacherId || cls.teacherName === selectedTeacher?.fullName
       );
       setTeacherClasses(filtered);
@@ -350,6 +352,15 @@ export default function TeacherManagementPage() {
 
   // Detail View
   if (selectedTeacher) {
+    const teacherStatusLabel = selectedTeacher.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động';
+    const teacherGenderLabel = selectedTeacher.gender === 'MALE'
+      ? 'Nam'
+      : selectedTeacher.gender === 'FEMALE'
+        ? 'Nữ'
+        : selectedTeacher.gender === 'OTHER'
+          ? 'Khác'
+          : 'Chưa cập nhật';
+
     return (
       <Box>
         <Button startIcon={<ArrowBackIcon />} onClick={() => setSelectedTeacher(null)} sx={{ mb: 2 }}>
@@ -357,59 +368,36 @@ export default function TeacherManagementPage() {
         </Button>
 
         <Grid container spacing={3}>
-          {/* Teacher Profile Card */}
           <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Stack alignItems="center" spacing={2} sx={{ py: 2 }}>
-                  <Avatar sx={{ width: 80, height: 80, fontSize: 32, bgcolor: 'primary.main' }}>
-                    {selectedTeacher.fullName?.charAt(0)?.toUpperCase()}
-                  </Avatar>
-                  <Typography variant="h5" fontWeight={700}>{selectedTeacher.fullName}</Typography>
-                  <Chip label={selectedTeacher.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'} color={selectedTeacher.status === 'ACTIVE' ? 'success' : 'default'} />
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack spacing={2}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <EmailIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Email</Typography>
-                      <Typography variant="body2">{selectedTeacher.email}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <PhoneIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Số điện thoại</Typography>
-                      <Typography variant="body2">{selectedTeacher.phone || 'Chưa cập nhật'}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <SchoolIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Vai trò</Typography>
-                      <Typography variant="body2">Giáo viên</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <ClassIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Số lớp đang dạy</Typography>
-                      <Typography variant="body2" fontWeight={700}>{teacherClasses.length}</Typography>
-                    </Box>
-                  </Stack>
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack direction="row" spacing={1}>
-                  <Button fullWidth variant="outlined" startIcon={<EditIcon />} onClick={() => handleOpenEdit(selectedTeacher)}>
+            <PersonalResumeCard
+              name={selectedTeacher.fullName || 'Giảng viên'}
+              avatarUrl={selectedTeacher.avatarUrl}
+              avatarFallback={selectedTeacher.fullName?.charAt(0)?.toUpperCase()}
+              statusLabel={teacherStatusLabel}
+              statusColor={selectedTeacher.status === 'ACTIVE' ? 'success' : 'default'}
+              fields={[
+                { number: 1, label: 'Mã giảng viên', value: selectedTeacher.id.slice(0, 8).toUpperCase() },
+                { number: 2, label: 'Họ và tên', value: selectedTeacher.fullName || '-' },
+                { number: 3, label: 'Giới tính', value: teacherGenderLabel },
+                { number: 4, label: 'Ngày sinh', value: selectedTeacher.dateOfBirth ? formatDateToDDMMYYYY(selectedTeacher.dateOfBirth) : 'Chưa cập nhật' },
+                { number: 5, label: 'Trạng thái', value: teacherStatusLabel },
+                { number: 6, label: 'Email', value: selectedTeacher.email },
+                { number: 7, label: 'Số điện thoại', value: selectedTeacher.phone || 'Chưa cập nhật' },
+                { number: 8, label: 'Vai trò', value: 'Giáo viên' },
+                { number: 9, label: 'Số lớp đang dạy', value: teacherClasses.length },
+                { number: 10, label: 'Địa chỉ', value: selectedTeacher.address || 'Chưa cập nhật', fullWidth: true },
+              ]}
+              actions={
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => handleOpenEdit(selectedTeacher)} sx={{ borderRadius: 2 }}>
                     Sửa
                   </Button>
-                  <Button fullWidth variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => void handleDelete(selectedTeacher.id)}>
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => void handleDelete(selectedTeacher.id)} sx={{ borderRadius: 2 }}>
                     Xóa
                   </Button>
                 </Stack>
-              </CardContent>
-            </Card>
+              }
+            />
           </Grid>
 
           {/* Teacher Classes */}
@@ -427,11 +415,11 @@ export default function TeacherManagementPage() {
                   {teacherClasses.map((cls) => (
                     <Grid item xs={12} sm={6} key={cls.id}>
                       <Card
-                        variant="outlined" 
-                        sx={{ 
+                        variant="outlined"
+                        sx={{
                           cursor: 'pointer',
-                          '&:hover': { boxShadow: 3, borderColor: 'primary.main' }, 
-                          transition: 'all 0.2s' 
+                          '&:hover': { boxShadow: 3, borderColor: 'primary.main' },
+                          transition: 'all 0.2s'
                         }}
                         onClick={() => {
                           setSelectedClassDetail(cls);
@@ -469,10 +457,10 @@ export default function TeacherManagementPage() {
         </Grid>
 
         {/* Class Detail Dialog - Manager Style */}
-        <Dialog 
-          open={!!selectedClassDetail} 
-          onClose={() => setSelectedClassDetail(null)} 
-          maxWidth="lg" 
+        <Dialog
+          open={!!selectedClassDetail}
+          onClose={() => setSelectedClassDetail(null)}
+          maxWidth="lg"
           fullWidth
           PaperProps={{ sx: { borderRadius: 4 } }}
         >
@@ -499,8 +487,8 @@ export default function TeacherManagementPage() {
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">HỌC VIÊN</Typography>
                     <Typography variant="h4" fontWeight={900}>{classEnrollments.length} / {selectedClassDetail?.maxStudents || '-'}</Typography>
-                    <LinearProgress 
-                      variant="determinate" 
+                    <LinearProgress
+                      variant="determinate"
                       value={selectedClassDetail?.maxStudents ? (classEnrollments.length / selectedClassDetail.maxStudents) * 100 : 0}
                       sx={{ mt: 1, borderRadius: 2, height: 6 }}
                     />
@@ -523,8 +511,8 @@ export default function TeacherManagementPage() {
                 </Grid>
               </Grid>
 
-              <Tabs 
-                value={classDetailTab} 
+              <Tabs
+                value={classDetailTab}
                 onChange={(_, v) => setClassDetailTab(v)}
                 sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
               >
@@ -592,7 +580,7 @@ export default function TeacherManagementPage() {
                     Lịch học chi tiết theo từng buổi
                     <Typography variant="caption" color="text.secondary" fontWeight={600}>Tổng số: {scheduleSessionRows.length}</Typography>
                   </Typography>
-                  
+
                   <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 400 }}>
                     <Table size="small" stickyHeader>
                       <TableHead>
@@ -691,11 +679,11 @@ export default function TeacherManagementPage() {
                             <TableRow key={att.id} hover>
                               <TableCell sx={{ fontWeight: 700 }}>{att.studentName}</TableCell>
                               <TableCell align="center">
-                                <Chip 
-                                  size="small" 
-                                  label={att.status} 
-                                  color={att.status === 'PRESENT' ? 'success' : att.status === 'ABSENT' ? 'error' : 'warning'} 
-                                  sx={{ fontWeight: 700 }} 
+                                <Chip
+                                  size="small"
+                                  label={att.status}
+                                  color={att.status === 'PRESENT' ? 'success' : att.status === 'ABSENT' ? 'error' : 'warning'}
+                                  sx={{ fontWeight: 700 }}
                                 />
                               </TableCell>
                               <TableCell>{att.notes || '-'}</TableCell>

@@ -1,27 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Alert, Box, Card, CardContent, Chip, CircularProgress, Grid, Paper, Typography } from '@mui/material';
-import { CalendarMonth as CalendarIcon } from '@mui/icons-material';
+import { Alert, Box, Button, CircularProgress, Dialog, DialogContent, DialogTitle, Stack, Typography } from '@mui/material';
 import { classApi } from '../../../services/api';
 import { RootState } from '../../../store';
-
-const dayLabels: Record<string, string> = {
-  MONDAY: 'Thứ Hai',
-  TUESDAY: 'Thứ Ba',
-  WEDNESDAY: 'Thứ Tư',
-  THURSDAY: 'Thứ Năm',
-  FRIDAY: 'Thứ Sáu',
-  SATURDAY: 'Thứ Bảy',
-  SUNDAY: 'Chủ Nhật',
-};
-
-const dayOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+import WeeklyTimetable, { WeeklyTimetableSession } from '../../components/schedule/WeeklyTimetable';
+import { dayOfWeekIndexMap, getWeekDates, isIsoDateInRange, toIsoDate } from '../../utils/timetable';
 
 export default function TeacherSchedulePage() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<WeeklyTimetableSession | null>(null);
+  const [referenceDate, setReferenceDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     void fetchSchedule();
@@ -40,21 +31,55 @@ export default function TeacherSchedulePage() {
     }
   };
 
-  const grouped = useMemo(() => {
-    const result: Record<string, any[]> = {};
-    classes.forEach((cls) => {
+  const sessions = useMemo<WeeklyTimetableSession[]>(() => {
+    const weekDates = getWeekDates(referenceDate);
+    const items: WeeklyTimetableSession[] = [];
+
+    classes.forEach((cls: any) => {
+      const startDateIso = cls.startDate || '';
+      const endDateIso = cls.endDate || '';
+
       (cls.schedules || []).forEach((schedule: any) => {
-        const day = schedule.dayOfWeek || 'UNKNOWN';
-        result[day] = result[day] || [];
-        result[day].push({ ...schedule, className: cls.name, roomName: cls.roomName, status: cls.status });
+        const dayIndex = dayOfWeekIndexMap[schedule.dayOfWeek?.toUpperCase?.() || ''];
+        if (dayIndex === undefined) {
+          return;
+        }
+
+        const sessionDate = weekDates[dayIndex];
+        const sessionDateIso = toIsoDate(sessionDate);
+        if (!isIsoDateInRange(sessionDateIso, startDateIso, endDateIso)) {
+          return;
+        }
+
+        items.push({
+          key: `${cls.id}-${schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`}-${sessionDateIso}`,
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          title: cls.name || 'Lớp học',
+          subtitle: cls.courseName || cls.roomName || '',
+          roomLabel: cls.roomName || '-',
+          teacherLabel: cls.teacherName || '',
+          statusLabel: cls.status || '',
+          dateLabel: `${sessionDate.getDate().toString().padStart(2, '0')}/${(sessionDate.getMonth() + 1).toString().padStart(2, '0')}`,
+        });
       });
     });
-    return result;
-  }, [classes]);
+
+    return items.sort((left, right) => {
+      const leftDay = dayOfWeekIndexMap[left.dayOfWeek.toUpperCase()] ?? 0;
+      const rightDay = dayOfWeekIndexMap[right.dayOfWeek.toUpperCase()] ?? 0;
+      if (leftDay !== rightDay) {
+        return leftDay - rightDay;
+      }
+
+      return left.startTime.localeCompare(right.startTime);
+    });
+  }, [classes, referenceDate]);
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
+      <Typography variant="h4" gutterBottom fontWeight={800}>
         Lịch dạy của tôi
       </Typography>
 
@@ -65,43 +90,73 @@ export default function TeacherSchedulePage() {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={3}>
-          {dayOrder.map((day) => (
-            <Grid item xs={12} key={day}>
-              <Paper sx={{ p: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <CalendarIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6" fontWeight={600}>{dayLabels[day]}</Typography>
-                </Box>
-
-                <Grid container spacing={2}>
-                  {(grouped[day] || []).length === 0 && (
-                    <Grid item xs={12}>
-                      <Typography variant="body2" color="text.secondary">Không có lịch dạy</Typography>
-                    </Grid>
-                  )}
-                  {(grouped[day] || []).map((item, index) => (
-                    <Grid item xs={12} md={4} key={`${day}-${index}`}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Typography variant="h6" color="primary" gutterBottom>
-                            {item.startTime}-{item.endTime}
-                          </Typography>
-                          <Typography variant="subtitle1" fontWeight={600}>{item.className || 'Lớp học'}</Typography>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Phòng: {item.roomName || '-'}
-                          </Typography>
-                          <Chip label={item.status || 'UNKNOWN'} size="small" color={item.status === 'ONGOING' ? 'success' : 'default'} />
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
+        <WeeklyTimetable
+          title="Thời khóa biểu giảng dạy"
+          emptyMessage="Chưa có lịch dạy trong tuần này."
+          sessions={sessions}
+          referenceDate={referenceDate}
+          onWeekChange={(startIso, endIso) => {
+            // update referenceDate when timetable week changes
+            // derive a Date from startIso (YYYY-MM-DD)
+            const parts = startIso.split('-').map(Number);
+            if (parts.length === 3) setReferenceDate(new Date(parts[0], parts[1] - 1, parts[2]));
+          }}
+          onSessionClick={(session) => setSelectedSession(session)}
+        />
       )}
+
+      <Dialog
+        open={!!selectedSession}
+        onClose={() => setSelectedSession(null)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4 } }}
+      >
+        <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+            <Box>
+              <Typography variant="h6" fontWeight={900} color="primary.main">
+                Chi tiết buổi học
+              </Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
+                {selectedSession?.dateLabel} • {selectedSession?.startTime} - {selectedSession?.endTime}
+              </Typography>
+            </Box>
+            <Button variant="outlined" size="small" onClick={() => setSelectedSession(null)} sx={{ borderRadius: 2 }}>
+              Đóng
+            </Button>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 3 }}>
+          {selectedSession && (
+            <Stack spacing={1.5}>
+              <Typography variant="body1" fontWeight={800}>
+                {selectedSession.title}
+              </Typography>
+              {selectedSession.subtitle && (
+                <Typography variant="body2" color="text.secondary">
+                  {selectedSession.subtitle}
+                </Typography>
+              )}
+              {selectedSession.teacherLabel && (
+                <Typography variant="body2" color="text.secondary">
+                  GV: {selectedSession.teacherLabel}
+                </Typography>
+              )}
+              {selectedSession.roomLabel && (
+                <Typography variant="body2" color="text.secondary">
+                  Phòng: {selectedSession.roomLabel}
+                </Typography>
+              )}
+              {selectedSession.statusLabel && (
+                <Typography variant="body2" color="text.secondary">
+                  Trạng thái: {selectedSession.statusLabel}
+                </Typography>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

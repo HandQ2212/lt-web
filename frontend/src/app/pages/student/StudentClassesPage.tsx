@@ -33,6 +33,8 @@ import { EventBusy as EventBusyIcon, Send as SendIcon } from '@mui/icons-materia
 import { attendanceApi, classApi, enrollmentApi } from '../../../services/api';
 import { RootState } from '../../../store';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
+import WeeklyTimetable, { WeeklyTimetableSession } from '../../components/schedule/WeeklyTimetable';
+import { dayOfWeekIndexMap, dayOfWeekLabelMap, getWeekDates, isIsoDateInRange, toIsoDate } from '../../utils/timetable';
 
 type ClassItem = {
   id: string;
@@ -68,26 +70,6 @@ type ScheduleSessionRow = {
   dateIso: string;
 };
 
-const dayOfWeekIndexMap: Record<string, number> = {
-  SUNDAY: 0,
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
-};
-
-const dayOfWeekLabelMap: Record<string, string> = {
-  SUNDAY: 'Chủ Nhật',
-  MONDAY: 'Thứ Hai',
-  TUESDAY: 'Thứ Ba',
-  WEDNESDAY: 'Thứ Tư',
-  THURSDAY: 'Thứ Năm',
-  FRIDAY: 'Thứ Sáu',
-  SATURDAY: 'Thứ Bảy',
-};
-
 const formatSessionDateLabel = (date: Date) => {
   const raw = date.toLocaleDateString('vi-VN', {
     weekday: 'long',
@@ -119,6 +101,7 @@ export default function StudentClassesPage() {
   });
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [referenceDate, setReferenceDate] = useState<Date | undefined>(undefined);
 
   const selectedClass = selectedEnrollment ? classesMap[selectedEnrollment.classId] : null;
 
@@ -304,6 +287,53 @@ export default function StudentClassesPage() {
     return rows.sort((l, r) => l.sortTime - r.sortTime);
   }, [selectedClass]);
 
+  const weeklySessions = useMemo<WeeklyTimetableSession[]>(() => {
+    if (!selectedClass?.schedules?.length) {
+      return [];
+    }
+
+    const weekDates = getWeekDates(referenceDate);
+    const sessions: WeeklyTimetableSession[] = [];
+    const startDateIso = selectedClass.startDate || '';
+    const endDateIso = selectedClass.endDate || '';
+
+    selectedClass.schedules.forEach((schedule) => {
+      const dayIndex = dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()];
+      if (dayIndex === undefined) {
+        return;
+      }
+
+      const sessionDate = weekDates[dayIndex];
+      const sessionDateIso = toIsoDate(sessionDate);
+      if (!isIsoDateInRange(sessionDateIso, startDateIso, endDateIso)) {
+        return;
+      }
+
+      sessions.push({
+        key: `${schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`}-${sessionDateIso}`,
+        dayOfWeek: schedule.dayOfWeek,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        title: selectedClass.name || 'Lớp học',
+        subtitle: selectedClass.courseName || selectedClass.teacherName || '',
+        roomLabel: selectedClass.roomName || '-',
+        teacherLabel: selectedClass.teacherName || '',
+        statusLabel: selectedClass.status || '',
+        dateLabel: `${String(sessionDate.getDate()).padStart(2, '0')}/${String(sessionDate.getMonth() + 1).padStart(2, '0')}`,
+      });
+    });
+
+    return sessions.sort((left, right) => {
+      const leftDay = dayOfWeekIndexMap[left.dayOfWeek.toUpperCase()] ?? 0;
+      const rightDay = dayOfWeekIndexMap[right.dayOfWeek.toUpperCase()] ?? 0;
+      if (leftDay !== rightDay) {
+        return leftDay - rightDay;
+      }
+
+      return left.startTime.localeCompare(right.startTime);
+    });
+  }, [selectedClass, referenceDate]);
+
   return (
     <Box sx={{ pb: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -461,42 +491,27 @@ export default function StudentClassesPage() {
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                       <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
                       <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Tổng số: {scheduleSessionRows.length}
+                        Tổng số: {weeklySessions.length}
                       </Typography>
                     </Stack>
-                    {scheduleSessionRows.length ? (
-                      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
-                        <Table size="small" stickyHeader>
-                          <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>TT</TableCell>
-                              <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Ngày học</TableCell>
-                              <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Tiết học</TableCell>
-                              <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Phòng học</TableCell>
-                              <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Hình thức</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {scheduleSessionRows.map((session, index) => (
-                              <TableRow key={session.key} hover>
-                                <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
-                                <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.dateLabel}</TableCell>
-                                <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.timeLabel}</TableCell>
-                                <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.roomLabel}</TableCell>
-                                <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                                  <Chip
-                                    size="small"
-                                    label={session.formatLabel}
-                                    color={session.formatLabel === 'Trực tiếp' ? 'success' : 'info'}
-                                    variant="outlined"
-                                    sx={{ fontWeight: 700 }}
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                    {weeklySessions.length ? (
+                      <WeeklyTimetable
+                        title="Thời khóa biểu lớp học"
+                        emptyMessage="Lớp học này chưa được xếp lịch trong tuần hiện tại."
+                        sessions={weeklySessions}
+                        referenceDate={referenceDate}
+                        onWeekChange={(startIso) => {
+                          const parts = startIso.split('-').map(Number);
+                          if (parts.length === 3) setReferenceDate(new Date(parts[0], parts[1] - 1, parts[2]));
+                        }}
+                        onSessionClick={(session) => {
+                          setSnackbar({
+                            open: true,
+                            message: `${session.title} • ${session.dateLabel} • ${session.startTime} - ${session.endTime}`,
+                            severity: 'success',
+                          });
+                        }}
+                      />
                     ) : (
                       <Alert severity="info" sx={{ borderRadius: 2 }}>Lớp học này chưa được xếp lịch.</Alert>
                     )}

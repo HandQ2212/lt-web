@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Alert,
@@ -42,6 +42,8 @@ import {
 import { RootState } from '../../../store';
 import { courseApi, leadApi, profileApi } from '../../../services/api';
 import { setCurrentUser } from '../../../store/slices/authSlice';
+import { formatDateToDDMMYYYY } from '../../utils/dateFormatter';
+import PersonalResumeCard from '../../components/common/PersonalResumeCard';
 
 type CourseOption = {
   id: string;
@@ -102,6 +104,7 @@ export default function ProfilePage() {
 
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState(user?.avatarUrl || '');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setFormData({
@@ -200,6 +203,19 @@ export default function ProfilePage() {
 
   const interestedCourseIds = new Set((leadProfile?.interests || []).map((interest) => interest.courseId));
   const availableCourses = courses.filter((course) => !interestedCourseIds.has(course.id));
+  const roleLabel = user?.role === 'STUDENT'
+    ? 'Học viên'
+    : user?.role === 'ADMIN'
+      ? 'Quản trị viên'
+      : user?.role === 'MANAGER'
+        ? 'Quản trị viên'
+        : user?.role === 'TEACHER'
+          ? 'Giảng viên'
+          : user?.role === 'ACCOUNTANT'
+            ? 'Kế toán viên'
+            : 'Khách hàng';
+  const genderLabel = formData.gender === 'MALE' ? 'Nam' : formData.gender === 'FEMALE' ? 'Nữ' : formData.gender === 'OTHER' ? 'Khác' : 'Chưa cập nhật';
+  const statusLabel = user?.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động';
 
   return (
     <Box sx={{ pb: 6 }}>
@@ -212,177 +228,129 @@ export default function ProfilePage() {
         </Typography>
       </Box>
 
-      <Grid container spacing={4}>
-        {/* Left Column: Avatar & Basic Info */}
-        <Grid item xs={12} lg={4}>
-          <Paper sx={{ p: 4, borderRadius: 4, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.05)', height: '100%' }}>
-            <Box sx={{ position: 'relative', width: 150, height: 150, mx: 'auto', mb: 3 }}>
-              <Avatar
-                src={user?.avatarUrl}
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                  border: '4px solid white',
-                  bgcolor: 'primary.main',
-                  fontSize: 64,
-                }}
-              >
-                {(user?.fullName?.charAt(0) || 'U').toUpperCase()}
-              </Avatar>
-              <IconButton 
-                size="small"
-                onClick={() => setAvatarDialogOpen(true)}
-                sx={{ 
-                  position: 'absolute', 
-                  bottom: 5, 
-                  right: 5, 
-                  bgcolor: 'primary.main', 
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)'
-                }}
-              >
-                <PhotoCameraIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            
-            <Typography variant="h5" fontWeight={800} gutterBottom>{user?.fullName}</Typography>
-            <Chip 
-              label={
-                user?.role === 'STUDENT' ? 'Học viên' : 
-                user?.role === 'ADMIN' ? 'Quản trị viên' : 
-                user?.role === 'MANAGER' ? 'Quản trị viên' : 
-                user?.role === 'TEACHER' ? 'Giảng viên' : 
-                user?.role === 'ACCOUNTANT' ? 'Kế toán viên' : 
-                'Khách hàng'
-              } 
-              color="primary" 
-              variant="outlined"
-              sx={{ fontWeight: 700, borderRadius: 2, mb: 2 }} 
-            />
-            
-            <Divider sx={{ my: 3, borderStyle: 'dashed' }} />
-            
-            <Stack spacing={2} sx={{ textAlign: 'left' }}>
-              <Box>
-                <Typography variant="caption" color="text.secondary" display="block">Email đăng ký</Typography>
-                <Typography variant="body2" fontWeight={600}>{user?.email}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary" display="block">Ngày tham gia</Typography>
-                <Typography variant="body2" fontWeight={600}>Cập nhật lần cuối: {new Date().toLocaleDateString('vi-VN')}</Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Grid>
-
-        {/* Right Column: Detailed Info & Security */}
-        <Grid item xs={12} lg={8}>
-          <Stack spacing={4}>
-            {/* Personal Details Card */}
-            <Card sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', overflow: 'visible' }}>
-              <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                  <Typography variant="h6" fontWeight={800} display="flex" alignItems="center">
-                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} /> Thông tin chi tiết
-                  </Typography>
-                  {!isEditing ? (
-                    <Button 
-                      variant="contained" 
-                      startIcon={<EditIcon />} 
-                      onClick={() => setIsEditing(true)}
-                      sx={{ borderRadius: 2, px: 3 }}
-                    >
-                      Chỉnh sửa
-                    </Button>
-                  ) : (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button variant="outlined" onClick={() => setIsEditing(false)} sx={{ borderRadius: 2 }}>Hủy</Button>
-                      <Button 
-                        variant="contained" 
-                        startIcon={<SaveIcon />} 
-                        onClick={handleSave} 
-                        disabled={saving}
-                        sx={{ borderRadius: 2 }}
-                      >
-                        Lưu thông tin
-                      </Button>
-                    </Box>
-                  )}
+      <Stack spacing={4}>
+        {!isEditing ? (
+          <PersonalResumeCard
+            name={user?.fullName || 'Người dùng'}
+            avatarUrl={user?.avatarUrl}
+            avatarFallback={user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+            statusLabel={statusLabel}
+            statusColor={user?.status === 'ACTIVE' ? 'success' : 'default'}
+            fields={[
+              { number: 1, label: 'Mã người dùng', value: user?.id?.slice(0, 8)?.toUpperCase() || '-' },
+              { number: 2, label: 'Họ và tên', value: user?.fullName || '-' },
+              { number: 3, label: 'Giới tính', value: genderLabel },
+              { number: 4, label: 'Ngày sinh', value: user?.dateOfBirth ? formatDateToDDMMYYYY(user.dateOfBirth) : 'Chưa cập nhật' },
+              { number: 5, label: 'Trạng thái', value: statusLabel },
+              { number: 6, label: 'Vai trò', value: roleLabel },
+              { number: 7, label: 'Số điện thoại', value: user?.phone || 'Chưa cập nhật' },
+              { number: 8, label: 'Email', value: user?.email || '-' },
+              { number: 9, label: 'Địa chỉ thường trú', value: user?.address || 'Chưa cập nhật', fullWidth: true },
+            ]}
+            actions={
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Button variant="contained" startIcon={<EditIcon />} onClick={() => setIsEditing(true)} sx={{ borderRadius: 2 }}>
+                  Chỉnh sửa hồ sơ
+                </Button>
+                <Button variant="outlined" startIcon={<PhotoCameraIcon />} onClick={() => setAvatarDialogOpen(true)} sx={{ borderRadius: 2 }}>
+                  Đổi ảnh đại diện
+                </Button>
+              </Stack>
+            }
+          />
+        ) : (
+          <Card sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', overflow: 'visible' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h6" fontWeight={800} display="flex" alignItems="center">
+                  <PersonIcon sx={{ mr: 1, color: 'primary.main' }} /> Cập nhật thông tin
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button variant="outlined" onClick={() => setIsEditing(false)} sx={{ borderRadius: 2 }}>Hủy</Button>
+                  <Button 
+                    variant="contained" 
+                    startIcon={<SaveIcon />} 
+                    onClick={handleSave} 
+                    disabled={saving}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Lưu thông tin
+                  </Button>
                 </Box>
+              </Box>
 
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Họ và tên"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      variant={isEditing ? "outlined" : "filled"}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Số điện thoại"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      variant={isEditing ? "outlined" : "filled"}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Ngày sinh"
-                      name="dateOfBirth"
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      variant={isEditing ? "outlined" : "filled"}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Giới tính"
-                      name="gender"
-                      select
-                      value={formData.gender}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      variant={isEditing ? "outlined" : "filled"}
-                    >
-                      <MenuItem value="MALE">Nam</MenuItem>
-                      <MenuItem value="FEMALE">Nữ</MenuItem>
-                      <MenuItem value="OTHER">Khác</MenuItem>
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Địa chỉ thường trú"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      variant={isEditing ? "outlined" : "filled"}
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Họ và tên"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    variant={isEditing ? "outlined" : "filled"}
+                  />
                 </Grid>
-              </CardContent>
-            </Card>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Số điện thoại"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    variant={isEditing ? "outlined" : "filled"}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Ngày sinh"
+                    name="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    variant={isEditing ? "outlined" : "filled"}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Giới tính"
+                    name="gender"
+                    select
+                    value={formData.gender}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    variant={isEditing ? "outlined" : "filled"}
+                  >
+                    <MenuItem value="MALE">Nam</MenuItem>
+                    <MenuItem value="FEMALE">Nữ</MenuItem>
+                    <MenuItem value="OTHER">Khác</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Địa chỉ thường trú"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    variant={isEditing ? "outlined" : "filled"}
+                    multiline
+                    rows={2}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Security Card */}
-            <Card sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
+        {/* Security Card */}
+        <Card sx={{ borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
               <CardContent sx={{ p: 4 }}>
                 <Typography variant="h6" fontWeight={800} sx={{ mb: 4 }} display="flex" alignItems="center">
                   <LockIcon sx={{ mr: 1, color: 'primary.main' }} /> Bảo mật & Đổi mật khẩu
@@ -428,17 +396,39 @@ export default function ProfilePage() {
                 </Button>
               </CardContent>
             </Card>
-          </Stack>
-        </Grid>
-      </Grid>
+      </Stack>
 
       {/* Avatar Edit Dialog */}
       <Dialog open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
         <DialogTitle sx={{ fontWeight: 800 }}>Cập nhật ảnh đại diện</DialogTitle>
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Vui lòng dán đường dẫn (URL) hình ảnh bạn muốn sử dụng làm ảnh đại diện.
+            Bạn có thể tải ảnh lên từ máy hoặc dán đường dẫn (URL). Ảnh sẽ được xem trước trước khi lưu.
           </Typography>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+            <input
+              ref={(el) => (fileInputRef.current = el)}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                if (f.size > 2 * 1024 * 1024) {
+                  setSnackbar({ open: true, message: 'Kích thước ảnh quá lớn (tối đa 2MB)', severity: 'error' });
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = reader.result as string;
+                  setNewAvatarUrl(result);
+                };
+                reader.readAsDataURL(f);
+              }}
+            />
+            <Button variant="outlined" onClick={() => fileInputRef.current?.click()} startIcon={<PhotoCameraIcon />}>Tải ảnh lên</Button>
+            <Typography variant="caption" color="text.secondary">hoặc dán URL bên dưới</Typography>
+          </Box>
           <TextField
             fullWidth
             label="Đường dẫn ảnh (URL)"

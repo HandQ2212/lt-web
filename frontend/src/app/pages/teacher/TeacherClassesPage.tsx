@@ -78,6 +78,7 @@ type AttendanceItem = {
 type ScheduleSessionRow = {
   key: string;
   sortTime: number;
+  attendanceDate: string;
   dateLabel: string;
   timeLabel: string;
   dayOfWeek: string;
@@ -289,6 +290,7 @@ export default function TeacherClassesPage() {
           rows.push({
             key: `${schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`}-${occurrenceDateKey}`,
             sortTime: occurrence.getTime(),
+            attendanceDate: occurrenceDateKey,
             dateLabel: formatSessionDateLabel(new Date(occurrence)),
             timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
             dayOfWeek: schedule.dayOfWeek,
@@ -307,6 +309,7 @@ export default function TeacherClassesPage() {
       rows.push({
         key: schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`,
         sortTime: dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()] || 0,
+        attendanceDate: todayIso,
         dateLabel: labelDay,
         timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
         dayOfWeek: schedule.dayOfWeek,
@@ -685,7 +688,7 @@ export default function TeacherClassesPage() {
                                   const newStatus = e.target.value;
                                   setAttendanceForm((prev) => ({ ...prev, [attendanceKey]: newStatus }));
                                   // Auto save
-                                  handleMarkAttendance(enrollment.id, newStatus, sessionAttendanceDialog.session?.dateLabel?.split(' ')[1] || todayIso);
+                                  handleMarkAttendance(enrollment.id, newStatus, sessionAttendanceDialog.session?.attendanceDate || todayIso);
                                 }}
                                 sx={{ width: 120 }}
                               >

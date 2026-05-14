@@ -35,7 +35,14 @@ export default function DashboardLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8f9fa' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        background:
+          'radial-gradient(circle at top right, rgba(29, 78, 216, 0.08), transparent 30%), radial-gradient(circle at left top, rgba(15, 118, 110, 0.06), transparent 24%), linear-gradient(180deg, #f7faff 0%, #eef3f9 100%)',
+      }}
+    >
       <DashboardHeader 
         onMenuClick={toggleSidebar} 
         // Header should shift according to sidebar width on desktop
@@ -71,16 +78,31 @@ export default function DashboardLayout() {
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden'
+          overflow: 'hidden',
         }}
       >
         <Toolbar />
-        <Box sx={{ 
-          p: { xs: 2, sm: 3, md: 4, lg: 5 }, 
-          flexGrow: 1,
-          overflowY: 'auto'
-        }}>
-          <Outlet />
+        <Box
+          sx={{
+            p: { xs: 2, sm: 3, md: 4, lg: 5 },
+            flexGrow: 1,
+            overflowY: 'auto',
+            position: 'relative',
+          }}
+        >
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0)), radial-gradient(circle at 100% 0%, rgba(29, 78, 216, 0.06), transparent 20%)',
+            }}
+          />
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Outlet />
+          </Box>
         </Box>
       </Box>
       <ChatWidget />

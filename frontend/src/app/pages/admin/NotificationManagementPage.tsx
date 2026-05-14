@@ -11,6 +11,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   MenuItem,
   Paper,
@@ -18,9 +19,10 @@ import {
   Stack,
   TextField,
   Typography,
+  InputAdornment,
 } from '@mui/material';
 import { Add as AddIcon, Search as SearchIcon, Send as SendIcon } from '@mui/icons-material';
-import { announcementApi, branchApi, classApi, userApi } from '../../../services/api';
+import { announcementApi, classApi } from '../../../services/api';
 import { formatDateTimeToPattern } from '../../utils/dateFormatter';
 
 type AnnouncementItem = {
@@ -36,6 +38,7 @@ type AnnouncementItem = {
   createdAt?: string;
   expiresAt?: string;
   isActive?: boolean;
+  active?: boolean;
   isDelivered?: boolean;
 };
 
@@ -67,9 +70,7 @@ export default function NotificationManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [form, setForm] = useState<AnnouncementForm>(defaultForm);
-  const [teachers, setTeachers] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
-  const [branches, setBranches] = useState<any[]>([]);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -87,17 +88,13 @@ export default function NotificationManagementPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [announcementResponse, userResponse, classResponse, branchResponse] = await Promise.all([
+      const [announcementResponse, classResponse] = await Promise.all([
         announcementApi.getAll({ size: 100, sort: 'createdAt,desc' }),
-        userApi.getAll({ size: 200 }),
         classApi.getAll(),
-        branchApi.getAll(),
       ]);
 
-      setAnnouncements(announcementResponse.data || []);
-      setTeachers((userResponse?.content || []).filter((user: any) => user.role === 'TEACHER'));
-      setClasses(classResponse || []);
-      setBranches(branchResponse || []);
+      setAnnouncements(Array.isArray(announcementResponse) ? announcementResponse : []);
+      setClasses(Array.isArray(classResponse) ? classResponse : []);
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -190,71 +187,94 @@ export default function NotificationManagementPage() {
   const counts = useMemo(() => {
     return {
       total: announcements.length,
-      active: announcements.filter((item) => item.isActive).length,
+      active: announcements.filter((item) => (item.active ?? item.isActive) === true).length,
       delivered: announcements.filter((item) => item.isDelivered).length,
     };
   }, [announcements]);
 
+  const isAnnouncementActive = (item: AnnouncementItem) => item.active ?? item.isActive ?? false;
+
   return (
     <Box sx={{ pb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, gap: 2 }}>
-        <Box>
-          <Typography variant="h4" fontWeight={800} color="primary.main">
-            Quản lý Thông báo
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Tạo và quản lý các thông báo nội bộ, chương trình khuyến mãi trên toàn hệ thống.
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenDialog(true)} sx={{ borderRadius: 2, px: 3, fontWeight: 700 }}>
-          Tạo thông báo
-        </Button>
-      </Box>
+      <Paper
+        sx={{
+          p: { xs: 2, sm: 3 },
+          mb: 3,
+          borderRadius: 4,
+          border: '1px solid rgba(15, 23, 42, 0.08)',
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
+          bgcolor: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2} sx={{ mb: 2.5 }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} color="primary.main">
+              Quản lý Thông báo
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 760 }}>
+              Tạo, lọc và theo dõi thông báo nội bộ theo phạm vi, trạng thái và thời gian hết hạn.
+            </Typography>
+          </Box>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenDialog(true)} sx={{ borderRadius: 2, px: 3, fontWeight: 800, whiteSpace: 'nowrap' }}>
+            Tạo thông báo
+          </Button>
+        </Stack>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, borderRadius: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-              Tổng số thông báo
-            </Typography>
-            <Typography variant="h4" fontWeight={800}>
-              {counts.total}
-            </Typography>
-          </Paper>
+        <Grid container spacing={2} sx={{ mb: 2.5 }}>
+          <Grid item xs={12} sm={4}>
+            <Paper sx={{ p: 2.25, borderRadius: 3, bgcolor: 'rgba(25,118,210,0.06)', border: '1px solid rgba(25,118,210,0.14)' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
+                Tổng số
+              </Typography>
+              <Typography variant="h4" fontWeight={900} color="primary.main" sx={{ lineHeight: 1.05 }}>
+                {counts.total}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper sx={{ p: 2.25, borderRadius: 3, bgcolor: 'rgba(46,125,50,0.06)', border: '1px solid rgba(46,125,50,0.14)' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
+                Đang hoạt động
+              </Typography>
+              <Typography variant="h4" fontWeight={900} color="success.main" sx={{ lineHeight: 1.05 }}>
+                {counts.active}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper sx={{ p: 2.25, borderRadius: 3, bgcolor: 'rgba(2,136,209,0.06)', border: '1px solid rgba(2,136,209,0.14)' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
+                Đã gửi thành công
+              </Typography>
+              <Typography variant="h4" fontWeight={900} color="info.main" sx={{ lineHeight: 1.05 }}>
+                {counts.delivered}
+              </Typography>
+            </Paper>
+          </Grid>
         </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, borderRadius: 3, borderLeft: '4px solid', borderLeftColor: 'success.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-              Đang hoạt động
-            </Typography>
-            <Typography variant="h4" fontWeight={800} color="success.main">
-              {counts.active}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{ p: 3, borderRadius: 3, borderLeft: '4px solid', borderLeftColor: 'info.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-              Đã gửi thành công
-            </Typography>
-            <Typography variant="h4" fontWeight={800} color="info.main">
-              {counts.delivered}
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
 
-      <Box sx={{ mb: 4 }}>
         <TextField
           fullWidth
           placeholder="Tìm kiếm theo tiêu đề, nội dung hoặc loại thông báo..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           size="medium"
-          InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
-          sx={{ bgcolor: 'white', borderRadius: 2, '& fieldset': { borderRadius: 2 } }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 3,
+              bgcolor: 'background.paper',
+            },
+          }}
         />
-      </Box>
+      </Paper>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
@@ -267,52 +287,97 @@ export default function NotificationManagementPage() {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3}>
+        <Stack spacing={2.5}>
           {filteredAnnouncements.map((item) => (
-            <Grid item xs={12} md={6} lg={4} key={item.id}>
-              <Card sx={{ height: '100%', borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ p: 3, flexGrow: 1 }}>
-                  <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
-                    <Chip 
-                      label={item.type === 'URGENT' ? 'Khẩn cấp' : item.type === 'PROMO' ? 'Khuyến mãi' : 'Thông tin'} 
-                      size="small" 
-                      color={getTypeColor(item.type)} 
-                      sx={{ fontWeight: 800 }}
-                    />
-                    <Chip label={getScopeLabel(item.scope)} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                    <Chip
-                      label={item.isActive ? 'Đang mở' : 'Đã tắt'}
-                      size="small"
-                      color={item.isActive ? 'success' : 'default'}
-                      variant={item.isActive ? 'filled' : 'outlined'}
-                      sx={{ fontWeight: 700 }}
-                    />
-                  </Stack>
-                  <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5, color: 'text.primary' }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {item.message}
-                  </Typography>
-                  <Divider sx={{ mb: 2, opacity: 0.6 }} />
-                  <Stack spacing={0.8}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                      Người tạo: <span style={{ color: '#333' }}>{item.createdByFullName || item.createdByEmail || '-'}</span>
+            <Card
+              key={item.id}
+              sx={{
+                borderRadius: 4,
+                overflow: 'hidden',
+                boxShadow: '0 8px 24px rgba(15,23,42,0.06)',
+                border: '1px solid rgba(15,23,42,0.06)',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 14px 32px rgba(15,23,42,0.10)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2.25} alignItems={{ xs: 'flex-start', md: 'flex-start' }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
+                      <Chip
+                        label={item.type === 'URGENT' ? 'Khẩn cấp' : item.type === 'PROMO' ? 'Khuyến mãi' : 'Thông tin'}
+                        size="small"
+                        color={getTypeColor(item.type)}
+                        sx={{ fontWeight: 800 }}
+                      />
+                      <Chip label={getScopeLabel(item.scope)} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
+                      <Chip
+                          label={isAnnouncementActive(item) ? 'Đang hoạt động' : 'Đã tắt'}
+                        size="small"
+                          color={isAnnouncementActive(item) ? 'success' : 'default'}
+                          variant={isAnnouncementActive(item) ? 'filled' : 'outlined'}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </Stack>
+
+                    <Typography variant="h6" fontWeight={900} sx={{ mb: 1, color: 'text.primary' }}>
+                      {item.title}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                      Ngày tạo: <span style={{ color: '#333' }}>{formatDateTimeToPattern(item.createdAt || '', 'dd/MM/yyyy HH:mm')}</span>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mb: 2,
+                        lineHeight: 1.7,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {item.message}
                     </Typography>
-                    {item.expiresAt && (
-                      <Typography variant="caption" color="error.main" sx={{ fontWeight: 700 }}>
-                        Hết hạn: {formatDateTimeToPattern(item.expiresAt, 'dd/MM/yyyy HH:mm')}
+                  </Box>
+
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      minWidth: { xs: '100%', md: 260 },
+                      p: 2,
+                      borderRadius: 3,
+                      bgcolor: 'rgba(248,250,252,0.9)',
+                      borderColor: 'rgba(15,23,42,0.08)',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
+                      Thông tin bổ sung
+                    </Typography>
+                    <Divider sx={{ my: 1.5 }} />
+                    <Stack spacing={1}>
+                      <Typography variant="body2" color="text.secondary">
+                        Người tạo: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{item.createdByFullName || item.createdByEmail || '-'}</Box>
                       </Typography>
-                    )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
+                      <Typography variant="body2" color="text.secondary">
+                        Ngày tạo: <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>{formatDateTimeToPattern(item.createdAt || '', 'dd/MM/yyyy HH:mm')}</Box>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Trạng thái: <Box component="span" sx={{ color: isAnnouncementActive(item) ? 'success.main' : 'text.primary', fontWeight: 700 }}>{isAnnouncementActive(item) ? 'Đang hoạt động' : 'Đã tắt'}</Box>
+                      </Typography>
+                      {item.expiresAt && (
+                        <Typography variant="body2" color="error.main" fontWeight={700}>
+                          Hết hạn: {formatDateTimeToPattern(item.expiresAt, 'dd/MM/yyyy HH:mm')}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Paper>
+                </Stack>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+        </Stack>
       )}
 
       {/* Create Notification Dialog */}

@@ -1,6 +1,13 @@
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/inter/800.css';
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { responsiveFontSizes } from '@mui/material/styles';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { store } from '../store';
@@ -55,19 +62,92 @@ import TeacherPaymentsPage from './pages/finance/TeacherPaymentsPage';
 import FinanceOperationsPage from './pages/finance/FinanceOperationsPage';
 import { getDefaultRouteByRole } from './utils/roleRouting';
 
-const theme = createTheme({
+let theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#1d4ed8',
+      dark: '#163fb0',
+      light: '#3b82f6',
     },
     secondary: {
-      main: '#4caf50',
+      main: '#0f766e',
+      light: '#14b8a6',
+    },
+    background: {
+      default: '#f4f7fb',
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#0f172a',
+      secondary: '#52617a',
     },
   },
+  shape: {
+    borderRadius: 4,
+  },
   typography: {
-    fontFamily: 'Inter, Roboto, sans-serif',
+    fontFamily: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    h1: { fontWeight: 800 },
+    h2: { fontWeight: 800 },
+    h3: { fontWeight: 800 },
+    h4: { fontWeight: 800 },
+    h5: { fontWeight: 700 },
+    h6: { fontWeight: 700 },
+    subtitle1: { fontWeight: 700 },
+    subtitle2: { fontWeight: 700 },
+    button: { fontWeight: 700, textTransform: 'none' },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+        },
+        body: {
+          background:
+            'radial-gradient(circle at top left, rgba(29, 78, 216, 0.08), transparent 28%), linear-gradient(180deg, #f7faff 0%, #f4f7fb 100%)',
+          backgroundAttachment: 'fixed',
+        },
+        '*': {
+          boxSizing: 'border-box',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 12px 40px rgba(15, 23, 42, 0.08)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 700,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+        },
+      },
+    },
   },
 });
+
+theme = responsiveFontSizes(theme);
 
 export default function App() {
   return (

@@ -3,8 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   CircularProgress,
   Dialog,
@@ -44,7 +42,7 @@ import {
   Info as InfoIcon,
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
-import { classApi, courseApi, leadApi } from '../../../services/api';
+import { classApi, leadApi } from '../../../services/api';
 
 type LeadStatus = 'NEW' | 'INTERESTED' | 'CONSULTING' | 'AGREED' | 'PAID' | 'CONVERTED' | 'REJECTED';
 
