@@ -18,7 +18,7 @@ public class ClassDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ClassRequest {
-        private UUID courseId;
+        private UUID levelId;
         private UUID roomId;
         private UUID teacherId;
         private UUID branchId;
@@ -36,6 +36,8 @@ public class ClassDto {
     public static class ClassResponse {
         private UUID id;
         private String name;
+        private UUID levelId;
+        private String levelName;
         private UUID courseId;
         private String courseName;
         private UUID roomId;
@@ -48,6 +50,7 @@ public class ClassDto {
         private LocalDate startDate;
         private LocalDate endDate;
         private Integer maxStudents;
+        private Integer currentStudents;
         private List<ScheduleResponse> schedules;
     }
 }

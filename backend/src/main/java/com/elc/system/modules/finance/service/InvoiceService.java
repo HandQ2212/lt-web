@@ -59,7 +59,6 @@ public class InvoiceService {
 
         Invoice invoice = Invoice.builder()
                 .enrollment(enrollment)
-                .amount(request.getTotalAmount())
                 .totalAmount(request.getTotalAmount())
                 .discountAmount(request.getDiscountAmount())
                 .finalAmount(request.getFinalAmount())

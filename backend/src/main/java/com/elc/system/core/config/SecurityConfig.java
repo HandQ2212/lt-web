@@ -77,6 +77,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
             "https://elc.handq2212.site",
             "http://localhost:*",
+            "http://127.0.0.1:*",
             "http://26.150.15.154:*"
         ));
         // Cho phép các phương thức HTTP

@@ -164,7 +164,7 @@ public class EnrollmentService {
             return;
         }
 
-        java.math.BigDecimal amount = enrollment.getClazz().getCourse().getBasePrice();
+        java.math.BigDecimal amount = enrollment.getClazz().getLevel().getBasePrice();
         if (amount == null) amount = java.math.BigDecimal.ZERO;
 
         Invoice invoice = Invoice.builder()

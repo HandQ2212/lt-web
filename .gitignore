@@ -1,4 +1,7 @@
 claude-engineer/
+.env
+backend/.env
+frontend/.env
 src\main\resources\application-local.yml
 Code_BTL7_BTL8/
 *.postman_collection.json

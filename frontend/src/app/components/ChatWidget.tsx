@@ -7,9 +7,10 @@ import {
   IconButton,
   TextField,
   Avatar,
-  Stack,
   Fade,
   Divider,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -18,27 +19,48 @@ import {
   SmartToy as BotIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../../store';
+import { RootState } from '../../store';
+import { chatbotApi, ChatbotHistoryMessage } from '../../services/chatbot-api';
+import ChatMessageList, { ChatMessage } from './chat-message-list';
 
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot' | 'agent';
-  timestamp: Date;
-}
+const STORAGE_PREFIX = 'elc-chatbot-history';
+const MAX_STORED_MESSAGES = 30;
+
+const getDisplayName = (user: any) => user?.name || user?.fullName || '';
+
+const createWelcomeMessage = (displayName: string): ChatMessage => ({
+  id: 'welcome',
+  text: `Xin chào${displayName ? ` ${displayName}` : ''}! Tôi là trợ lý ELC. Bạn cần tư vấn khóa học, lịch học hay học phí?`,
+  sender: 'bot',
+  timestamp: new Date(),
+});
+
+const loadMessages = (storageKey: string, welcomeMessage: ChatMessage): ChatMessage[] => {
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (!stored) return [welcomeMessage];
+
+    const parsed = JSON.parse(stored) as Array<Omit<ChatMessage, 'timestamp'> & { timestamp: string }>;
+    const messages = parsed
+      .filter((message) => message.id && message.text && message.sender)
+      .map((message) => ({ ...message, timestamp: new Date(message.timestamp) }))
+      .slice(-MAX_STORED_MESSAGES);
+
+    return messages.length ? messages : [welcomeMessage];
+  } catch {
+    return [welcomeMessage];
+  }
+};
 
 export default function ChatWidget() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: `Xin chào ${user?.name || ''}! Tôi là trợ lý ảo ELC. Tôi có thể giúp gì cho bạn?`,
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ]);
+  const displayName = getDisplayName(user);
+  const storageKey = `${STORAGE_PREFIX}:${user?.id || 'guest'}`;
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage(displayName)]);
   const [inputText, setInputText] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [errorText, setErrorText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -46,46 +68,80 @@ export default function ChatWidget() {
   };
 
   useEffect(() => {
+    setMessages(loadMessages(storageKey, createWelcomeMessage(displayName)));
+  }, [storageKey, displayName]);
+
+  useEffect(() => {
     if (isOpen) {
       scrollToBottom();
     }
   }, [isOpen, messages]);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+  }, [messages, storageKey]);
 
-    const newUserMessage: Message = {
+  const handleSend = async () => {
+    const trimmedText = inputText.trim();
+    if (!trimmedText || isSending) return;
+
+    const history: ChatbotHistoryMessage[] = messages.slice(-8).map((message) => ({
+      role: message.sender === 'user' ? 'user' : 'assistant',
+      content: message.text,
+    }));
+
+    const newUserMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: inputText,
+      text: trimmedText,
       sender: 'user',
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
     setInputText('');
+    setIsSending(true);
+    setErrorText('');
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'Cảm ơn bạn đã nhắn tin. Yêu cầu của bạn đã được gửi đến bộ phận hỗ trợ. Chúng tôi sẽ phản hồi sớm nhất có thể!',
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+    try {
+      const response = await chatbotApi.sendMessage({
+        message: trimmedText,
+        history,
+        currentPath: window.location.pathname,
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-bot`,
+          text: response.message,
+          sender: 'bot',
+          timestamp: new Date(response.timestamp || Date.now()),
+        },
+      ]);
+    } catch {
+      setErrorText('Chưa kết nối được với trợ lý ELC. Vui lòng thử lại sau ít phút.');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-error`,
+          text: 'Xin lỗi, trợ lý ELC đang tạm thời chưa phản hồi được. Bạn có thể thử lại hoặc gửi form liên hệ.',
+          sender: 'bot',
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  if (!user) return null;
-
-  const targetLabel = user.role === 'LEAD' ? 'Tư vấn viên' : 'Giảng viên';
+  const subtitle = isSending ? 'Đang trả lời...' : user ? 'Hỗ trợ theo tài khoản' : 'Tư vấn khóa học';
 
   return (
     <>
       <Fab
         color="primary"
         aria-label="chat"
-        sx={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000, boxShadow: 6 }}
+        sx={{ position: 'fixed', bottom: { xs: 20, sm: 30 }, right: { xs: 20, sm: 30 }, zIndex: 1000, boxShadow: 6 }}
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <CloseIcon /> : <ChatIcon />}
@@ -96,26 +152,25 @@ export default function ChatWidget() {
           elevation={12}
           sx={{
             position: 'fixed',
-            bottom: 100,
-            right: 30,
-            width: 350,
-            height: 500,
+            bottom: { xs: 84, sm: 100 },
+            right: { xs: 16, sm: 30 },
+            width: { xs: 'calc(100vw - 32px)', sm: 380 },
+            height: { xs: 480, sm: 520 },
             zIndex: 1000,
-            borderRadius: 4,
+            borderRadius: 3,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
           }}
         >
-          {/* Header */}
           <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'white', color: 'primary.main', mr: 1 }}>
                 <BotIcon />
               </Avatar>
               <Box>
-                <Typography variant="subtitle1" fontWeight={700}>Chat với {targetLabel}</Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>Trực tuyến</Typography>
+                <Typography variant="subtitle1" fontWeight={700}>Trợ lý ELC</Typography>
+                <Typography variant="caption" sx={{ opacity: 0.85 }}>{subtitle}</Typography>
               </Box>
             </Box>
             <IconButton size="small" color="inherit" onClick={() => setIsOpen(false)}>
@@ -123,55 +178,38 @@ export default function ChatWidget() {
             </IconButton>
           </Box>
 
-          {/* Messages */}
           <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', bgcolor: '#f9fafb' }}>
-            <Stack spacing={2}>
-              {messages.map((msg) => (
-                <Box
-                  key={msg.id}
-                  sx={{
-                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '80%',
-                  }}
-                >
-                  <Paper
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 3,
-                      bgcolor: msg.sender === 'user' ? 'primary.main' : 'white',
-                      color: msg.sender === 'user' ? 'white' : 'text.primary',
-                      boxShadow: 1,
-                      borderTopRightRadius: msg.sender === 'user' ? 0 : 3,
-                      borderTopLeftRadius: msg.sender === 'user' ? 3 : 0,
-                    }}
-                  >
-                    <Typography variant="body2">{msg.text}</Typography>
-                  </Paper>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: msg.sender === 'user' ? 'right' : 'left' }}>
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Typography>
-                </Box>
-              ))}
-              <div ref={messagesEndRef} />
-            </Stack>
+            <ChatMessageList messages={messages} isSending={isSending} messagesEndRef={messagesEndRef} />
           </Box>
 
           <Divider />
 
-          {/* Input */}
           <Box sx={{ p: 2, bgcolor: 'white' }}>
+            {errorText && (
+              <Alert severity="warning" variant="outlined" sx={{ mb: 1.25, py: 0.25, borderRadius: 2 }}>
+                {errorText}
+              </Alert>
+            )}
             <Box sx={{ display: 'flex', gap: 1 }}>
               <TextField
                 fullWidth
                 size="small"
                 placeholder="Nhập tin nhắn..."
                 value={inputText}
+                disabled={isSending}
                 onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 4 } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                multiline
+                maxRows={3}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
               />
-              <IconButton color="primary" disabled={!inputText.trim()} onClick={handleSend}>
-                <SendIcon />
+              <IconButton color="primary" disabled={!inputText.trim() || isSending} onClick={handleSend}>
+                {isSending ? <CircularProgress size={22} /> : <SendIcon />}
               </IconButton>
             </Box>
           </Box>

@@ -133,7 +133,13 @@ public class PaymentService {
 
     private void updateLeadStatusIfApplicable(User user) {
         if (user.getRole() == UserRole.LEAD) {
-            leadRepository.findByUserId(user.getId()).ifPresent(lead -> {
+            java.util.Optional<Lead> linkedLead = user.getEmail() != null
+                    ? leadRepository.findByEmailIgnoreCase(user.getEmail())
+                    : java.util.Optional.empty();
+            if (linkedLead.isEmpty() && user.getPhone() != null) {
+                linkedLead = leadRepository.findByPhone(user.getPhone());
+            }
+            linkedLead.ifPresent(lead -> {
                 lead.setStatus(LeadStatus.PAID);
                 leadRepository.save(lead);
             });

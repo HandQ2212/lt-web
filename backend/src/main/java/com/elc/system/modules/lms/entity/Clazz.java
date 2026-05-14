@@ -3,7 +3,7 @@ package com.elc.system.modules.lms.entity;
 import com.elc.system.core.BaseEntity;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.sms.entity.Branch;
-import com.elc.system.modules.sms.entity.Course;
+import com.elc.system.modules.sms.entity.Level;
 import com.elc.system.modules.room.entity.Room;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,8 +24,8 @@ import java.time.LocalDate;
 public class Clazz extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
+    @JoinColumn(name = "level_id", nullable = false)
+    private Level level;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
@@ -54,4 +54,7 @@ public class Clazz extends BaseEntity {
 
     @Column(name = "max_students")
     private Integer maxStudents = 20;
+
+    @Column(name = "current_students", insertable = false, updatable = false)
+    private Integer currentStudents = 0;
 }
