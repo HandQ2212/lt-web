@@ -24,7 +24,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Add as AddIcon, Assignment as AssignmentIcon, Grade as GradeIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
+import { Add as AddIcon, Assignment as AssignmentIcon, ContentCopy as ContentCopyIcon, Grade as GradeIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { assignmentApi, classApi, submissionApi } from '../../../services/api';
 import { RootState } from '../../../store';
 
@@ -38,8 +38,10 @@ export default function AssignmentPage() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openGradeDialog, setOpenGradeDialog] = useState(false);
   const [openScoreDialog, setOpenScoreDialog] = useState(false);
+  const [openSubmissionDetailDialog, setOpenSubmissionDetailDialog] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  const [selectedSubmissionDetail, setSelectedSubmissionDetail] = useState<any>(null);
   const [gradeForm, setGradeForm] = useState({ score: '', feedback: '' });
   const [form, setForm] = useState({ classId: '', title: '', description: '', dueDate: '' });
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -103,6 +105,38 @@ export default function AssignmentPage() {
     setSelectedSubmission(submission);
     setGradeForm({ score: submission.grade != null ? String(submission.grade) : '', feedback: submission.feedback || '' });
     setOpenScoreDialog(true);
+  };
+
+  const openSubmissionDetail = (submission: any) => {
+    setSelectedSubmissionDetail(submission);
+    setOpenSubmissionDetailDialog(true);
+  };
+
+  const getSubmissionFileUrl = (submission: any) =>
+    submission?.fileUrl || submission?.fileURL || submission?.attachmentUrl || submission?.attachmentURL || submission?.url || '';
+
+  const handleCopySubmissionLink = async (link: string) => {
+    if (!link) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setSnackbar({ open: true, message: 'Đã copy link bài nộp', severity: 'success' });
+    } catch {
+      setSnackbar({ open: true, message: 'Không thể copy link bài nộp', severity: 'error' });
+    }
   };
 
   const handleGrade = async () => {
@@ -199,7 +233,7 @@ export default function AssignmentPage() {
                     <TableCell>{submission.grade != null ? <Chip label={submission.grade} color="success" size="small" /> : <Chip label="Chưa chấm" color="warning" size="small" />}</TableCell>
                     <TableCell><Chip label={submission.status || 'SUBMITTED'} color={submission.grade != null ? 'success' : 'warning'} size="small" /></TableCell>
                     <TableCell align="right">
-                      <IconButton size="small"><VisibilityIcon /></IconButton>
+                      <IconButton size="small" color="warning" onClick={() => openSubmissionDetail(submission)}><VisibilityIcon /></IconButton>
                       <IconButton size="small" color="primary" onClick={() => openGradeForm(submission)}><GradeIcon /></IconButton>
                     </TableCell>
                   </TableRow>
@@ -210,6 +244,123 @@ export default function AssignmentPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenGradeDialog(false)}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openSubmissionDetailDialog} onClose={() => setOpenSubmissionDetailDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Chi tiết bài nộp</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'grid', gap: 2, pt: 1 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
+                Học viên
+              </Typography>
+              <Typography fontWeight={800}>
+                {selectedSubmissionDetail?.studentName || selectedSubmissionDetail?.studentId || '-'}
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
+                Ngày nộp
+              </Typography>
+              <Typography>
+                {selectedSubmissionDetail?.submissionDate ? new Date(selectedSubmissionDetail.submissionDate).toLocaleString('vi-VN') : '-'}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              <Chip
+                label={selectedSubmissionDetail?.grade != null ? `Điểm: ${selectedSubmissionDetail.grade}` : 'Chưa chấm'}
+                color={selectedSubmissionDetail?.grade != null ? 'success' : 'warning'}
+                sx={{ fontWeight: 800 }}
+              />
+              <Chip
+                label={selectedSubmissionDetail?.status || 'SUBMITTED'}
+                color={selectedSubmissionDetail?.grade != null ? 'success' : 'warning'}
+                variant="outlined"
+                sx={{ fontWeight: 800 }}
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
+                Nội dung bài làm
+              </Typography>
+              <Box sx={{ p: 2, mt: 0.75, borderRadius: 2, border: '1px solid rgba(30,41,59,0.25)', bgcolor: '#FFFDF5' }}>
+                <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  {selectedSubmissionDetail?.content || selectedSubmissionDetail?.answer || selectedSubmissionDetail?.description || 'Không có nội dung text.'}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
+                Link bài nộp
+              </Typography>
+              {getSubmissionFileUrl(selectedSubmissionDetail) ? (
+                <Box
+                  sx={{
+                    mt: 0.75,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 1,
+                    borderRadius: 999,
+                    border: '1px solid rgba(30,41,59,0.25)',
+                    bgcolor: '#FFFDF5',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      px: 1,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={getSubmissionFileUrl(selectedSubmissionDetail)}
+                  >
+                    {getSubmissionFileUrl(selectedSubmissionDetail)}
+                  </Typography>
+                  <IconButton
+                    aria-label="Copy link bài nộp"
+                    onClick={() => void handleCopySubmissionLink(getSubmissionFileUrl(selectedSubmissionDetail))}
+                    sx={{
+                      border: '2px solid #1E293B',
+                      bgcolor: '#FACC15',
+                      color: '#1E293B',
+                      '&:hover': { bgcolor: '#FDE68A' },
+                    }}
+                  >
+                    <ContentCopyIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+                  Không có link bài nộp.
+                </Typography>
+              )}
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
+                Nhận xét của giáo viên
+              </Typography>
+              <Box sx={{ p: 2, mt: 0.75, borderRadius: 2, border: '1px solid rgba(30,41,59,0.25)', bgcolor: '#F7E9FF' }}>
+                <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  {selectedSubmissionDetail?.feedback || 'Chưa có nhận xét.'}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSubmissionDetailDialog(false)}>Đóng</Button>
+          <Button variant="contained" onClick={() => selectedSubmissionDetail && openGradeForm(selectedSubmissionDetail)}>
+            Chấm/Sửa điểm
+          </Button>
         </DialogActions>
       </Dialog>
 

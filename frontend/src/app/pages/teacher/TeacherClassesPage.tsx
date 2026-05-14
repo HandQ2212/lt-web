@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
   IconButton,
   LinearProgress,
   MenuItem,
@@ -344,11 +343,22 @@ export default function TeacherClassesPage() {
         </Paper>
       ) : (
         <>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: classes.length === 1 ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+              },
+              gap: 3,
+              mb: 4,
+              alignItems: 'stretch',
+            }}
+          >
             {classes.map((cls) => {
               const scheduleCount = cls.schedules?.length || 0;
               return (
-                <Grid key={cls.id} item xs={12} sm={6} lg={4}>
+                <Box key={cls.id} sx={{ minWidth: 0, display: 'flex' }}>
                   <Card
                     onClick={() => {
                       setSelectedClass(cls);
@@ -356,16 +366,21 @@ export default function TeacherClassesPage() {
                     }}
                     sx={{
                       cursor: 'pointer',
+                      width: '100%',
                       height: '100%',
+                      minHeight: 286,
+                      display: 'flex',
+                      flexDirection: 'column',
                       borderRadius: 4,
-                      border: selectedClassId === cls.id ? '2px solid' : '1px solid transparent',
-                      borderColor: selectedClassId === cls.id ? 'primary.main' : 'transparent',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                      border: '2px solid #1E293B',
+                      borderColor: selectedClassId === cls.id ? 'primary.main' : '#1E293B',
+                      boxShadow: selectedClassId === cls.id ? '6px 6px 0 #1E293B' : '4px 4px 0 #1E293B',
+                      bgcolor: selectedClassId === cls.id ? 'rgba(139, 92, 246, 0.06)' : '#FFFFFF',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 32px rgba(0,0,0,0.1)' },
+                      '&:hover': { transform: 'translateY(-4px)', boxShadow: '7px 7px 0 #1E293B' },
                     }}
                   >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
                         <Box sx={{ minWidth: 0 }}>
                           <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
@@ -381,20 +396,24 @@ export default function TeacherClassesPage() {
                         </Box>
                       </Stack>
 
-                      <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={4}>
-                          <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(96px, 0.85fr) minmax(0, 1.15fr)',
+                          gap: 2,
+                          mb: 3,
+                          alignItems: 'stretch',
+                        }}
+                      >
+                          <Box sx={{ p: 1.5, minHeight: 84, textAlign: 'center', bgcolor: '#FFF7DF', border: '1px solid rgba(30,41,59,0.2)', borderRadius: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <Typography variant="h6" fontWeight={800}>{scheduleCount}</Typography>
                             <Typography variant="caption" color="text.secondary" fontWeight={600}>Buổi/Tuần</Typography>
                           </Box>
-                        </Grid>
-                        <Grid item xs={8}>
-                          <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                            <Typography variant="h6" fontWeight={800}>{cls.courseName}</Typography>
+                          <Box sx={{ p: 1.5, minHeight: 84, textAlign: 'center', bgcolor: '#F7E9FF', border: '1px solid rgba(30,41,59,0.2)', borderRadius: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
+                            <Typography variant="h6" fontWeight={800} sx={{ fontSize: '1rem', overflowWrap: 'anywhere' }}>{cls.courseName || '-'}</Typography>
                             <Typography variant="caption" color="text.secondary" fontWeight={600}>Khóa học</Typography>
                           </Box>
-                        </Grid>
-                      </Grid>
+                      </Box>
 
                       <Button
                         fullWidth
@@ -404,16 +423,16 @@ export default function TeacherClassesPage() {
                           setSelectedClass(cls);
                           setDetailTab(0);
                         }}
-                        sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
+                        sx={{ mt: 'auto', borderRadius: 2, fontWeight: 800, textTransform: 'none' }}
                       >
                         Xem chi tiết
                       </Button>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
               );
             })}
-          </Grid>
+          </Box>
 
           {/* Class Details Dialog */}
           <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
@@ -436,9 +455,17 @@ export default function TeacherClassesPage() {
             </DialogTitle>
             <DialogContent dividers sx={{ p: 0 }}>
               <Box sx={{ p: 3 }}>
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                  <Grid item xs={12} md={4}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+                    gap: 3,
+                    mb: 4,
+                    alignItems: 'stretch',
+                  }}
+                >
+                  <Box sx={{ minWidth: 0, display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
                       <Typography variant="h4" fontWeight={900}>{enrollments.length} / {selectedClass?.maxStudents || '-'}</Typography>
                       <LinearProgress
@@ -447,16 +474,16 @@ export default function TeacherClassesPage() {
                         sx={{ mt: 2, height: 8, borderRadius: 4 }}
                       />
                     </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  </Box>
+                  <Box sx={{ minWidth: 0, display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>TỔNG BUỔI HỌC</Typography>
                       <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
                       <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Buổi học</Typography>
                     </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  </Box>
+                  <Box sx={{ minWidth: 0, display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
                       <Typography variant="h6" fontWeight={800}>
                         {formatDateToDDMMYYYY(selectedClass?.startDate)}
@@ -466,8 +493,8 @@ export default function TeacherClassesPage() {
                         {formatDateToDDMMYYYY(selectedClass?.endDate)}
                       </Typography>
                     </Paper>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
 
                 <Tabs
                   value={detailTab}

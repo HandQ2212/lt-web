@@ -1,6 +1,6 @@
 import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardHeader from './DashboardHeader';
 import ChatWidget from '../ChatWidget';
@@ -11,6 +11,7 @@ const CLOSED_DRAWER_WIDTH = 80;
 export default function DashboardLayout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
   
   // On desktop, default to open. On mobile, default to closed.
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -102,7 +103,7 @@ export default function DashboardLayout() {
               opacity: 0.6,
             }}
           />
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box key={location.pathname} sx={{ position: 'relative', zIndex: 1 }}>
             <Outlet />
           </Box>
         </Box>

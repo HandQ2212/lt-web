@@ -145,6 +145,8 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
                     if (isMobile) onClose();
                   }}
                   sx={{
+                    cursor: 'pointer',
+                    pointerEvents: 'auto',
                     borderRadius: 999,
                     py: 1.5,
                     minHeight: 48,
@@ -224,11 +226,13 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
       open={open}
       onClose={onClose}
       sx={{
+        zIndex: theme.zIndex.drawer + 2,
         width: open ? drawerWidth : CLOSED_DRAWER_WIDTH,
         flexShrink: 0,
         whiteSpace: 'nowrap',
         boxSizing: 'border-box',
         '& .MuiDrawer-paper': {
+          zIndex: theme.zIndex.drawer + 2,
           width: open ? drawerWidth : CLOSED_DRAWER_WIDTH,
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
@@ -241,6 +245,7 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
           borderRadius: '0 !important',
           bgcolor: '#FFFDF5',
           boxShadow: '4px 0 0 #1E293B',
+          pointerEvents: 'auto',
         },
       }}
     >
