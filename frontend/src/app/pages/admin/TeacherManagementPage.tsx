@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
   IconButton,
   List,
   ListItem,
@@ -47,7 +46,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Class as ClassIcon,
 } from '@mui/icons-material';
-import { AppUser, classApi, userApi, enrollmentApi, attendanceApi } from '../../../services/api';
+import { AppUser, UserRole, classApi, userApi, enrollmentApi, attendanceApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 import PersonalResumeCard from '../../components/common/PersonalResumeCard';
 
@@ -60,6 +59,7 @@ type ClassItem = {
   maxStudents?: number;
   courseName?: string;
   roomName?: string;
+  teacherId?: string;
   teacherName?: string;
   schedules?: Array<{ id?: string; dayOfWeek: string; startTime: string; endTime: string }>;
 };
@@ -162,7 +162,7 @@ export default function TeacherManagementPage() {
     try {
       setLoading(true);
       const page = await userApi.getAll({ size: 200, sort: 'fullName,asc' });
-      const list = (page.content || []).filter((u) => u.role === 'TEACHER');
+      const list = (page.content || []).filter((u: AppUser) => u.role === 'TEACHER');
       setTeachers(list);
       setFilteredTeachers(list);
     } catch (err: any) {
@@ -180,7 +180,7 @@ export default function TeacherManagementPage() {
       setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
       // Refresh teacher classes and detailed class
       await fetchTeacherClasses(selectedTeacher?.id || '');
-      const updatedClass = (await classApi.getAll()).find(c => c.id === selectedClassDetail.id);
+      const updatedClass = (await classApi.getAll()).find((c: ClassItem) => c.id === selectedClassDetail.id);
       if (updatedClass) setSelectedClassDetail(updatedClass);
     } catch (err: any) {
       setSnackbar({ open: true, message: 'Không thể thêm lịch học', severity: 'error' });
@@ -196,7 +196,7 @@ export default function TeacherManagementPage() {
       await classApi.deleteSchedule(selectedClassDetail.id, scheduleId);
       setSnackbar({ open: true, message: 'Xóa lịch học thành công', severity: 'success' });
       await fetchTeacherClasses(selectedTeacher?.id || '');
-      const updatedClass = (await classApi.getAll()).find(c => c.id === selectedClassDetail.id);
+      const updatedClass = (await classApi.getAll()).find((c: ClassItem) => c.id === selectedClassDetail.id);
       if (updatedClass) setSelectedClassDetail(updatedClass);
     } catch (err: any) {
       setSnackbar({ open: true, message: 'Không thể xóa lịch học', severity: 'error' });
@@ -258,7 +258,7 @@ export default function TeacherManagementPage() {
       setDetailLoading(true);
       const allClasses = await classApi.getAll();
       const clsList = Array.isArray(allClasses) ? allClasses : [];
-      const filtered = clsList.filter((cls: any) =>
+      const filtered = clsList.filter((cls: ClassItem) =>
         cls.teacherId === teacherId || cls.teacherName === selectedTeacher?.fullName
       );
       setTeacherClasses(filtered);
@@ -303,7 +303,7 @@ export default function TeacherManagementPage() {
       setFilteredTeachers(teachers);
     } else {
       const q = query.toLowerCase();
-      setFilteredTeachers(teachers.filter((t) =>
+      setFilteredTeachers(teachers.filter((t: AppUser) =>
         t.fullName?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q) || t.phone?.includes(q)
       ));
     }
@@ -367,8 +367,8 @@ export default function TeacherManagementPage() {
           Quay lại danh sách
         </Button>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
             <PersonalResumeCard
               name={selectedTeacher.fullName || 'Giảng viên'}
               avatarUrl={selectedTeacher.avatarUrl}
@@ -398,10 +398,10 @@ export default function TeacherManagementPage() {
                 </Stack>
               }
             />
-          </Grid>
+          </Box>
 
           {/* Teacher Classes */}
-          <Grid item xs={12} md={8}>
+          <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(66.667% - 20px)' } }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
                 Danh sách lớp đang dạy
@@ -411,9 +411,9 @@ export default function TeacherManagementPage() {
               ) : teacherClasses.length === 0 ? (
                 <Alert severity="info">Giáo viên chưa được phân công lớp nào.</Alert>
               ) : (
-                <Grid container spacing={2}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                   {teacherClasses.map((cls) => (
-                    <Grid item xs={12} sm={6} key={cls.id}>
+                    <Box key={cls.id} sx={{ flex: { xs: '0 0 100%', sm: '0 0 calc(50% - 8px)' } }}>
                       <Card
                         variant="outlined"
                         sx={{
@@ -448,13 +448,13 @@ export default function TeacherManagementPage() {
                           </Stack>
                         </CardContent>
                       </Card>
-                    </Grid>
-                  ))}
-                </Grid>
+                    </Box>
+                  ))}  
+                </Box>
               )}
             </Paper>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Class Detail Dialog - Manager Style */}
         <Dialog
@@ -482,8 +482,8 @@ export default function TeacherManagementPage() {
           </DialogTitle>
           <DialogContent dividers sx={{ p: 0 }}>
             <Box sx={{ p: 3 }}>
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={4}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">HỌC VIÊN</Typography>
                     <Typography variant="h4" fontWeight={900}>{classEnrollments.length} / {selectedClassDetail?.maxStudents || '-'}</Typography>
@@ -493,23 +493,23 @@ export default function TeacherManagementPage() {
                       sx={{ mt: 1, borderRadius: 2, height: 6 }}
                     />
                   </Paper>
-                </Grid>
-                <Grid item xs={12} md={4}>
+                </Box>
+                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">PHÒNG HỌC</Typography>
                     <Typography variant="h4" fontWeight={900}>{selectedClassDetail?.roomName || 'N/A'}</Typography>
                     <Typography variant="body2" color="primary" fontWeight={700}>Trực tiếp</Typography>
                   </Paper>
-                </Grid>
-                <Grid item xs={12} md={4}>
+                </Box>
+                <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">THỜI GIAN</Typography>
                     <Typography variant="h6" fontWeight={800}>{formatDateToDDMMYYYY(selectedClassDetail?.startDate)}</Typography>
                     <Typography variant="caption" color="text.secondary">đến</Typography>
                     <Typography variant="h6" fontWeight={800}>{formatDateToDDMMYYYY(selectedClassDetail?.endDate)}</Typography>
                   </Paper>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
 
               <Tabs
                 value={classDetailTab}
@@ -527,8 +527,8 @@ export default function TeacherManagementPage() {
                 <Box>
                   <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 3, bgcolor: 'rgba(25, 118, 210, 0.02)' }}>
                     <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>Thêm lịch học mới</Typography>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} sm={4}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                      <Box sx={{ flex: { xs: '0 0 100%', sm: '0 0 calc(33.333% - 13px)' } }}>
                         <TextField
                           select
                           fullWidth
@@ -541,8 +541,8 @@ export default function TeacherManagementPage() {
                             <option key={day} value={day}>{dayOfWeekLabelMap[day]}</option>
                           ))}
                         </TextField>
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
+                      </Box>
+                      <Box sx={{ flex: { xs: '0 0 calc(50% - 8px)', sm: '0 0 calc(25% - 15px)' } }}>
                         <TextField
                           fullWidth
                           label="Giờ bắt đầu"
@@ -551,8 +551,8 @@ export default function TeacherManagementPage() {
                           onChange={(e) => setScheduleForm(prev => ({ ...prev, startTime: e.target.value }))}
                           InputLabelProps={{ shrink: true }}
                         />
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
+                      </Box>
+                      <Box sx={{ flex: { xs: '0 0 calc(50% - 8px)', sm: '0 0 calc(25% - 15px)' } }}>
                         <TextField
                           fullWidth
                           label="Giờ kết thúc"
@@ -561,8 +561,8 @@ export default function TeacherManagementPage() {
                           onChange={(e) => setScheduleForm(prev => ({ ...prev, endTime: e.target.value }))}
                           InputLabelProps={{ shrink: true }}
                         />
-                      </Grid>
-                      <Grid item xs={12} sm={2}>
+                      </Box>
+                      <Box sx={{ flex: { xs: '0 0 100%', sm: '0 0 calc(16.667% - 14px)' } }}>
                         <Button
                           fullWidth
                           variant="contained"
@@ -572,8 +572,8 @@ export default function TeacherManagementPage() {
                         >
                           THÊM VÀO LỊCH
                         </Button>
-                      </Grid>
-                    </Grid>
+                      </Box>
+                    </Box>
                   </Paper>
 
                   <Typography variant="subtitle1" fontWeight={800} gutterBottom sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -745,9 +745,9 @@ export default function TeacherManagementPage() {
           <Typography color="text.secondary">{searchQuery ? 'Không tìm thấy giáo viên phù hợp' : 'Chưa có giáo viên nào'}</Typography>
         </Paper>
       ) : (
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {filteredTeachers.map((teacher) => (
-            <Grid item xs={12} sm={6} md={4} key={teacher.id}>
+            <Box key={teacher.id} sx={{ flex: { xs: '0 0 100%', sm: '0 0 calc(50% - 8px)', md: '0 0 calc(33.333% - 13px)' } }}>
               <Card sx={{ cursor: 'pointer', transition: 'all 0.2s', '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 } }} onClick={() => setSelectedTeacher(teacher)}>
                 <CardContent>
                   <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
@@ -764,9 +764,9 @@ export default function TeacherManagementPage() {
                   <Typography variant="body2" color="text.secondary">SĐT: {teacher.phone || 'Chưa cập nhật'}</Typography>
                 </CardContent>
               </Card>
-            </Grid>
-          ))}
-        </Grid>
+            </Box>
+          ))}  
+        </Box>
       )}
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
