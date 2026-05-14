@@ -20,7 +20,6 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
-  Grid,
   useTheme,
   InputAdornment,
 } from '@mui/material';
@@ -197,9 +196,10 @@ export default function RoleNotificationsPage() {
           p: { xs: 3, sm: 4 },
           mb: 4,
           borderRadius: 4,
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-          color: 'white',
-          boxShadow: '0 12px 30px rgba(29, 78, 216, 0.2)',
+          background: 'linear-gradient(135deg, #FFFDF5 0%, #FFF7DF 45%, #F7E9FF 100%)',
+          color: 'text.primary',
+          border: '2px solid #1E293B',
+          boxShadow: '6px 6px 0 #1E293B',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -208,30 +208,30 @@ export default function RoleNotificationsPage() {
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={3}>
             <Box>
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
-                <CampaignIcon sx={{ fontSize: 36, color: 'secondary.light' }} />
+                <CampaignIcon sx={{ fontSize: 36, color: 'secondary.main' }} />
                 <Typography variant="h4" fontWeight={900} letterSpacing={0.5}>
                   Trung tâm Thông báo
                 </Typography>
               </Stack>
-              <Typography variant="body1" sx={{ opacity: 0.9, maxWidth: 680, fontWeight: 500 }}>
+              <Typography variant="body1" sx={{ maxWidth: 680, fontWeight: 650, color: 'text.secondary', lineHeight: 1.7 }}>
                 Cập nhật nhanh chóng các thông báo nội bộ, lịch học, học phí và các bảng tin quan trọng dành riêng cho vai trò của bạn.
               </Typography>
             </Box>
 
             <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
-              <Paper sx={{ px: 2.5, py: 1.5, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <Typography variant="caption" display="block" sx={{ opacity: 0.8, fontWeight: 700, textTransform: 'uppercase' }}>
+              <Paper sx={{ px: 2.5, py: 1.5, borderRadius: 3, bgcolor: '#FFFFFF', border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B' }}>
+                <Typography variant="caption" display="block" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
                   Thông báo chưa đọc
                 </Typography>
-                <Typography variant="h5" fontWeight={900} color="error.light">
+                <Typography variant="h5" fontWeight={900} color="error.main">
                   {unreadCount}
                 </Typography>
               </Paper>
-              <Paper sx={{ px: 2.5, py: 1.5, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <Typography variant="caption" display="block" sx={{ opacity: 0.8, fontWeight: 700, textTransform: 'uppercase' }}>
+              <Paper sx={{ px: 2.5, py: 1.5, borderRadius: 3, bgcolor: '#FFFFFF', border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B' }}>
+                <Typography variant="caption" display="block" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
                   Bảng tin hệ thống
                 </Typography>
-                <Typography variant="h5" fontWeight={900} color="inherit">
+                <Typography variant="h5" fontWeight={900} color="text.primary">
                   {announcements.length}
                 </Typography>
               </Paper>
@@ -242,10 +242,20 @@ export default function RoleNotificationsPage() {
         <Box sx={{ position: 'absolute', right: -50, top: -50, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)' }} />
       </Paper>
 
-      <Grid container spacing={4}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            lg: hasRoleUtilityPanel ? 'minmax(0, 1.35fr) minmax(320px, 0.9fr)' : '1fr',
+          },
+          gap: { xs: 3, lg: 3.5 },
+          alignItems: 'start',
+        }}
+      >
         {/* Cột chính: Danh sách thông báo */}
-        <Grid item xs={12} lg={hasRoleUtilityPanel ? 7 : 12}>
-          <Paper sx={{ borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.06)', boxShadow: '0 10px 30px rgba(15,23,42,0.04)' }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Paper sx={{ borderRadius: 4, overflow: 'hidden', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', bgcolor: '#FFFFFF' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#fdfdfe', px: 2, pt: 1 }}>
               <Tabs value={currentTab} onChange={(_, v) => setCurrentTab(v)} variant="fullWidth">
                 <Tab
@@ -268,8 +278,8 @@ export default function RoleNotificationsPage() {
               </Tabs>
             </Box>
 
-            <Box sx={{ p: 2.5, bgcolor: '#fcfcfd', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems="center">
+            <Box sx={{ p: 2.5, bgcolor: '#fcfcfd', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
                 <TextField
                   fullWidth
                   placeholder="Tìm kiếm thông báo..."
@@ -279,10 +289,10 @@ export default function RoleNotificationsPage() {
                   InputProps={{
                     startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary' }} /></InputAdornment>,
                   }}
-                  sx={{ maxWidth: { sm: 360 }, bgcolor: 'white', borderRadius: 2 }}
+                  sx={{ minWidth: 0, flex: 1, bgcolor: 'white', borderRadius: 2 }}
                 />
                 {currentTab === 0 && unreadCount > 0 && (
-                  <Button variant="outlined" startIcon={<CheckCircleIcon />} onClick={handleMarkAllRead} size="small" sx={{ fontWeight: 700, borderRadius: 2, whiteSpace: 'nowrap' }}>
+                  <Button variant="outlined" startIcon={<CheckCircleIcon />} onClick={handleMarkAllRead} size="small" sx={{ fontWeight: 800, borderRadius: 2, whiteSpace: 'nowrap', alignSelf: { xs: 'stretch', md: 'center' }, px: 1.5 }}>
                     Đánh dấu tất cả đã đọc
                   </Button>
                 )}
@@ -314,14 +324,14 @@ export default function RoleNotificationsPage() {
                       }}
                     >
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={item.read ? 600 : 800} color={item.read ? 'text.secondary' : 'text.primary'}>
+                        <Typography variant="subtitle1" fontWeight={item.read ? 600 : 800} color={item.read ? 'text.secondary' : 'text.primary'} sx={{ minWidth: 0, overflowWrap: 'anywhere', pr: 1 }}>
                           {item.title || item.message}
                         </Typography>
                         <Chip
                           size="small"
                           label={item.read ? 'Đã xem' : 'Chưa xem'}
                           color={item.read ? 'default' : 'primary'}
-                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                          sx={{ fontWeight: 800, fontSize: '0.7rem', flexShrink: 0, maxWidth: 96 }}
                         />
                       </Stack>
                       <Typography variant="caption" color="text.secondary" display="block">
@@ -374,11 +384,11 @@ export default function RoleNotificationsPage() {
               )
             )}
           </Paper>
-        </Grid>
+        </Box>
 
         {/* Cột phụ: Bảng tính năng điều khiển chuyên biệt theo Role (Chia role ra để xem tab thông báo đấy có thể làm gì) */}
         {hasRoleUtilityPanel && (
-          <Grid item xs={12} lg={5}>
+          <Box sx={{ minWidth: 0 }}>
             <Stack spacing={3}>
               {/* Tiện ích dành cho MANAGER */}
               {user?.role === 'MANAGER' && (
@@ -627,8 +637,8 @@ export default function RoleNotificationsPage() {
 
               {/* Tiện ích dành cho LEAD */}
               {user.role === 'LEAD' && (
-                <Card sx={{ borderRadius: 4, border: '1px solid rgba(239, 108, 0, 0.12)', background: 'linear-gradient(180deg, #fffaf0 0%, #ffffff 100%)' }}>
-                  <CardContent sx={{ p: 3 }}>
+                <Card sx={{ borderRadius: 4, border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', background: 'linear-gradient(180deg, #fffaf0 0%, #ffffff 100%)' }}>
+                  <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
                     <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
                       <LocalOfferIcon color="warning" fontSize="large" />
                       <Box>
@@ -641,7 +651,7 @@ export default function RoleNotificationsPage() {
                       </Box>
                     </Stack>
 
-                    <Alert severity="success" sx={{ borderRadius: 3, mb: 2, fontWeight: 600 }}>
+                    <Alert severity="success" sx={{ borderRadius: 3, mb: 2, fontWeight: 700, alignItems: 'center' }}>
                       Tặng ngay Voucher giảm 20% học phí khi hoàn tất ghi danh trong tuần này!
                     </Alert>
 
@@ -652,9 +662,9 @@ export default function RoleNotificationsPage() {
                 </Card>
               )}
             </Stack>
-          </Grid>
+          </Box>
         )}
-      </Grid>
+      </Box>
 
       {/* Popup / Dialog hiển thị thông tin chi tiết */}
       <Dialog open={openDetail} onClose={() => setOpenDetail(false)} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
