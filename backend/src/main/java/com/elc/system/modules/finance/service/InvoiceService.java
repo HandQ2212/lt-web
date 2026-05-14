@@ -77,6 +77,18 @@ public class InvoiceService {
         invoiceRepository.save(invoice);
     }
 
+    @Transactional
+    public void deleteInvoice(UUID id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+
+        if (paymentRepository.existsByInvoiceId(id)) {
+            throw new RuntimeException("Không thể xóa hóa đơn đã có thanh toán");
+        }
+
+        invoiceRepository.delete(invoice);
+    }
+
     @Transactional(readOnly = true)
     public List<InvoiceResponse> getDebtInvoices() {
         return invoiceRepository.findDebtInvoices().stream()

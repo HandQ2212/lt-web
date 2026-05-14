@@ -103,7 +103,7 @@ export default function CourseDetailPage() {
     </Box>
   );
 
-  if (!course) return <Container sx={{ py: 10 }}><Alert severity="error">Khóa học không tồn tại</Alert></Container>;
+  if (!course) return <Container sx={{ py: 10 }}><Alert severity="error">Vui lòng đăng ký để xem chi tiết khóa học</Alert></Container>;
 
   const primaryLevel = Array.isArray(course.levels) ? course.levels[0] : null;
   const displayPrice = Number(primaryLevel?.basePrice || course.price || 0);

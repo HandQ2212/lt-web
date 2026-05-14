@@ -413,6 +413,7 @@ export const invoiceApi = {
   refund: (id: string, payload: { amount: number; reason?: string }) =>
     api.post(`invoices/${id}/refund`, payload),
   create: (data: any) => api.post('invoices', data),
+  delete: (id: string) => api.delete(`invoices/${id}`),
   updateStatus: (id: string, status: string) =>
     api.patch(`invoices/${id}/status`, null, { params: { status } }),
 };

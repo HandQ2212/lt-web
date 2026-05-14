@@ -27,6 +27,7 @@ import {
 import {
   AccountBalanceWallet,
   AssignmentTurnedIn,
+  DeleteOutline,
   FactCheck,
   Paid,
   ReceiptLong,
@@ -285,6 +286,31 @@ export default function FinanceOperationsPage() {
     }
   };
 
+  const handleDeleteInvoice = async (invoice: InvoiceRecord) => {
+    if (Number(invoice.paidAmount || 0) > 0) {
+      showMessage('Không thể xóa hóa đơn đã có thanh toán', 'error');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa hóa đơn của ${invoice.studentName || 'học viên'}${invoice.className ? ` - ${invoice.className}` : ''}?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await invoiceApi.delete(invoice.id);
+      await fetchData();
+      showMessage('Đã xóa hóa đơn thành công');
+    } catch (err: any) {
+      showMessage(err?.response?.data?.message || 'Không thể xóa hóa đơn', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCreatePayroll = async () => {
     if (!selectedTeacher || payrollAmount <= 0) {
       showMessage('Vui lòng chọn giáo viên và điền đầy đủ thông tin tính lương', 'error');
@@ -504,7 +530,7 @@ export default function FinanceOperationsPage() {
       {activeTab === 1 && (
         <FinanceTable
           title="Chi tiết công nợ học phí"
-          columns={['Học viên', 'Lớp học', 'Hạn thanh toán', 'Trạng thái', 'Tổng học phí', 'Đã nộp', 'Còn nợ']}
+          columns={['Học viên', 'Lớp học', 'Hạn thanh toán', 'Trạng thái', 'Tổng học phí', 'Đã nộp', 'Còn nợ', 'Thao tác']}
           rows={debtInvoices.map((invoice) => [
             <Typography fontWeight={700}>{invoice.studentName}</Typography>,
             invoice.className || '-',
@@ -513,6 +539,19 @@ export default function FinanceOperationsPage() {
             formatCurrency(getInvoiceAmount(invoice)),
             formatCurrency(invoice.paidAmount),
             <Typography fontWeight={800} color="error.main">{formatCurrency(getOutstandingAmount(invoice))}</Typography>,
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 40 }}>
+              <Button
+                color="error"
+                variant="outlined"
+                size="small"
+                startIcon={<DeleteOutline />}
+                disabled={submitting || Number(invoice.paidAmount || 0) > 0}
+                onClick={() => void handleDeleteInvoice(invoice)}
+                sx={{ fontWeight: 700, whiteSpace: 'nowrap', minWidth: 88 }}
+              >
+                Xóa
+              </Button>
+            </Box>,
           ])}
           emptyText="Hiện không có học viên nào nợ phí"
         />

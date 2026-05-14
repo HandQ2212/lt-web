@@ -47,6 +47,13 @@ public class InvoiceController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER')")
+    public ResponseEntity<Void> deleteInvoice(@PathVariable UUID id) {
+        invoiceService.deleteInvoice(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/debt")
     @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER')")
     public ResponseEntity<List<InvoiceResponse>> getDebtInvoices() {
