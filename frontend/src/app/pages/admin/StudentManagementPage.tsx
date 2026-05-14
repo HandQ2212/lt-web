@@ -19,6 +19,12 @@ import {
   Paper,
   Snackbar,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -435,28 +441,42 @@ export default function StudentManagementPage() {
           <Typography color="text.secondary">{searchQuery ? 'Không tìm thấy học viên' : 'Chưa có học viên nào'}</Typography>
         </Paper>
       ) : (
-        <Grid container spacing={2}>
-          {filteredStudents.map((student) => (
-            <Grid item xs={12} sm={6} md={4} key={student.id}>
-              <Card sx={{ cursor: 'pointer', transition: 'all 0.2s', '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 } }} onClick={() => setSelectedStudent(student)}>
-                <CardContent>
-                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'success.main', width: 48, height: 48 }}>{student.name?.charAt(0)?.toUpperCase()}</Avatar>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="subtitle1" fontWeight={700} noWrap>{student.name}</Typography>
-                      <Typography variant="body2" color="text.secondary" noWrap>{student.email}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                    <Chip size="small" label="Học viên" color="success" />
-                    <Chip size="small" label={student.status === 'ACTIVE' ? 'Đang học' : 'Ngừng'} color={student.status === 'ACTIVE' ? 'info' : 'default'} />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">SĐT: {student.phone || 'Chưa cập nhật'}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <TableContainer component={Paper} sx={{ borderRadius: 4, overflow: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
+          <Table sx={{ minWidth: 900 }}>
+            <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Số điện thoại</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800 }}>Thao tác</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredStudents.map((student) => (
+                <TableRow key={student.id} hover onClick={() => setSelectedStudent(student)} sx={{ cursor: 'pointer' }}>
+                  <TableCell>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>{student.name?.charAt(0)?.toUpperCase()}</Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" fontWeight={800}>{student.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">Mã: {student.id.slice(0, 8).toUpperCase()}</Typography>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>{student.email}</TableCell>
+                  <TableCell>{student.phone || 'Chưa cập nhật'}</TableCell>
+                  <TableCell>
+                    <Chip size="small" label={student.status === 'ACTIVE' ? 'Đang học' : 'Ngừng'} color={student.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 800 }} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button size="small" variant="text" sx={{ fontWeight: 800 }}>Xem chi tiết</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>

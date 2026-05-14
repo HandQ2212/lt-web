@@ -25,6 +25,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import {
+  ArrowBack as ArrowBackIcon,
   Notifications as NotificationsIcon,
   Announcement as AnnouncementIcon,
   Campaign as CampaignIcon,
@@ -181,6 +182,15 @@ export default function RoleNotificationsPage() {
 
   return (
     <Box sx={{ pb: 6, px: { xs: 1, sm: 2 } }}>
+      <Button
+        variant="outlined"
+        startIcon={<ArrowBackIcon />}
+        onClick={() => navigate(-1)}
+        sx={{ mb: 2, fontWeight: 800, borderRadius: 2 }}
+      >
+        Quay lại
+      </Button>
+
       {/* Premium Header Banner */}
       <Paper
         sx={{

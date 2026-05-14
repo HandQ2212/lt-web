@@ -44,7 +44,7 @@ import {
   People as PeopleIcon,
   School as SchoolIcon,
 } from '@mui/icons-material';
-import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi, resultApi } from '../../../services/api';
+import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi, resultApi, levelApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 
 type ClassItem = {
@@ -95,6 +95,7 @@ type StudentReport = {
 type ClassForm = {
   name: string;
   courseId: string;
+  levelId: string;
   roomId: string;
   teacherId: string;
   branchId: string;
@@ -130,6 +131,7 @@ type ScheduleSessionRow = {
 const defaultForm: ClassForm = {
   name: '',
   courseId: '',
+  levelId: '',
   roomId: '',
   teacherId: '',
   branchId: '',
@@ -192,6 +194,7 @@ export default function ClassManagementPage() {
   const [targetClassForStatus, setTargetClassForStatus] = useState<ClassItem | null>(null);
   const [selectedNewStatus, setSelectedNewStatus] = useState<string>('');
   const [courses, setCourses] = useState<any[]>([]);
+  const [levels, setLevels] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -262,14 +265,16 @@ export default function ClassManagementPage() {
 
   const fetchOptions = async () => {
     try {
-      const [courseList, roomList, branchList, userPage] = await Promise.all([
+      const [courseList, levelList, roomList, branchList, userPage] = await Promise.all([
         courseApi.getAll(),
+        levelApi.getAll(),
         roomApi.getAll(),
         branchApi.getAll(),
         userApi.getAll({ size: 200, sort: 'fullName,asc' }),
       ]);
 
       setCourses(Array.isArray(courseList) ? courseList : []);
+      setLevels(Array.isArray(levelList) ? levelList : []);
       setRooms(Array.isArray(roomList) ? roomList : []);
       setBranches(Array.isArray(branchList) ? branchList : []);
       setTeachers((userPage?.content || []).filter((user: any) => user.role === 'TEACHER'));
@@ -285,13 +290,18 @@ export default function ClassManagementPage() {
   const fetchClassDetails = async (classId: string) => {
     try {
       setDetailLoading(true);
-      const [enrollmentResponse, attendanceResponse] = await Promise.all([
-        enrollmentApi.getByClass(classId),
-        attendanceApi.getByClass(classId, todayIso),
+      const [classRes, schedRes, enrollmentResponse, attendanceResponse] = await Promise.all([
+        classApi.getById(classId).catch(() => null),
+        classApi.getSchedule(classId).catch(() => null),
+        enrollmentApi.getByClass(classId).catch(() => ({ data: [] })),
+        attendanceApi.getByClass(classId, todayIso).catch(() => ({ data: [] })),
       ]);
 
-      setEnrollments(Array.isArray(enrollmentResponse.data) ? enrollmentResponse.data : []);
-      setAttendance(Array.isArray(attendanceResponse.data) ? attendanceResponse.data : []);
+      const classData = classRes?.data || {};
+      const scheduleData = Array.isArray(schedRes?.data) ? schedRes.data : Array.isArray(classData?.schedules) ? classData.schedules : [];
+      setSelectedClass((prev) => (prev ? { ...prev, ...classData, schedules: scheduleData } : prev));
+      setEnrollments(Array.isArray(enrollmentResponse?.data) ? enrollmentResponse.data : []);
+      setAttendance(Array.isArray(attendanceResponse?.data) ? attendanceResponse.data : []);
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -346,12 +356,19 @@ export default function ClassManagementPage() {
     return result;
   }, [classes, searchQuery, statusFilter, courseFilter, sortBy]);
 
+  const selectedCourseLevels = useMemo(() => {
+    const selectedCourse = courses.find((course) => course.id === form.courseId);
+    const embeddedLevels = Array.isArray(selectedCourse?.levels) ? selectedCourse.levels : [];
+    const flatLevels = levels.filter((level) => level.courseId === form.courseId);
+    return embeddedLevels.length > 0 ? embeddedLevels : flatLevels;
+  }, [courses, levels, form.courseId]);
+
   const handleCreate = async () => {
     try {
       setSubmitting(true);
       await classApi.create({
         name: form.name,
-        courseId: form.courseId,
+        levelId: form.levelId,
         roomId: form.roomId,
         teacherId: form.teacherId,
         branchId: form.branchId,
@@ -986,9 +1003,9 @@ export default function ClassManagementPage() {
                 <Grid item xs={12} md={9}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                     <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                      Tổng số: {scheduleSessionRows.length}
-                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center"><Typography variant="body2" color="text.secondary" fontWeight={600}>Tổng số: {scheduleSessionRows.length}</Typography><Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => openScheduleDialog(selectedClassId || activeClass?.id || '')} sx={{ borderRadius: 2, fontWeight: 700 }}>Thêm buổi</Button></Stack>
+
+
                   </Stack>
                   {scheduleSessionRows.length ? (
                     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
@@ -1059,7 +1076,7 @@ export default function ClassManagementPage() {
                                                 const idToDelete = session.scheduleId || String(session.key).split('-')[0];
                                                 if (!idToDelete) return;
                                                 if (window.confirm('Bạn có chắc chắn muốn xóa buổi học này?')) {
-                                                  void handleDeleteSchedule(idToDelete);
+                                                  void handleDeleteSchedule(selectedClassId || activeClass?.id || '', idToDelete);
                                                 }
                                               }}
                                             >
@@ -1159,7 +1176,7 @@ export default function ClassManagementPage() {
       </Dialog>
 
       {/* Create Class Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4, width: 'min(960px, calc(100vw - 32px))' } }}>
         <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>Tạo lớp học mới</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -1170,34 +1187,43 @@ export default function ClassManagementPage() {
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
             />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Khóa học"
-                  value={form.courseId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}
-                >
-                  {courses.map((course) => (
-                    <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Giảng viên"
-                  value={form.teacherId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
-                >
-                  {teachers.map((teacher) => (
-                    <MenuItem value={teacher.id} key={teacher.id}>{teacher.fullName || teacher.email}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            </Grid>
+            <TextField
+              fullWidth
+              select
+              label="Chương trình học"
+              value={form.courseId}
+              onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value, levelId: '' }))}
+            >
+              {courses.map((course) => (
+                <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              select
+              label="Mức độ"
+              value={form.levelId}
+              onChange={(e) => setForm((prev) => ({ ...prev, levelId: e.target.value }))}
+              disabled={!form.courseId}
+              helperText={!form.courseId ? 'Vui lòng chọn chương trình trước khi chọn mức độ' : ' '}
+            >
+              {selectedCourseLevels.map((level: any) => (
+                <MenuItem value={level.id} key={level.id}>
+                  {level.name || level.code} {level.basePrice ? `- ${Number(level.basePrice).toLocaleString('vi-VN')}đ` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              select
+              label="Giảng viên"
+              value={form.teacherId}
+              onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
+            >
+              {teachers.map((teacher) => (
+                <MenuItem value={teacher.id} key={teacher.id}>{teacher.fullName || teacher.email}</MenuItem>
+              ))}
+            </TextField>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -1275,7 +1301,7 @@ export default function ClassManagementPage() {
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={() => setOpenDialog(false)} color="inherit" sx={{ fontWeight: 700 }}>Hủy</Button>
-          <Button variant="contained" disabled={submitting} onClick={() => void handleCreate()} sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}>
+          <Button variant="contained" disabled={submitting || !form.courseId || !form.levelId} onClick={() => void handleCreate()} sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}>
             {submitting ? 'Đang xử lý...' : 'Xác nhận tạo lớp'}
           </Button>
         </DialogActions>
@@ -1322,6 +1348,64 @@ export default function ClassManagementPage() {
             sx={{ borderRadius: 2, fontWeight: 700 }}
           >
             Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Edit/Create Dialog */}
+      <Dialog open={scheduleDialog.open} onClose={() => setScheduleDialog({ open: false, classId: '' })} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Typography variant="h6" fontWeight={800} color="primary.main">
+            {scheduleMode === 'edit' ? 'Cập nhật buổi học' : 'Thêm buổi học mới'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              select
+              fullWidth
+              label="Ngày trong tuần"
+              value={scheduleForm.dayOfWeek}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
+              sx={{ borderRadius: 2 }}
+            >
+              <MenuItem value="MONDAY">Thứ Hai</MenuItem>
+              <MenuItem value="TUESDAY">Thứ Ba</MenuItem>
+              <MenuItem value="WEDNESDAY">Thứ Tư</MenuItem>
+              <MenuItem value="THURSDAY">Thứ Năm</MenuItem>
+              <MenuItem value="FRIDAY">Thứ Sáu</MenuItem>
+              <MenuItem value="SATURDAY">Thứ Bảy</MenuItem>
+              <MenuItem value="SUNDAY">Chủ Nhật</MenuItem>
+            </TextField>
+            <TextField
+              type="time"
+              fullWidth
+              label="Giờ bắt đầu"
+              value={scheduleForm.startTime}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              type="time"
+              fullWidth
+              label="Giờ kết thúc"
+              value={scheduleForm.endTime}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setScheduleDialog({ open: false, classId: '' })} sx={{ borderRadius: 2, fontWeight: 700 }}>
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            disabled={scheduleSubmitting}
+            onClick={() => void handleSaveSchedule()}
+            sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
+          >
+            {scheduleSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -56,7 +56,10 @@ export default function CourseDetailPage() {
       setCourse(courseData);
       // Filter classes for this course
       const upcoming = (Array.isArray(classData) ? classData : classData?.content || [])
-        .filter((c: any) => c.courseId === id && (c.status === 'ACCEPTING' || c.status === 'UPCOMING'));
+        .filter((c: any) => {
+          const sameCourse = c.courseId === id || c.course?.id === id || c.courseName === courseData.name;
+          return sameCourse && (c.status === 'ACCEPTING' || c.status === 'UPCOMING');
+        });
       setClasses(upcoming);
     } catch (error) {
       console.error('Failed to fetch course data', error);
@@ -102,6 +105,11 @@ export default function CourseDetailPage() {
 
   if (!course) return <Container sx={{ py: 10 }}><Alert severity="error">Khóa học không tồn tại</Alert></Container>;
 
+  const primaryLevel = Array.isArray(course.levels) ? course.levels[0] : null;
+  const displayPrice = Number(primaryLevel?.basePrice || course.price || 0);
+  const displayLevel = primaryLevel?.name || primaryLevel?.code || course.level || 'Chưa phân cấp';
+  const displayDuration = primaryLevel?.durationWeeks ? `${primaryLevel.durationWeeks} tuần` : 'Theo lộ trình';
+
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       <Grid container spacing={4}>
@@ -118,8 +126,8 @@ export default function CourseDetailPage() {
           </Typography>
 
           <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
-            <Chip label={course.level} color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
-            <Chip label="3 tháng" icon={<AccessTimeIcon />} variant="outlined" />
+            <Chip label={displayLevel} color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+            <Chip label={displayDuration} icon={<AccessTimeIcon />} variant="outlined" />
           </Box>
 
           <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
@@ -167,7 +175,7 @@ export default function CourseDetailPage() {
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 4, position: 'sticky', top: 100, borderRadius: 4, boxShadow: 4, bgcolor: 'primary.main', color: 'white' }}>
             <Typography variant="h4" fontWeight={800} gutterBottom>
-              {Number(course.price || 0).toLocaleString('vi-VN')}đ
+              {displayPrice.toLocaleString('vi-VN')}đ
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8, mb: 3 }}>
               Học phí trọn gói, bao gồm giáo trình và lệ phí thi thử.
@@ -178,7 +186,7 @@ export default function CourseDetailPage() {
             <Box sx={{ mb: 4 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <AccessTimeIcon sx={{ mr: 2 }} />
-                <Typography variant="body1">Thời lượng: 3 tháng</Typography>
+                <Typography variant="body1">Thời lượng: {displayDuration}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <PeopleIcon sx={{ mr: 2 }} />

@@ -39,7 +39,6 @@ const menuItems: MenuItem[] = [
   { text: 'Kế toán', icon: <AccountBalanceIcon />, path: '/admin/accountants', roles: ['MANAGER'] },
   { text: 'Học viên', icon: <GroupsIcon />, path: '/admin/students', roles: ['MANAGER'] },
   { text: 'Quản lý Leads (CRM)', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER', 'ACCOUNTANT'] },
-  { text: 'Quản lý thông báo', icon: <NotificationsIcon />, path: '/admin/notifications', roles: ['MANAGER'] },
   { text: 'Thông báo', icon: <NotificationsIcon />, path: '/notifications', roles: ['MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT', 'LEAD'] },
   { text: 'Chương trình học', icon: <MenuBookIcon />, path: '/admin/programs', roles: ['MANAGER'] },
 

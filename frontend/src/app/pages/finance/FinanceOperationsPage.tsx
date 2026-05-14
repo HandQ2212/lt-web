@@ -23,6 +23,8 @@ import {
   Tabs,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   AccountBalanceWallet,
@@ -55,6 +57,8 @@ const today = new Date().toISOString().slice(0, 10);
 type SnackbarState = { open: boolean; message: string; severity: 'success' | 'error' };
 
 export default function FinanceOperationsPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [activeTab, setActiveTab] = useState(0);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
@@ -335,7 +339,17 @@ export default function FinanceOperationsPage() {
       </Grid>
 
       <Paper sx={{ mb: 4, borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto" sx={{ px: 1 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, value) => setActiveTab(value)}
+          variant={isMobile ? 'scrollable' : 'fullWidth'}
+          scrollButtons={isMobile ? 'auto' : false}
+          centered={!isMobile}
+          sx={{
+            '& .MuiTabs-flexContainer': { justifyContent: isMobile ? 'flex-start' : 'center' },
+            '& .MuiTab-root': { minWidth: 0, px: { xs: 2, md: 1.5 }, flex: isMobile ? '0 0 auto' : 1 },
+          }}
+        >
           <Tab label="Phiếu thu" sx={{ fontWeight: 700 }} />
           <Tab label="Công nợ học phí" sx={{ fontWeight: 700 }} />
           <Tab label="Hoàn phí & Học vụ" sx={{ fontWeight: 700 }} />

@@ -1,9 +1,10 @@
 export interface Course {
   id: string;
   name: string;
-  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-  price: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | string;
+  levels?: Array<{ id: string; code?: string; name?: string; basePrice?: number; durationWeeks?: number | null }>;
+  price?: number;
+  status?: 'ACTIVE' | 'INACTIVE';
   description?: string;
   duration?: string;
   imageUrl?: string;
@@ -54,6 +55,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  fullName?: string;
   role: 'MANAGER' | 'TEACHER' | 'STUDENT' | 'ACCOUNTANT' | 'LEAD';
   status: 'ACTIVE' | 'INACTIVE';
   phone?: string;

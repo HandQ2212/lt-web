@@ -55,7 +55,10 @@ export default function CourseListPage() {
     }
 
     if (levelFilter !== 'ALL') {
-      filtered = filtered.filter((course) => course.level === levelFilter);
+      filtered = filtered.filter((course) =>
+        course.level === levelFilter ||
+        (course.levels || []).some((level) => level.code === levelFilter || level.name === levelFilter)
+      );
     }
 
     setFilteredCourses(filtered);
@@ -144,6 +147,13 @@ export default function CourseListPage() {
     }
   };
 
+  const getPrimaryLevel = (course: Course) => course.levels?.[0] || null;
+  const getDisplayLevel = (course: Course) => {
+    const level = getPrimaryLevel(course);
+    return level?.name || level?.code || course.level || 'Chưa phân cấp';
+  };
+  const getDisplayPrice = (course: Course) => Number(getPrimaryLevel(course)?.basePrice || course.price || 0);
+
   return (
     <Container maxWidth="xl" sx={{ py: 8 }}>
       <Typography variant="h3" gutterBottom fontWeight={700} align="center" sx={{ mb: 2 }}>
@@ -201,14 +211,14 @@ export default function CourseListPage() {
               <CardMedia
                 component="img"
                 height="200"
-                image={course.imageUrl}
+                image={course.imageUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800'}
                 alt={course.name}
               />
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ mb: 2 }}>
                   <Chip
-                    label={getLevelText(course.level)}
-                    color={getLevelColor(course.level)}
+                    label={getLevelText(getDisplayLevel(course))}
+                    color={getLevelColor(getPrimaryLevel(course)?.code || course.level || '')}
                     size="small"
                   />
                 </Box>
@@ -219,7 +229,7 @@ export default function CourseListPage() {
                   {course.description}
                 </Typography>
                 <Typography variant="h6" color="primary" fontWeight={700}>
-                  {course.price.toLocaleString('vi-VN')}đ
+                  {getDisplayPrice(course).toLocaleString('vi-VN')}đ
                 </Typography>
               </CardContent>
               <Box sx={{ p: 2 }}>

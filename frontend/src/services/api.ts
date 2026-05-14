@@ -136,6 +136,10 @@ export const courseApi = {
       id: course.id,
       name: course.name,
       description: course.description,
+      imageUrl: course.imageUrl,
+      level: course.level,
+      price: Number(course.price || 0),
+      status: course.status,
       levels: Array.isArray(course.levels)
         ? course.levels.map((level: any) => ({
             id: level.id,
@@ -154,6 +158,10 @@ export const courseApi = {
       id: course.id,
       name: course.name,
       description: course.description,
+      imageUrl: course.imageUrl,
+      level: course.level,
+      price: Number(course.price || 0),
+      status: course.status,
       levels: Array.isArray(course.levels)
         ? course.levels.map((level: any) => ({
             id: level.id,
@@ -310,7 +318,7 @@ export const userApi = {
   },
   update: async (
     id: string,
-    payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED' }
+    payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED'; avatarUrl?: string; address?: string; dateOfBirth?: string; gender?: string }
   ) => {
     const response = await api.put(`users/${id}`, payload);
     return normalizeUser(response.data);
@@ -325,6 +333,13 @@ export const userApi = {
 export const profileApi = {
   update: async (payload: {
     fullName: string;
+    phone?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    address?: string;
+    avatarUrl?: string;
+  } | {
+    fullName?: string;
     phone?: string;
     dateOfBirth?: string;
     gender?: string;

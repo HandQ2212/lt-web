@@ -40,3 +40,5 @@ src/main/resources/application-local.yml
 
 # Ngoại lệ cho file này
 !ELC_Dev1_API_Collection.postman_collection.json
+
+.env

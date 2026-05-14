@@ -1267,9 +1267,9 @@ export default function ProgramManagementPage() {
                 <Grid item xs={12} md={9}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                     <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                      Tổng số: {scheduleSessionRows.length}
-                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center"><Typography variant="body2" color="text.secondary" fontWeight={600}>Tổng số: {scheduleSessionRows.length}</Typography><Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => openScheduleDialog(selectedClassDetail?.id || selectedClass?.id || '')} sx={{ borderRadius: 2, fontWeight: 700 }}>Thêm buổi</Button></Stack>
+
+
                   </Stack>
                   {scheduleSessionRows.length ? (
                     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
@@ -1437,6 +1437,64 @@ export default function ProgramManagementPage() {
             )}
           </Box>
         </DialogContent>
+      </Dialog>
+
+      {/* Schedule Edit/Create Dialog */}
+      <Dialog open={scheduleDialog.open} onClose={() => setScheduleDialog({ open: false, classId: '' })} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Typography variant="h6" fontWeight={800} color="primary.main">
+            {scheduleMode === 'edit' ? 'Cập nhật buổi học' : 'Thêm buổi học mới'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              select
+              fullWidth
+              label="Ngày trong tuần"
+              value={scheduleForm.dayOfWeek}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
+              sx={{ borderRadius: 2 }}
+            >
+              <MenuItem value="MONDAY">Thứ Hai</MenuItem>
+              <MenuItem value="TUESDAY">Thứ Ba</MenuItem>
+              <MenuItem value="WEDNESDAY">Thứ Tư</MenuItem>
+              <MenuItem value="THURSDAY">Thứ Năm</MenuItem>
+              <MenuItem value="FRIDAY">Thứ Sáu</MenuItem>
+              <MenuItem value="SATURDAY">Thứ Bảy</MenuItem>
+              <MenuItem value="SUNDAY">Chủ Nhật</MenuItem>
+            </TextField>
+            <TextField
+              type="time"
+              fullWidth
+              label="Giờ bắt đầu"
+              value={scheduleForm.startTime}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              type="time"
+              fullWidth
+              label="Giờ kết thúc"
+              value={scheduleForm.endTime}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setScheduleDialog({ open: false, classId: '' })} sx={{ borderRadius: 2, fontWeight: 700 }}>
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            disabled={scheduleSubmitting}
+            onClick={() => void handleSaveSchedule()}
+            sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
+          >
+            {scheduleSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar

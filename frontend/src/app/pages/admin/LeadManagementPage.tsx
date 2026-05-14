@@ -44,7 +44,7 @@ import {
 } from '@mui/icons-material';
 import { classApi, leadApi } from '../../../services/api';
 
-type LeadStatus = 'NEW' | 'INTERESTED' | 'CONSULTING' | 'AGREED' | 'PAID' | 'CONVERTED' | 'REJECTED';
+type LeadStatus = 'NEW' | 'INTERESTED' | 'CONSULTING' | 'CONTACTED' | 'AGREED' | 'PAID' | 'CONVERTED' | 'REJECTED';
 
 type LeadInterest = {
   id: string;
@@ -76,6 +76,7 @@ const stages: Array<{ id: LeadStatus; title: string; color: string }> = [
   { id: 'AGREED', title: 'Chờ thanh toán', color: '#fff9c4' },
   { id: 'PAID', title: 'Đã thanh toán', color: '#e8f5e9' },
   { id: 'CONVERTED', title: 'Đã nhập học', color: '#f3e5f5' },
+  { id: 'REJECTED', title: 'Đã từ chối', color: '#ffebee' },
 ];
 
 export default function LeadManagementPage() {
@@ -149,12 +150,27 @@ export default function LeadManagementPage() {
     }
   };
 
+  const normalizeLeadStatus = (status?: LeadStatus | string): LeadStatus => {
+    if (status === 'CONTACTED') return 'CONSULTING';
+    return (status || 'NEW') as LeadStatus;
+  };
+
+  const getLeadStatusLabel = (status?: LeadStatus | string) => {
+    switch (normalizeLeadStatus(status)) {
+      case 'NEW': return 'Khách hàng mới';
+      case 'INTERESTED': return 'Chờ tư vấn';
+      case 'CONSULTING': return 'Đang tư vấn';
+      case 'AGREED': return 'Chờ thanh toán';
+      case 'PAID': return 'Đã thanh toán';
+      case 'CONVERTED': return 'Đã nhập học';
+      case 'REJECTED': return 'Đã từ chối';
+      default: return status || 'Không xác định';
+    }
+  };
+
   const getLeadsByStatus = (status: LeadStatus) => {
     return leads.filter((lead) => {
-      if (status === 'CONSULTING') {
-        return lead.status === 'CONSULTING' || (lead.status as any) === 'CONTACTED';
-      }
-      return lead.status === status;
+      return normalizeLeadStatus(lead.status) === status;
     });
   };
 
@@ -356,7 +372,7 @@ export default function LeadManagementPage() {
                               </TableCell>
                               <TableCell align="right">
                                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                  {lead.status === 'INTERESTED' && (
+                                  {normalizeLeadStatus(lead.status) === 'INTERESTED' && (
                                     <Tooltip title="Bắt đầu tư vấn">
                                       <IconButton
                                         color="primary"
@@ -370,7 +386,7 @@ export default function LeadManagementPage() {
                                     </Tooltip>
                                   )}
 
-                                  {lead.status === 'CONSULTING' && (
+                                  {normalizeLeadStatus(lead.status) === 'CONSULTING' && (
                                     <>
                                       <Button
                                         size="small"
@@ -396,7 +412,7 @@ export default function LeadManagementPage() {
                                     </>
                                   )}
 
-                                  {lead.status === 'AGREED' && (
+                                  {normalizeLeadStatus(lead.status) === 'AGREED' && (
                                     <>
                                       <Button
                                         size="small"
@@ -419,7 +435,7 @@ export default function LeadManagementPage() {
                                     </>
                                   )}
 
-                                  {lead.status === 'PAID' && (
+                                  {normalizeLeadStatus(lead.status) === 'PAID' && (
                                     <Button
                                       size="small"
                                       variant="contained"
@@ -433,7 +449,7 @@ export default function LeadManagementPage() {
                                     </Button>
                                   )}
 
-                                  {lead.status === 'CONVERTED' && (
+                                  {normalizeLeadStatus(lead.status) === 'CONVERTED' && (
                                     <Chip
                                       label="Đã nhập học"
                                       color="success"
@@ -563,7 +579,7 @@ export default function LeadManagementPage() {
             <Box>
               <Typography variant="h6" fontWeight={700}>{selectedLead.fullName}</Typography>
               <Typography variant="body2" color="text.secondary">Số điện thoại liên hệ: {selectedLead.phone}</Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Trạng thái hiện tại: {selectedLead.status}</Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>Trạng thái hiện tại: {getLeadStatusLabel(selectedLead.status)}</Typography>
 
               <Divider sx={{ my: 2 }} />
 
