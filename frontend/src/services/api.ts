@@ -131,26 +131,34 @@ export const authApi = {
 export const courseApi = {
   getAll: async () => {
     const response = await api.get('courses');
-    return (response.data as any[]).map((course) => ({
-      id: course.id,
-      name: course.name,
-      level: course.level,
-      price: Number(course.basePrice || 0),
-      status: 'ACTIVE',
-      description: course.description,
-      imageUrl: course.imageUrl,
-    }));
+    return (response.data as any[]).map((course) => {
+      const firstLevel = Array.isArray(course.levels) && course.levels.length > 0 ? course.levels[0] : null;
+      return {
+        id: course.id,
+        name: course.name,
+        level: firstLevel?.name || firstLevel?.code || '',
+        levels: course.levels || [],
+        price: Number(firstLevel?.basePrice || 0),
+        status: 'ACTIVE',
+        description: course.description,
+        duration: firstLevel?.durationWeeks ? `${firstLevel.durationWeeks} tuần` : undefined,
+        imageUrl: course.imageUrl,
+      };
+    });
   },
   getById: async (id: string) => {
     const response = await api.get(`courses/${id}`);
     const course = response.data;
+    const firstLevel = Array.isArray(course.levels) && course.levels.length > 0 ? course.levels[0] : null;
     return {
       id: course.id,
       name: course.name,
-      level: course.level,
-      price: Number(course.basePrice || 0),
+      level: firstLevel?.name || firstLevel?.code || '',
+      levels: course.levels || [],
+      price: Number(firstLevel?.basePrice || 0),
       status: 'ACTIVE',
       description: course.description,
+      duration: firstLevel?.durationWeeks ? `${firstLevel.durationWeeks} tuần` : undefined,
       imageUrl: course.imageUrl,
     };
   },

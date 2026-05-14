@@ -54,6 +54,7 @@ type ClassItem = {
   startDate?: string;
   endDate?: string;
   maxStudents?: number;
+  levelName?: string;
   courseName?: string;
   roomName?: string;
   teacherName?: string;
@@ -93,7 +94,7 @@ type StudentReport = {
 
 type ClassForm = {
   name: string;
-  courseId: string;
+  levelId: string;
   roomId: string;
   teacherId: string;
   branchId: string;
@@ -124,7 +125,7 @@ type ScheduleSessionRow = {
 
 const defaultForm: ClassForm = {
   name: '',
-  courseId: '',
+  levelId: '',
   roomId: '',
   teacherId: '',
   branchId: '',
@@ -307,7 +308,7 @@ export default function ClassManagementPage() {
       setSubmitting(true);
       await classApi.create({
         name: form.name,
-        courseId: form.courseId,
+        levelId: form.levelId,
         roomId: form.roomId,
         teacherId: form.teacherId,
         branchId: form.branchId,
@@ -497,6 +498,13 @@ export default function ClassManagementPage() {
   }, [attendance]);
 
   const activeClass = classes.find((item) => item.id === selectedClassId) || selectedClass;
+  const levelOptions = useMemo(
+    () => courses.flatMap((course) => (course.levels || []).map((level: any) => ({
+      id: level.id,
+      label: `${course.name} - ${level.name || level.code}`,
+    }))),
+    [courses]
+  );
 
   const scheduleSessionRows = useMemo<ScheduleSessionRow[]>(() => {
     if (!activeClass?.schedules?.length) {
@@ -1039,12 +1047,12 @@ export default function ClassManagementPage() {
                 <TextField
                   fullWidth
                   select
-                  label="Khóa học"
-                  value={form.courseId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}
+                  label="Cấp độ"
+                  value={form.levelId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, levelId: e.target.value }))}
                 >
-                  {courses.map((course) => (
-                    <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>
+                  {levelOptions.map((level) => (
+                    <MenuItem value={level.id} key={level.id}>{level.label}</MenuItem>
                   ))}
                 </TextField>
               </Grid>
