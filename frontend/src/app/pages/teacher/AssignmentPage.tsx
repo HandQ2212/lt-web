@@ -263,15 +263,26 @@ export default function AssignmentPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openSubmissionDetailDialog} onClose={() => setOpenSubmissionDetailDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openSubmissionDetailDialog}
+        onClose={() => setOpenSubmissionDetailDialog(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            width: 'min(920px, calc(100vw - 32px))',
+            maxHeight: 'calc(100vh - 32px)',
+          },
+        }}
+      >
         <DialogTitle>Chi tiết bài nộp</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'grid', gap: 2, pt: 1 }}>
+        <DialogContent sx={{ px: 3, pb: 3 }}>
+          <Box sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
             <Box>
               <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
                 Học viên
               </Typography>
-              <Typography fontWeight={800}>
+              <Typography fontWeight={800} fontSize="1.7rem" lineHeight={1.2} sx={{ mt: 0.5 }}>
                 {selectedSubmissionDetail?.studentName || selectedSubmissionDetail?.studentId || '-'}
               </Typography>
             </Box>
@@ -280,7 +291,7 @@ export default function AssignmentPage() {
               <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
                 Ngày nộp
               </Typography>
-              <Typography>
+              <Typography fontSize="1.1rem" sx={{ mt: 0.5 }}>
                 {selectedSubmissionDetail?.submissionDate ? new Date(selectedSubmissionDetail.submissionDate).toLocaleString('vi-VN') : '-'}
               </Typography>
             </Box>
@@ -289,13 +300,13 @@ export default function AssignmentPage() {
               <Chip
                 label={selectedSubmissionDetail?.grade != null ? `Điểm: ${selectedSubmissionDetail.grade}` : 'Chưa chấm'}
                 color={selectedSubmissionDetail?.grade != null ? 'success' : 'warning'}
-                sx={{ fontWeight: 800 }}
+                sx={{ fontWeight: 800, height: 36, fontSize: '0.95rem' }}
               />
               <Chip
                 label={selectedSubmissionDetail?.status || 'SUBMITTED'}
                 color={selectedSubmissionDetail?.grade != null ? 'success' : 'warning'}
                 variant="outlined"
-                sx={{ fontWeight: 800 }}
+                sx={{ fontWeight: 800, height: 36, fontSize: '0.95rem' }}
               />
             </Box>
 
@@ -303,8 +314,8 @@ export default function AssignmentPage() {
               <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
                 Nội dung bài làm
               </Typography>
-              <Box sx={{ p: 2, mt: 0.75, borderRadius: 2, border: '1px solid rgba(30,41,59,0.25)', bgcolor: '#FFFDF5' }}>
-                <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+              <Box sx={{ p: 2.5, mt: 0.75, minHeight: 84, borderRadius: 2, border: '1px solid rgba(30,41,59,0.25)', bgcolor: '#FFFDF5' }}>
+                <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: '1.05rem' }}>
                   {selectedSubmissionDetail?.content || selectedSubmissionDetail?.answer || selectedSubmissionDetail?.description || 'Không có nội dung text.'}
                 </Typography>
               </Box>
@@ -321,7 +332,7 @@ export default function AssignmentPage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
-                    p: 1,
+                    p: 1.5,
                     borderRadius: 1,
                     border: '1px solid rgba(30,41,59,0.25)',
                     bgcolor: '#FFFDF5',
@@ -335,6 +346,7 @@ export default function AssignmentPage() {
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
+                      fontSize: '1rem',
                     }}
                     title={getSubmissionFileUrl(selectedSubmissionDetail)}
                   >
@@ -354,7 +366,7 @@ export default function AssignmentPage() {
                   </IconButton>
                 </Box>
               ) : (
-                <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+                <Typography color="text.secondary" sx={{ mt: 0.75, fontSize: '1rem' }}>
                   Không có link bài nộp.
                 </Typography>
               )}
@@ -364,8 +376,8 @@ export default function AssignmentPage() {
               <Typography variant="caption" color="text.secondary" fontWeight={800} textTransform="uppercase">
                 Nhận xét của giáo viên
               </Typography>
-              <Box sx={{ p: 2, mt: 0.75, borderRadius: 2, border: '1px solid rgba(30,41,59,0.25)', bgcolor: '#F7E9FF' }}>
-                <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+              <Box sx={{ p: 2.5, mt: 0.75, minHeight: 92, borderRadius: 2, border: '1px solid rgba(30,41,59,0.25)', bgcolor: '#F7E9FF' }}>
+                <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: '1.05rem' }}>
                   {selectedSubmissionDetail?.feedback || 'Chưa có nhận xét.'}
                 </Typography>
               </Box>
