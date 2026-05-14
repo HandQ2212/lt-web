@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +41,7 @@ public class ClassDto {
         private String levelName;
         private UUID courseId;
         private String courseName;
+        private BigDecimal basePrice;
         private UUID roomId;
         private String roomName;
         private UUID teacherId;

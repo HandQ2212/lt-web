@@ -514,6 +514,7 @@ public class ClazzService {
                 .levelName(level != null ? safeString(level::getName) : null)
                 .courseId(course != null ? safeId(course::getId) : null)
                 .courseName(course != null ? safeString(course::getName) : null)
+                .basePrice(level != null ? level.getBasePrice() : null)
                 .roomId(room != null ? safeId(room::getId) : null)
                 .roomName(room != null ? safeString(room::getName) : null)
                 .teacherId(teacher != null ? safeId(teacher::getId) : null)

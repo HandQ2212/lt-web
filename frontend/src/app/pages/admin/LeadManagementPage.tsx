@@ -541,7 +541,7 @@ export default function LeadManagementPage() {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Typography variant="body2" color="text.secondary">Học phí:</Typography>
                           <Typography variant="body2" fontWeight={800} color="error.main">
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selected.price || 0)}
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(selected.basePrice ?? selected.price ?? 0))}
                           </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
