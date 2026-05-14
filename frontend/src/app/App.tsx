@@ -319,6 +319,33 @@ let theme = createTheme({
         },
       },
     },
+    MuiSnackbar: {
+      defaultProps: {
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      },
+      styleOverrides: {
+        root: {
+          zIndex: 1600,
+          '&.MuiSnackbar-anchorOriginTopRight': {
+            top: 88,
+          },
+          '@media (max-width:599.95px)': {
+            left: 16,
+            right: 16,
+            maxWidth: 'calc(100vw - 32px)',
+            '&.MuiSnackbar-anchorOriginTopRight': {
+              top: 16,
+            },
+            '& .MuiAlert-root': {
+              width: '100%',
+            },
+          },
+        },
+      },
+    },
     MuiTableContainer: {
       styleOverrides: {
         root: {

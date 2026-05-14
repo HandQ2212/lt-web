@@ -62,6 +62,7 @@ CREATE TABLE public.class_schedules (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   class_id uuid,
   day_of_week character varying NOT NULL,
+  schedule_date date,
   start_time time without time zone NOT NULL,
   end_time time without time zone NOT NULL,
   created_at timestamp with time zone,

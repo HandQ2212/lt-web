@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS public.class_schedules (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
     day_of_week day_of_week NOT NULL,
+    schedule_date DATE,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     UNIQUE(class_id, day_of_week, start_time)

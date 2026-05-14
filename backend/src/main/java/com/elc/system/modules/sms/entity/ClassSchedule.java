@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -23,6 +24,9 @@ public class ClassSchedule extends BaseEntity {
 
     @Column(nullable = false)
     private String dayOfWeek; // MON, TUE, WED, THU, FRI, SAT, SUN
+
+    @Column(name = "schedule_date")
+    private LocalDate scheduleDate;
 
     @Column(nullable = false)
     private LocalTime startTime;

@@ -16,6 +16,7 @@ import {
   Notifications as NotificationsIcon,
   MenuBook as MenuBookIcon,
   AccountBalance as AccountBalanceIcon,
+  Dashboard as DashboardIcon,
   Home as HomeIcon,
   Explore as ExploreIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -33,6 +34,7 @@ const menuItems: MenuItem[] = [
   { text: 'Trang chủ', icon: <HomeIcon />, path: '/', roles: ['STUDENT', 'LEAD', 'TEACHER', 'MANAGER', 'ACCOUNTANT'] },
   { text: 'Khám phá khóa học', icon: <ExploreIcon />, path: '/courses', roles: ['STUDENT', 'LEAD'] },
   
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard', roles: ['MANAGER'] },
   { text: 'Người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
   { text: 'Lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
   { text: 'Giảng viên', icon: <SchoolIcon />, path: '/admin/teachers', roles: ['MANAGER'] },

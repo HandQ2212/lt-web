@@ -503,7 +503,7 @@ export default function LeadManagementPage() {
           </Typography>
 
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 select
@@ -528,7 +528,7 @@ export default function LeadManagementPage() {
             </Grid>
 
             {agreeClassId && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)', borderRadius: 3, borderStyle: 'dashed' }}>
                   <Typography variant="subtitle2" color="primary" gutterBottom fontWeight={700}>
                     Thông tin lớp học:

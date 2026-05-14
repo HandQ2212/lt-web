@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import com.elc.system.modules.sms.validation.ValidScheduleTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -19,8 +20,9 @@ public class ClassScheduleDto {
     @NoArgsConstructor
     @ValidScheduleTime(message = "Start time must be before end time")
     public static class ScheduleRequest {
-        @NotNull(message = "Day of week is required")
         private String dayOfWeek;
+
+        private LocalDate scheduleDate;
 
         @NotNull(message = "Start time is required")
         private LocalTime startTime;
@@ -37,6 +39,7 @@ public class ClassScheduleDto {
         private UUID id;
         private UUID classId;
         private String dayOfWeek;
+        private LocalDate scheduleDate;
         private LocalTime startTime;
         private LocalTime endTime;
     }
@@ -49,6 +52,7 @@ public class ClassScheduleDto {
         private UUID teacherId;
         private UUID roomId;
         private String dayOfWeek;
+        private LocalDate scheduleDate;
         private LocalTime startTime;
         private LocalTime endTime;
     }

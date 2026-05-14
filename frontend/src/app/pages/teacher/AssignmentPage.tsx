@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Alert,
@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -42,6 +43,8 @@ export default function AssignmentPage() {
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
   const [selectedSubmissionDetail, setSelectedSubmissionDetail] = useState<any>(null);
+  const [creatingAssignment, setCreatingAssignment] = useState(false);
+  const creatingAssignmentRef = useRef(false);
   const [gradeForm, setGradeForm] = useState({ score: '', feedback: '' });
   const [form, setForm] = useState({ classId: '', title: '', description: '', dueDate: '' });
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -74,6 +77,11 @@ export default function AssignmentPage() {
   };
 
   const handleCreate = async () => {
+    if (creatingAssignmentRef.current || !form.classId || !form.title || !form.dueDate) return;
+
+    creatingAssignmentRef.current = true;
+    setCreatingAssignment(true);
+
     try {
       await assignmentApi.create({
         classId: form.classId,
@@ -87,6 +95,9 @@ export default function AssignmentPage() {
       await fetchClassesAndAssignments();
     } catch (err: any) {
       setSnackbar({ open: true, message: err?.response?.data?.message || 'Không thể tạo bài tập', severity: 'error' });
+    } finally {
+      creatingAssignmentRef.current = false;
+      setCreatingAssignment(false);
     }
   };
 
@@ -201,9 +212,14 @@ export default function AssignmentPage() {
           <TextField fullWidth type="date" label="Hạn nộp" margin="normal" InputLabelProps={{ shrink: true }} value={form.dueDate} onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenCreateDialog(false)}>Hủy</Button>
-          <Button variant="contained" disabled={!form.classId || !form.title || !form.dueDate} onClick={() => void handleCreate()}>
-            Tạo bài tập
+          <Button onClick={() => setOpenCreateDialog(false)} disabled={creatingAssignment}>Hủy</Button>
+          <Button
+            variant="contained"
+            disabled={creatingAssignment || !form.classId || !form.title || !form.dueDate}
+            onClick={() => void handleCreate()}
+            startIcon={creatingAssignment ? <CircularProgress size={18} color="inherit" /> : undefined}
+          >
+            {creatingAssignment ? 'Đang tạo...' : 'Tạo bài tập'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -245,6 +246,8 @@ public class ClazzService {
     public ScheduleResponse addSchedule(UUID classId, ScheduleRequest request) {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new RuntimeException("Class not found"));
+        LocalDate scheduleDate = request.getScheduleDate();
+        String dayOfWeek = resolveDayOfWeek(scheduleDate, request.getDayOfWeek());
 
         // Validate that start time is before end time
         if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
@@ -255,7 +258,8 @@ public class ClazzService {
         ConflictCheckRequest conflictRequest = ConflictCheckRequest.builder()
                 .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
                 .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
-                .dayOfWeek(request.getDayOfWeek())
+                .scheduleDate(scheduleDate)
+                .dayOfWeek(dayOfWeek)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .build();
@@ -267,7 +271,8 @@ public class ClazzService {
 
         ClassSchedule schedule = ClassSchedule.builder()
                 .clazz(clazz)
-                .dayOfWeek(request.getDayOfWeek())
+                .dayOfWeek(dayOfWeek)
+                .scheduleDate(scheduleDate)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .build();
@@ -286,6 +291,8 @@ public class ClazzService {
         if (schedule.getClazz() == null || !schedule.getClazz().getId().equals(clazz.getId())) {
             throw new IllegalArgumentException("Schedule does not belong to the given class");
         }
+        LocalDate scheduleDate = request.getScheduleDate();
+        String dayOfWeek = resolveDayOfWeek(scheduleDate, request.getDayOfWeek());
 
         if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be strictly before end time. Start: " + request.getStartTime() + ", End: " + request.getEndTime());
@@ -294,7 +301,8 @@ public class ClazzService {
         ConflictCheckResponse conflict = checkConflictExcludingSchedule(scheduleId, ConflictCheckRequest.builder()
                 .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
                 .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
-                .dayOfWeek(request.getDayOfWeek())
+                .scheduleDate(scheduleDate)
+                .dayOfWeek(dayOfWeek)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .build());
@@ -303,7 +311,8 @@ public class ClazzService {
             throw new RuntimeException("Schedule conflict detected: " + conflict.getConflictMessage());
         }
 
-        schedule.setDayOfWeek(request.getDayOfWeek());
+        schedule.setDayOfWeek(dayOfWeek);
+        schedule.setScheduleDate(scheduleDate);
         schedule.setStartTime(request.getStartTime());
         schedule.setEndTime(request.getEndTime());
 
@@ -341,8 +350,7 @@ public class ClazzService {
         List<ClassSchedule> existingSchedules = classScheduleRepository.findAll();
         
         for (ClassSchedule existing : existingSchedules) {
-            // Check if same day of week
-            if (!existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek())) {
+            if (!isSameScheduleDay(existing, request)) {
                 continue;
             }
 
@@ -396,7 +404,7 @@ public class ClazzService {
                 continue;
             }
 
-            if (!existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek())) {
+            if (!isSameScheduleDay(existing, request)) {
                 continue;
             }
 
@@ -435,6 +443,32 @@ public class ClazzService {
     private boolean isTimeOverlap(java.time.LocalTime start1, java.time.LocalTime end1, 
                                   java.time.LocalTime start2, java.time.LocalTime end2) {
         return start1.isBefore(end2) && start2.isBefore(end1);
+    }
+
+    private String resolveDayOfWeek(LocalDate scheduleDate, String dayOfWeek) {
+        if (scheduleDate != null) {
+            return scheduleDate.getDayOfWeek().name();
+        }
+
+        if (dayOfWeek == null || dayOfWeek.isBlank()) {
+            throw new IllegalArgumentException("Schedule date is required");
+        }
+
+        return dayOfWeek.trim().toUpperCase();
+    }
+
+    private boolean isSameScheduleDay(ClassSchedule existing, ConflictCheckRequest request) {
+        if (existing.getScheduleDate() != null && request.getScheduleDate() != null) {
+            return existing.getScheduleDate().equals(request.getScheduleDate());
+        }
+
+        if (existing.getScheduleDate() != null || request.getScheduleDate() != null) {
+            return false;
+        }
+
+        return existing.getDayOfWeek() != null
+                && request.getDayOfWeek() != null
+                && existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek());
     }
 
     private ClassResponse mapToResponse(Clazz clazz) {
@@ -500,6 +534,7 @@ public class ClazzService {
                 .id(schedule.getId())
                 .classId(safeId(() -> schedule.getClazz() != null ? schedule.getClazz().getId() : null))
                 .dayOfWeek(schedule.getDayOfWeek())
+                .scheduleDate(schedule.getScheduleDate())
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
                 .build();

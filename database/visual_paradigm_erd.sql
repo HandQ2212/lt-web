@@ -72,6 +72,7 @@ CREATE TABLE class_schedules (
     id uuid PRIMARY KEY,
     class_id uuid REFERENCES classes(id),
     day_of_week text,
+    schedule_date date,
     start_time time,
     end_time time
 );
