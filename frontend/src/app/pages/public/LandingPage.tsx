@@ -1,4 +1,4 @@
-import { Box, Container, Typography, Button, Grid, Card, CardContent, CardMedia, Avatar, Rating, Paper } from '@mui/material';
+import { Box, Container, Typography, Button, Card, CardContent, CardMedia, Avatar, Rating, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SchoolIcon from '@mui/icons-material/School';
 import PeopleIcon from '@mui/icons-material/People';
@@ -93,15 +93,22 @@ export default function LandingPage() {
           }}
         />
         
-        <Container maxWidth="xl">
-          <Grid container spacing={8} alignItems="center">
-            <Grid item xs={12} md={7}>
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.05fr) minmax(320px, 0.95fr)' },
+              gap: { xs: 6, md: 8 },
+              alignItems: 'center',
+            }}
+          >
+            <Box>
+              <Box sx={{ position: 'relative', textAlign: { xs: 'center', md: 'left' }, maxWidth: { xs: 760, md: 'none' }, mx: { xs: 'auto', md: 0 } }}>
                 <Typography 
                   variant="h1" 
                   fontWeight={900} 
                   sx={{ 
-                    fontSize: { xs: '2.8rem', md: '4rem', lg: '5rem' },
+                    fontSize: { xs: '2.5rem', sm: '3.2rem', md: '4rem', lg: '4.5rem' },
                     lineHeight: 1.1,
                     mb: 3,
                     color: '#1E293B'
@@ -110,11 +117,11 @@ export default function LandingPage() {
                   Học Tiếng Anh <br />
                   <span style={{ color: '#8B5CF6' }}>Hiệu Quả</span> Cùng ELC
                 </Typography>
-                <Typography variant="h5" sx={{ mb: 6, color: '#475569', maxWidth: 650, fontWeight: 600, lineHeight: 1.6 }}>
+                <Typography variant="h5" sx={{ mb: 6, color: '#475569', maxWidth: 650, mx: { xs: 'auto', md: 0 }, fontWeight: 600, lineHeight: 1.6 }}>
                   Hệ thống đào tạo Anh ngữ chuẩn quốc tế với phương pháp cá nhân hóa, 
                   giúp bạn chinh phục mọi mục tiêu ngôn ngữ trong tầm tay.
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
                   <Button
                     variant="contained"
                     size="large"
@@ -146,35 +153,42 @@ export default function LandingPage() {
                   </Button>
                 </Box>
               </Box>
-            </Grid>
-            <Grid item xs={12} md={5}>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <Box 
                 component="img"
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80"
                 sx={{ 
                   width: '100%', 
+                  maxWidth: 560,
                   borderRadius: '48px 48px 48px 8px',
                   border: '2px solid #1E293B',
                   boxShadow: '8px 8px 0 #1E293B',
-                  display: { xs: 'none', md: 'block' },
+                  display: 'block',
                   transform: 'rotate(2deg)',
                 }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Container>
       </Box>
 
       {/* Stats Section */}
       <Box sx={{ py: 10, bgcolor: '#FFF7DF' }}>
-        <Container maxWidth="xl">
-          <Grid container spacing={4}>
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {[
               { icon: <SchoolIcon />, value: '50+', label: 'Khóa học chất lượng', color: '#38bdf8' },
               { icon: <PeopleIcon />, value: '10,000+', label: 'Học viên tin tưởng', color: '#10b981' },
               { icon: <EmojiEventsIcon />, value: '95%', label: 'Đạt mục tiêu đầu ra', color: '#f59e0b' }
             ].map((stat, idx) => (
-              <Grid item xs={12} md={4} key={idx}>
+              <Box key={idx}>
                 <Paper sx={{ 
                   p: 6, 
                   textAlign: 'center', 
@@ -188,22 +202,28 @@ export default function LandingPage() {
                   <Typography variant="h3" fontWeight={900}>{stat.value}</Typography>
                   <Typography color="text.secondary" fontWeight={500}>{stat.label}</Typography>
                 </Paper>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
       {/* Course List Section */}
       <Box sx={{ py: 15 }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHƯƠNG TRÌNH ĐÀO TẠO</Typography>
             <Typography variant="h2" fontWeight={900} sx={{ mt: 1 }}>Khóa học nổi bật</Typography>
           </Box>
-          <Grid container spacing={4}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {courses.map((course) => (
-              <Grid item xs={12} sm={6} md={4} key={course.id}>
+              <Box key={course.id}>
                 <Card sx={{ 
                   borderRadius: 5, 
                   border: '2px solid #1E293B',
@@ -227,22 +247,28 @@ export default function LandingPage() {
                     </Button>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
       {/* Teachers Section */}
       <Box sx={{ py: 15, bgcolor: '#FFF7DF' }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHUYÊN GIA GIẢNG DẠY</Typography>
             <Typography variant="h2" fontWeight={900} sx={{ mt: 1 }}>Đội ngũ giảng viên</Typography>
           </Box>
-          <Grid container spacing={4}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {teachers.map((teacher, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={idx}>
+              <Box key={idx}>
                 <Paper sx={{ 
                   p: 5, 
                   textAlign: 'center', 
@@ -266,19 +292,25 @@ export default function LandingPage() {
                   <Typography color="primary" fontWeight={600} sx={{ mb: 2 }}>{teacher.specialty}</Typography>
                   <Rating value={teacher.rating} precision={0.1} readOnly sx={{ color: '#f59e0b' }} />
                 </Paper>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
       {/* Testimonials */}
       <Box sx={{ py: 15, bgcolor: '#1E293B', color: 'white', position: 'relative', overflow: 'hidden' }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="lg">
           <Typography variant="h2" fontWeight={900} align="center" sx={{ mb: 10 }}>Cảm nhận học viên</Typography>
-          <Grid container spacing={4}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {testimonials.map((item, idx) => (
-              <Grid item xs={12} md={6} key={idx}>
+              <Box key={idx}>
                 <Paper sx={{ 
                   p: 6, 
                   borderRadius: 5, 
@@ -286,9 +318,22 @@ export default function LandingPage() {
                   color: '#1E293B',
                   border: '2px solid #1E293B',
                   boxShadow: '6px 6px 0 #FBBF24',
+                  '& .MuiTypography-root': {
+                    fontFamily: 'var(--font-vietnamese)',
+                  },
                 }}>
                   <Rating value={item.rating} readOnly sx={{ mb: 3, color: '#f59e0b' }} />
-                  <Typography variant="h5" sx={{ fontStyle: 'italic', mb: 4, fontWeight: 300, lineHeight: 1.6 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontFamily: 'var(--font-vietnamese)',
+                      fontStyle: 'italic',
+                      mb: 4,
+                      fontWeight: 700,
+                      lineHeight: 1.65,
+                      letterSpacing: 0,
+                    }}
+                  >
                     "{item.comment}"
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -299,9 +344,9 @@ export default function LandingPage() {
                     </Box>
                   </Box>
                 </Paper>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
     </Box>

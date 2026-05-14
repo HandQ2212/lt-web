@@ -128,6 +128,7 @@ export default function DashboardHeader({ onMenuClick, drawerWidth }: DashboardH
         color: 'text.primary',
         boxShadow: '0 2px 0 #1E293B',
         borderBottom: '2px solid #1E293B',
+        borderRadius: '0 !important',
         transition: theme.transitions.create(['margin', 'width'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,

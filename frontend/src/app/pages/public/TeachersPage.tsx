@@ -1,4 +1,4 @@
-import { Container, Typography, Grid, Card, CardContent, Avatar, Rating, Chip, Box } from '@mui/material';
+import { Container, Typography, Card, CardContent, Avatar, Rating, Chip, Box } from '@mui/material';
 
 const teachers = [
   {
@@ -73,11 +73,24 @@ export default function TeachersPage() {
         Giảng viên giàu kinh nghiệm, tận tâm và chuyên nghiệp
       </Typography>
 
-      <Grid container spacing={4}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: 'repeat(3, minmax(0, 1fr))',
+          },
+          gap: 4,
+          alignItems: 'stretch',
+          maxWidth: 1240,
+          mx: 'auto',
+        }}
+      >
         {teachers.map((teacher) => (
-          <Grid item xs={12} md={6} lg={4} key={teacher.id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 5, border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B' }}>
-              <CardContent sx={{ flexGrow: 1 }}>
+          <Box key={teacher.id}>
+            <Card sx={{ height: '100%', minHeight: 390, display: 'flex', flexDirection: 'column', borderRadius: 5, border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B' }}>
+              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
                 <Box sx={{ textAlign: 'center', mb: 2 }}>
                   <Avatar
                     src={teacher.avatar}
@@ -98,7 +111,7 @@ export default function TeachersPage() {
                   <Chip label={`${teacher.experience} kinh nghiệm`} size="small" color="primary" />
                 </Box>
 
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
                   {teacher.bio}
                 </Typography>
 
@@ -114,9 +127,9 @@ export default function TeachersPage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
     </Container>
   );
 }

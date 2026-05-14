@@ -860,7 +860,13 @@ export default function ClassManagementPage() {
       )}
 
       {/* Class Details Dialog */}
-      <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+      <Dialog
+        open={!!selectedClass}
+        onClose={() => setSelectedClass(null)}
+        maxWidth={false}
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4, width: 'min(1200px, calc(100vw - 64px))', maxWidth: 'none' } }}
+      >
         <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2} alignItems={isMobile ? 'flex-start' : 'center'}>
             <Box>
@@ -880,9 +886,17 @@ export default function ClassManagementPage() {
           </Stack>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={4}>
+          <Box sx={{ p: 3, maxWidth: 1120, mx: 'auto' }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+                gap: 3,
+                mb: 4,
+                alignItems: 'stretch',
+              }}
+            >
+              <Box>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
                   <Typography variant="h4" fontWeight={900}>{enrollments.length} / {activeClass?.maxStudents || '-'}</Typography>
@@ -892,15 +906,15 @@ export default function ClassManagementPage() {
                     sx={{ mt: 2, height: 8, borderRadius: 4 }}
                   />
                 </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </Box>
+              <Box>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>TỔNG BUỔI HỌC</Typography>
                   <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
                   <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Buổi học</Typography>
                 </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </Box>
+              <Box>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
                   <Typography variant="h6" fontWeight={800}>
@@ -911,13 +925,22 @@ export default function ClassManagementPage() {
                     {formatDateToDDMMYYYY(activeClass?.endDate)}
                   </Typography>
                 </Paper>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
 
             <Tabs
               value={detailTab}
               onChange={(_, value) => setDetailTab(value)}
-              sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                mb: 3,
+                '& .MuiTabs-flexContainer': {
+                  justifyContent: { xs: 'flex-start', md: 'center' },
+                },
+              }}
             >
               <Tab label="Lịch học chi tiết" sx={{ fontWeight: 700 }} />
               <Tab label="Danh sách học viên" sx={{ fontWeight: 700 }} />
@@ -929,18 +952,25 @@ export default function ClassManagementPage() {
                 <CircularProgress />
               </Box>
             ) : detailTab === 0 ? (
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={3}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', lg: 'minmax(320px, 0.95fr) minmax(0, 1.35fr)' },
+                  gap: 3,
+                  alignItems: 'start',
+                }}
+              >
+                <Box>
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.01)' }}>
                     <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5 }}>
                       {scheduleMode === 'edit' ? 'Cập nhật lịch học' : 'Thêm lịch học mới'}
                     </Typography>
                     <Box
                       sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
+                        display: 'grid',
+                        gridTemplateColumns: '1fr',
                         gap: 1.5,
-                        alignItems: { xs: 'stretch', md: 'flex-end' },
+                        alignItems: 'stretch',
                         p: 1.5,
                         borderRadius: 3,
                         bgcolor: 'rgba(25, 118, 210, 0.03)',
@@ -953,7 +983,6 @@ export default function ClassManagementPage() {
                         label="Ngày trong tuần"
                         value={scheduleForm.dayOfWeek}
                         onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
-                        sx={{ flex: { md: '1.2 1 0%' }, minWidth: { md: 220 } }}
                       >
                         <MenuItem value="MONDAY">Thứ Hai</MenuItem>
                         <MenuItem value="TUESDAY">Thứ Ba</MenuItem>
@@ -970,7 +999,6 @@ export default function ClassManagementPage() {
                         value={scheduleForm.startTime}
                         onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
                         InputLabelProps={{ shrink: true }}
-                        sx={{ flex: { md: '0.9 1 0%' }, minWidth: { md: 170 } }}
                       />
                       <TextField
                         type="time"
@@ -979,7 +1007,6 @@ export default function ClassManagementPage() {
                         value={scheduleForm.endTime}
                         onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
                         InputLabelProps={{ shrink: true }}
-                        sx={{ flex: { md: '0.9 1 0%' }, minWidth: { md: 170 } }}
                       />
                       <Button
                         variant="contained"
@@ -992,15 +1019,14 @@ export default function ClassManagementPage() {
                           minHeight: 56,
                           whiteSpace: 'nowrap',
                           px: 3,
-                          flex: { md: '0 0 180px' },
                         }}
                       >
                         {scheduleMode === 'edit' ? 'Lưu thay đổi' : 'Thêm vào lịch'}
                       </Button>
                     </Box>
                   </Paper>
-                </Grid>
-                <Grid item xs={12} md={9}>
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                     <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
                     <Stack direction="row" spacing={2} alignItems="center"><Typography variant="body2" color="text.secondary" fontWeight={600}>Tổng số: {scheduleSessionRows.length}</Typography><Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => openScheduleDialog(selectedClassId || activeClass?.id || '')} sx={{ borderRadius: 2, fontWeight: 700 }}>Thêm buổi</Button></Stack>
@@ -1092,8 +1118,8 @@ export default function ClassManagementPage() {
                   ) : (
                     <Alert severity="info" sx={{ borderRadius: 2 }}>Lớp học này chưa được xếp lịch.</Alert>
                   )}
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             ) : detailTab === 1 ? (
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -1224,8 +1250,14 @@ export default function ClassManagementPage() {
                 <MenuItem value={teacher.id} key={teacher.id}>{teacher.fullName || teacher.email}</MenuItem>
               ))}
             </TextField>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2,
+                '& .MuiTextField-root': { minWidth: 0 },
+              }}
+            >
                 <TextField
                   fullWidth
                   select
@@ -1237,9 +1269,7 @@ export default function ClassManagementPage() {
                     <MenuItem value={room.id} key={room.id}>{room.name} ({room.capacity} chỗ)</MenuItem>
                   ))}
                 </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              <TextField
                   fullWidth
                   select
                   label="Chi nhánh"
@@ -1249,11 +1279,16 @@ export default function ClassManagementPage() {
                   {branches.map((branch) => (
                     <MenuItem value={branch.id} key={branch.id}>{branch.name}</MenuItem>
                   ))}
-                </TextField>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              </TextField>
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2,
+                '& .MuiTextField-root': { minWidth: 0 },
+              }}
+            >
                 <TextField
                   fullWidth
                   type="date"
@@ -1262,20 +1297,23 @@ export default function ClassManagementPage() {
                   value={form.startDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              <TextField
                   fullWidth
                   type="date"
                   label="Ngày kết thúc (dự kiến)"
                   InputLabelProps={{ shrink: true }}
                   value={form.endDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
-                />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              />
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2,
+                '& .MuiTextField-root': { minWidth: 0 },
+              }}
+            >
                 <TextField
                   fullWidth
                   type="number"
@@ -1283,9 +1321,7 @@ export default function ClassManagementPage() {
                   value={form.maxStudents}
                   onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              <TextField
                   fullWidth
                   select
                   label="Trạng thái khởi tạo"
@@ -1294,9 +1330,8 @@ export default function ClassManagementPage() {
                 >
                   <MenuItem value="UPCOMING">Chờ khai giảng</MenuItem>
                   <MenuItem value="ACCEPTING">Đang tuyển sinh</MenuItem>
-                </TextField>
-              </Grid>
-            </Grid>
+              </TextField>
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>

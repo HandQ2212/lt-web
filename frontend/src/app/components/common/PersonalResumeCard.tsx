@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Avatar, Box, Chip, Divider, Grid, Paper, Stack, Typography } from '@mui/material';
+import { Avatar, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 
 export type ResumeField = {
   number: string | number;
@@ -19,6 +19,7 @@ type PersonalResumeCardProps = {
   statusColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
   fields: ResumeField[];
   actions?: ReactNode;
+  compact?: boolean;
 };
 
 export default function PersonalResumeCard({
@@ -31,6 +32,7 @@ export default function PersonalResumeCard({
   statusColor = 'primary',
   fields,
   actions,
+  compact = false,
 }: PersonalResumeCardProps) {
   const leftFields = fields.filter((field) => !field.fullWidth);
   const fullWidthFields = fields.filter((field) => field.fullWidth);
@@ -38,7 +40,7 @@ export default function PersonalResumeCard({
   return (
     <Paper
       sx={{
-        p: { xs: 2.5, sm: 4 },
+        p: { xs: 2.5, sm: compact ? 3 : 4 },
         borderRadius: 4,
         boxShadow: '6px 6px 0 #1E293B',
         border: '2px solid #1E293B',
@@ -57,7 +59,7 @@ export default function PersonalResumeCard({
         },
       }}
     >
-      <Stack spacing={0.5} alignItems="center" sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+      <Stack spacing={0.5} alignItems="center" sx={{ mb: compact ? 2.5 : 4, position: 'relative', zIndex: 1 }}>
         <Typography variant="h5" fontWeight={800} letterSpacing={0.5} textAlign="center">
           {title}
         </Typography>
@@ -68,17 +70,22 @@ export default function PersonalResumeCard({
         )}
       </Stack>
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 2, sm: 4 }} alignItems="flex-start" sx={{ position: 'relative', zIndex: 1 }}>
+      <Stack
+        direction={compact ? 'column' : { xs: 'column', sm: 'row' }}
+        spacing={{ xs: 2, sm: compact ? 2.5 : 4 }}
+        alignItems={compact ? 'center' : 'flex-start'}
+        sx={{ position: 'relative', zIndex: 1 }}
+      >
         <Avatar
           src={avatarUrl}
           alt={name}
           sx={{
-            width: { xs: 88, sm: 140 },
-            height: { xs: 88, sm: 140 },
+            width: { xs: 88, sm: compact ? 120 : 140 },
+            height: { xs: 88, sm: compact ? 120 : 140 },
             borderRadius: 3,
             bgcolor: '#FFF7DF',
             color: 'primary.main',
-            fontSize: { xs: 36, sm: 56 },
+            fontSize: { xs: 36, sm: compact ? 48 : 56 },
             fontWeight: 800,
             border: '2px solid #1E293B',
             boxShadow: '4px 4px 0 #1E293B',
@@ -90,7 +97,14 @@ export default function PersonalResumeCard({
         </Avatar>
 
         <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ mb: 2.5 }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            justifyContent={compact ? 'center' : 'flex-start'}
+            flexWrap="wrap"
+            sx={{ mb: compact ? 3 : 2.5 }}
+          >
             <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' }, overflowWrap: 'anywhere' }}>
               {name}
             </Typography>
@@ -105,37 +119,90 @@ export default function PersonalResumeCard({
             )}
           </Stack>
 
-          <Grid container spacing={2.5}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                lg: compact ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))',
+              },
+              columnGap: { xs: 2.5, md: compact ? 3 : 4 },
+              rowGap: { xs: 2.25, md: 3 },
+              alignItems: 'start',
+            }}
+          >
             {leftFields.map((field) => (
-              <Grid item xs={12} sm={6} lg={4} key={`${field.number}-${field.label}`}>
-                <Box sx={{ minHeight: 48 }}>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                    <Box component="span" sx={{ fontWeight: 800, display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'text.secondary', mb: 0.25 }}>
-                      {field.label}
-                    </Box>
-                    <Box component="span" sx={{ color: field.valueColor || 'text.primary', fontWeight: field.valueColor ? 700 : 600, fontSize: '0.9rem' }}>
-                      {field.value}
-                    </Box>
-                  </Typography>
-                </Box>
-              </Grid>
+              <Box key={`${field.number}-${field.label}`} sx={{ minHeight: 58, minWidth: 0 }}>
+                <Typography variant="body2" component="div" sx={{ lineHeight: 1.6 }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      fontWeight: 800,
+                      display: 'block',
+                      fontSize: '0.75rem',
+                      textTransform: 'uppercase',
+                      color: 'text.secondary',
+                      mb: 0.55,
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {field.label}
+                  </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      color: field.valueColor || 'text.primary',
+                      fontWeight: field.valueColor ? 700 : 650,
+                      fontSize: '0.92rem',
+                      lineHeight: 1.45,
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {field.value}
+                  </Box>
+                </Typography>
+              </Box>
             ))}
+          </Box>
 
-            {fullWidthFields.map((field) => (
-              <Grid item xs={12} key={`${field.number}-${field.label}`}>
-                <Box sx={{ minHeight: 48 }}>
-                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+          {fullWidthFields.length > 0 && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  md: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+                },
+                gap: { xs: 2.25, md: 3 },
+                mt: { xs: 2.25, md: 3 },
+              }}
+            >
+              {fullWidthFields.map((field) => (
+                <Box key={`${field.number}-${field.label}`} sx={{ minHeight: 58, minWidth: 0 }}>
+                  <Typography variant="body2" component="div" sx={{ lineHeight: 1.6 }}>
                     <Box component="span" sx={{ fontWeight: 800, display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'text.secondary', mb: 0.25 }}>
                       {field.label}
                     </Box>
-                    <Box component="span" sx={{ color: field.valueColor || 'text.primary', fontWeight: field.valueColor ? 700 : 600, fontSize: '0.9rem' }}>
+                    <Box
+                      component="span"
+                      sx={{
+                        color: field.valueColor || 'text.primary',
+                        fontWeight: field.valueColor ? 700 : 650,
+                        fontSize: '0.92rem',
+                        lineHeight: 1.45,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'break-word',
+                      }}
+                    >
                       {field.value}
                     </Box>
                   </Typography>
                 </Box>
-              </Grid>
-            ))}
-          </Grid>
+              ))}
+            </Box>
+          )}
 
           {actions && (
             <>

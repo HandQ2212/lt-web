@@ -57,10 +57,21 @@ type ClassItem = {
   startDate?: string;
   endDate?: string;
   maxStudents?: number;
+  currentStudents?: number;
   courseName?: string;
+  branchId?: string;
+  branchName?: string;
+  roomId?: string;
   roomName?: string;
   teacherId?: string;
   teacherName?: string;
+  teacherEmail?: string;
+  teacher?: {
+    id?: string;
+    name?: string;
+    fullName?: string;
+    email?: string;
+  };
   schedules?: Array<{ id?: string; dayOfWeek: string; startTime: string; endTime: string }>;
 };
 
@@ -91,6 +102,16 @@ type TeacherForm = {
 };
 
 const defaultForm: TeacherForm = { fullName: '', email: '', phone: '', password: '' };
+
+const normalizeMatchValue = (value?: string | null) => (value || '').trim().toLowerCase();
+
+const getClassRoomName = (cls: ClassItem) => cls.roomName || (cls as any).room_name || '';
+const getClassBranchName = (cls: ClassItem) => cls.branchName || (cls as any).branch_name || '';
+
+const isClassAssignedToTeacher = (cls: ClassItem, teacher: AppUser | null) => {
+  if (!teacher) return false;
+  return normalizeMatchValue(cls.teacherId) === normalizeMatchValue(teacher.id);
+};
 
 const getStatusColor = (status?: string): 'default' | 'info' | 'success' | 'warning' | 'error' => {
   switch (status) {
@@ -224,8 +245,8 @@ export default function TeacherManagementPage() {
             sortTime: occurrence.getTime(),
             dateLabel: formatSessionDateLabel(new Date(occurrence)),
             timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
-            roomLabel: selectedClassDetail.roomName || '-',
-            formatLabel: selectedClassDetail.roomName ? 'Trực tiếp' : 'Online',
+            roomLabel: getClassRoomName(selectedClassDetail) || '-',
+            formatLabel: getClassRoomName(selectedClassDetail) ? 'Trực tiếp' : 'Online',
             attendanceLabel: 'Chưa điểm danh',
             teacherLabel: selectedTeacher?.fullName || '-',
             titleLabel: selectedClassDetail.name || '-',
@@ -242,8 +263,8 @@ export default function TeacherManagementPage() {
         sortTime: dayOfWeekIndexMap[schedule.dayOfWeek?.toUpperCase()] || 0,
         dateLabel: dayOfWeekLabelMap[schedule.dayOfWeek?.toUpperCase()] || schedule.dayOfWeek,
         timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
-        roomLabel: selectedClassDetail.roomName || '-',
-        formatLabel: selectedClassDetail.roomName ? 'Trực tiếp' : 'Online',
+        roomLabel: getClassRoomName(selectedClassDetail) || '-',
+        formatLabel: getClassRoomName(selectedClassDetail) ? 'Trực tiếp' : 'Online',
         attendanceLabel: 'Chưa điểm danh',
         teacherLabel: selectedTeacher?.fullName || '-',
         titleLabel: selectedClassDetail.name || '-',
@@ -258,9 +279,8 @@ export default function TeacherManagementPage() {
       setDetailLoading(true);
       const allClasses = await classApi.getAll();
       const clsList = Array.isArray(allClasses) ? allClasses : [];
-      const filtered = clsList.filter((cls: ClassItem) =>
-        cls.teacherId === teacherId || cls.teacherName === selectedTeacher?.fullName
-      );
+      const currentTeacher = selectedTeacher && selectedTeacher.id === teacherId ? selectedTeacher : null;
+      const filtered = clsList.filter((cls: ClassItem) => isClassAssignedToTeacher(cls, currentTeacher));
       setTeacherClasses(filtered);
     } catch (err: any) {
       setTeacherClasses([]);
@@ -370,6 +390,7 @@ export default function TeacherManagementPage() {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
             <PersonalResumeCard
+              compact
               name={selectedTeacher.fullName || 'Giảng viên'}
               avatarUrl={selectedTeacher.avatarUrl}
               avatarFallback={selectedTeacher.fullName?.charAt(0)?.toUpperCase()}
@@ -440,10 +461,13 @@ export default function TeacherManagementPage() {
                               <strong>Thời gian:</strong> {formatDateToDDMMYYYY(cls.startDate)} - {formatDateToDDMMYYYY(cls.endDate)}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Phòng:</strong> {cls.roomName || 'Chưa xếp'}
+                              <strong>Phòng:</strong> {getClassRoomName(cls) || 'Chưa xếp'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Sĩ số tối đa:</strong> {cls.maxStudents || 'N/A'}
+                              <strong>Cơ sở:</strong> {getClassBranchName(cls) || 'Chưa xếp'}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>Sĩ số:</strong> {cls.currentStudents ?? 0} / {cls.maxStudents || 'N/A'}
                             </Typography>
                           </Stack>
                         </CardContent>
@@ -497,7 +521,7 @@ export default function TeacherManagementPage() {
                 <Box sx={{ flex: { xs: '0 0 100%', md: '0 0 calc(33.333% - 20px)' } }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: 'center' }}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">PHÒNG HỌC</Typography>
-                    <Typography variant="h4" fontWeight={900}>{selectedClassDetail?.roomName || 'N/A'}</Typography>
+                    <Typography variant="h4" fontWeight={900}>{selectedClassDetail ? getClassRoomName(selectedClassDetail) || 'N/A' : 'N/A'}</Typography>
                     <Typography variant="body2" color="primary" fontWeight={700}>Trực tiếp</Typography>
                   </Paper>
                 </Box>

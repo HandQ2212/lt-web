@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -206,9 +205,20 @@ export default function CourseListPage() {
           Không tìm thấy khóa học phù hợp.
         </Typography>
       ) : (
-      <Grid container spacing={3}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(3, minmax(0, 1fr))',
+          },
+          gap: 3,
+          alignItems: 'stretch',
+        }}
+      >
         {filteredCourses.map((course) => (
-          <Grid item xs={12} md={4} key={course.id}>
+          <Box key={course.id}>
             <Card
               sx={{
                 height: '100%',
@@ -216,21 +226,24 @@ export default function CourseListPage() {
                 flexDirection: 'column',
                 cursor: 'pointer',
                 border: '2px solid #1E293B',
-                borderRadius: 5,
-                boxShadow: '5px 5px 0 #1E293B',
+                borderRadius: 4,
+                boxShadow: '4px 4px 0 #1E293B',
                 transition: 'all 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' },
+                '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '6px 6px 0 #1E293B' },
               }}
               onClick={() => navigate(`/courses/${course.id}`)}
             >
               <CardMedia
                 component="img"
-                height="200"
                 image={course.imageUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800'}
                 alt={course.name}
+                sx={{
+                  height: { xs: 180, md: 150 },
+                  objectFit: 'cover',
+                }}
               />
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ mb: 2 }}>
+              <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
+                <Box sx={{ mb: 1.5 }}>
                   <Chip
                     label={getLevelText(getDisplayLevel(course))}
                     color={getLevelColor(getPrimaryLevel(course)?.code || course.level || '')}
@@ -238,25 +251,25 @@ export default function CourseListPage() {
                     sx={{ border: '2px solid #1E293B', fontWeight: 900 }}
                   />
                 </Box>
-                <Typography variant="h6" gutterBottom fontWeight={900}>
+                <Typography variant="h6" gutterBottom fontWeight={900} sx={{ fontSize: '1rem', lineHeight: 1.35 }}>
                   {course.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 40 }}>
                   {course.description}
                 </Typography>
-                <Typography variant="h6" color="primary" fontWeight={900}>
+                <Typography variant="h6" color="primary" fontWeight={900} sx={{ fontSize: '1.05rem' }}>
                   {getDisplayPrice(course).toLocaleString('vi-VN')}đ
                 </Typography>
               </CardContent>
-              <Box sx={{ p: 2 }}>
-                <Button variant="contained" fullWidth>
+              <Box sx={{ p: 2.5, pt: 0 }}>
+                <Button variant="contained" fullWidth size="small" sx={{ py: 1 }}>
                   Xem chi tiết
                 </Button>
               </Box>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
       )}
     </Container>
   );

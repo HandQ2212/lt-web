@@ -74,6 +74,9 @@ type StudentForm = {
 
 const defaultForm: StudentForm = { fullName: '', email: '', phone: '', password: '' };
 
+const getStudentDisplayName = (student: AppUser) =>
+  student.fullName || (student as any).name || student.email || 'Chưa cập nhật';
+
 const getStatusColor = (status?: string): 'default' | 'info' | 'success' | 'warning' | 'error' => {
   switch (status) {
     case 'UPCOMING': return 'warning';
@@ -181,7 +184,7 @@ export default function StudentManagementPage() {
     } else {
       const q = query.toLowerCase();
       setFilteredStudents(students.filter((s) =>
-        s.name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.phone?.includes(q)
+        getStudentDisplayName(s).toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.phone?.includes(q)
       ));
     }
   };
@@ -189,7 +192,7 @@ export default function StudentManagementPage() {
   const handleOpenCreate = () => { setEditingStudent(null); setForm(defaultForm); setOpenDialog(true); };
   const handleOpenEdit = (student: AppUser) => {
     setEditingStudent(student);
-    setForm({ fullName: student.name, email: student.email, phone: student.phone || '', password: '' });
+    setForm({ fullName: getStudentDisplayName(student), email: student.email, phone: student.phone || '', password: '' });
     setOpenDialog(true);
   };
 
@@ -442,10 +445,11 @@ export default function StudentManagementPage() {
         </Paper>
       ) : (
         <TableContainer component={Paper} sx={{ borderRadius: 4, overflow: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
-          <Table sx={{ minWidth: 900 }}>
+          <Table sx={{ minWidth: 1050 }}>
             <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Tên học viên</TableCell>
                 <TableCell sx={{ fontWeight: 800 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 800 }}>Số điện thoại</TableCell>
                 <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
@@ -457,12 +461,14 @@ export default function StudentManagementPage() {
                 <TableRow key={student.id} hover onClick={() => setSelectedStudent(student)} sx={{ cursor: 'pointer' }}>
                   <TableCell>
                     <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>{student.name?.charAt(0)?.toUpperCase()}</Avatar>
+                      <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>{getStudentDisplayName(student).charAt(0).toUpperCase()}</Avatar>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="subtitle2" fontWeight={800}>{student.name}</Typography>
                         <Typography variant="caption" color="text.secondary">Mã: {student.id.slice(0, 8).toUpperCase()}</Typography>
                       </Box>
                     </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2" fontWeight={800}>{getStudentDisplayName(student)}</Typography>
                   </TableCell>
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{student.phone || 'Chưa cập nhật'}</TableCell>
