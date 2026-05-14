@@ -12,14 +12,19 @@ import com.elc.system.modules.finance.repository.InvoiceRepository;
 import com.elc.system.modules.finance.repository.PaymentRepository;
 import com.elc.system.modules.lead.dto.LeadDto.*;
 import com.elc.system.modules.lead.entity.Lead;
+import com.elc.system.modules.lead.entity.LeadInterest;
 import com.elc.system.modules.lead.entity.LeadSource;
 import com.elc.system.modules.lead.entity.LeadStatus;
+import com.elc.system.modules.lead.repository.LeadInterestRepository;
 import com.elc.system.modules.lead.repository.LeadRepository;
 import com.elc.system.modules.lms.entity.Clazz;
 import com.elc.system.modules.lms.entity.Enrollment;
 import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import com.elc.system.modules.lms.repository.ClazzRepository;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
+import com.elc.system.modules.sms.entity.Course;
+import com.elc.system.modules.sms.entity.Level;
+import com.elc.system.modules.sms.repository.CourseRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,8 +41,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -45,8 +52,10 @@ import java.util.UUID;
 public class LeadService {
 
     private final LeadRepository leadRepository;
+    private final LeadInterestRepository leadInterestRepository;
     private final UserRepository userRepository;
     private final ClazzRepository clazzRepository;
+    private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
@@ -54,16 +63,20 @@ public class LeadService {
     private final com.elc.system.core.service.EmailService emailService;
 
     public LeadService(LeadRepository leadRepository,
+                       LeadInterestRepository leadInterestRepository,
                        UserRepository userRepository,
                        ClazzRepository clazzRepository,
+                       CourseRepository courseRepository,
                        EnrollmentRepository enrollmentRepository,
                        InvoiceRepository invoiceRepository,
                        PaymentRepository paymentRepository,
                        PasswordEncoder passwordEncoder,
                        com.elc.system.core.service.EmailService emailService) {
         this.leadRepository = leadRepository;
+        this.leadInterestRepository = leadInterestRepository;
         this.userRepository = userRepository;
         this.clazzRepository = clazzRepository;
+        this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.invoiceRepository = invoiceRepository;
         this.paymentRepository = paymentRepository;
@@ -86,6 +99,7 @@ public class LeadService {
 
         applyLeadDetails(lead, request, email, phone);
         leadRepository.save(lead);
+        saveCourseInterests(lead, request.getCourseIds(), request.getNotes());
         ensureLeadUserIfPossible(lead, request.getPassword());
         log.info("Lead created: {}", lead.getId());
 
@@ -103,6 +117,15 @@ public class LeadService {
     @Transactional
     public LeadResponse addMyInterests(User currentUser, LeadInterestRequest request) {
         Lead lead = findOrCreateLeadForUser(currentUser);
+        if (!hasInterestTarget(request)) {
+            throw new IllegalArgumentException("At least one course or class is required");
+        }
+
+        saveCourseInterests(lead, request.getCourseIds(), request.getNotes());
+        if (request.getClassId() != null) {
+            saveClassInterest(lead, request.getClassId(), request.getNotes());
+        }
+
         lead.setStatus(LeadStatus.INTERESTED);
         lead.setNotes(firstNonBlank(request.getNotes(), lead.getNotes()));
         return mapToResponse(leadRepository.save(lead));
@@ -111,7 +134,7 @@ public class LeadService {
     @Transactional
     public LeadResponse expressInterestInClass(User currentUser, UUID classId, String notes) {
         Lead lead = findOrCreateLeadForUser(currentUser);
-        clazzRepository.findById(classId).orElseThrow(() -> new IllegalArgumentException("Class not found"));
+        saveClassInterest(lead, classId, notes);
         lead.setStatus(LeadStatus.INTERESTED);
         lead.setNotes(firstNonBlank(notes, lead.getNotes()));
         return mapToResponse(leadRepository.save(lead));
@@ -258,6 +281,54 @@ public class LeadService {
                 .build();
     }
 
+    private boolean hasInterestTarget(LeadInterestRequest request) {
+        return request != null
+                && (request.getClassId() != null || (request.getCourseIds() != null && !request.getCourseIds().isEmpty()));
+    }
+
+    private void saveCourseInterests(Lead lead, List<UUID> courseIds, String notes) {
+        if (courseIds == null || courseIds.isEmpty()) {
+            return;
+        }
+
+        Set<UUID> uniqueCourseIds = new LinkedHashSet<>(courseIds);
+        uniqueCourseIds.remove(null);
+
+        for (UUID courseId : uniqueCourseIds) {
+            Course course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> new IllegalArgumentException("Course not found with id: " + courseId));
+            LeadInterest interest = leadInterestRepository.findByLeadIdAndCourseId(lead.getId(), courseId)
+                    .orElseGet(() -> LeadInterest.builder()
+                            .lead(lead)
+                            .course(course)
+                            .status(LeadStatus.INTERESTED)
+                            .build());
+
+            interest.setStatus(LeadStatus.INTERESTED);
+            interest.setNotes(firstNonBlank(notes, interest.getNotes()));
+            leadInterestRepository.save(interest);
+        }
+    }
+
+    private void saveClassInterest(Lead lead, UUID classId, String notes) {
+        if (classId == null) {
+            throw new IllegalArgumentException("Class is required");
+        }
+
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("Class not found with id: " + classId));
+        LeadInterest interest = leadInterestRepository.findByLeadIdAndClazzId(lead.getId(), classId)
+                .orElseGet(() -> LeadInterest.builder()
+                        .lead(lead)
+                        .clazz(clazz)
+                        .status(LeadStatus.INTERESTED)
+                        .build());
+
+        interest.setStatus(LeadStatus.INTERESTED);
+        interest.setNotes(firstNonBlank(notes, interest.getNotes()));
+        leadInterestRepository.save(interest);
+    }
+
     private Lead findLeadOrThrow(UUID id) {
         return leadRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Lead not found with id: " + id));
@@ -359,6 +430,9 @@ public class LeadService {
         UUID enrollmentId = null;
         UUID invoiceId = null;
         Optional<User> linkedUser = findLinkedUser(lead);
+        List<LeadInterestResponse> interests = leadInterestRepository.findByLeadIdOrderByCreatedAtDesc(lead.getId()).stream()
+                .map(this::mapInterestToResponse)
+                .toList();
 
         if (linkedUser.isPresent()) {
             userId = linkedUser.get().getId();
@@ -390,9 +464,28 @@ public class LeadService {
                 .notes(lead.getNotes())
                 .currentEnrollmentId(enrollmentId)
                 .currentInvoiceId(invoiceId)
-                .interests(List.of())
+                .interests(interests)
                 .createdAt(lead.getCreatedAt())
                 .updatedAt(lead.getUpdatedAt())
+                .build();
+    }
+
+    private LeadInterestResponse mapInterestToResponse(LeadInterest interest) {
+        Course course = interest.getCourse();
+        Clazz clazz = interest.getClazz();
+        Level level = clazz != null ? clazz.getLevel() : null;
+
+        return LeadInterestResponse.builder()
+                .id(interest.getId())
+                .courseId(course != null ? course.getId() : null)
+                .courseName(course != null ? course.getName() : null)
+                .clazzId(clazz != null ? clazz.getId() : null)
+                .clazzName(clazz != null ? clazz.getName() : null)
+                .levelId(level != null ? level.getId() : null)
+                .levelName(level != null ? level.getName() : null)
+                .status(interest.getStatus())
+                .notes(interest.getNotes())
+                .createdAt(interest.getCreatedAt())
                 .build();
     }
 

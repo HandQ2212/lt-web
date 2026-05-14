@@ -149,6 +149,8 @@ public class LeadDto {
         private String courseName;
         private UUID clazzId;
         private String clazzName;
+        private UUID levelId;
+        private String levelName;
         private LeadStatus status;
         private String notes;
         private ZonedDateTime createdAt;
