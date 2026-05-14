@@ -18,7 +18,6 @@ public class LevelDto {
     public static class LevelRequest {
         private UUID courseId;
 
-        @NotBlank(message = "Code is required")
         private String code;
 
         @NotBlank(message = "Name is required")

@@ -135,11 +135,16 @@ export const courseApi = {
     return list.map((course: any) => ({
       id: course.id,
       name: course.name,
-      level: course.level,
-      price: Number(course.basePrice || course.price || 0),
-      status: 'ACTIVE',
       description: course.description,
-      imageUrl: course.imageUrl,
+      levels: Array.isArray(course.levels)
+        ? course.levels.map((level: any) => ({
+            id: level.id,
+            code: level.code,
+            name: level.name,
+            basePrice: Number(level.basePrice || 0),
+            durationWeeks: level.durationWeeks ?? null,
+          }))
+        : [],
     }));
   },
   getById: async (id: string) => {
@@ -148,16 +153,59 @@ export const courseApi = {
     return {
       id: course.id,
       name: course.name,
-      level: course.level,
-      price: Number(course.basePrice || 0),
-      status: 'ACTIVE',
       description: course.description,
-      imageUrl: course.imageUrl,
+      levels: Array.isArray(course.levels)
+        ? course.levels.map((level: any) => ({
+            id: level.id,
+            code: level.code,
+            name: level.name,
+            basePrice: Number(level.basePrice || 0),
+            durationWeeks: level.durationWeeks ?? null,
+          }))
+        : [],
     };
   },
   create: (data: any) => api.post('courses', data),
   update: (id: string, data: any) => api.put(`courses/${id}`, data),
   delete: (id: string) => api.delete(`courses/${id}`),
+};
+
+export const levelApi = {
+  getAll: async () => {
+    const response = await api.get('levels');
+    const list = Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
+    return list.map((level: any) => ({
+      id: level.id,
+      courseId: level.courseId,
+      courseName: level.courseName,
+      code: level.code,
+      name: level.name,
+      description: level.description,
+      displayOrder: level.displayOrder,
+      basePrice: Number(level.basePrice || 0),
+      durationWeeks: level.durationWeeks ?? null,
+      isActive: Boolean(level.isActive),
+    }));
+  },
+  getById: async (id: string) => {
+    const response = await api.get(`levels/${id}`);
+    const level = response.data;
+    return {
+      id: level.id,
+      courseId: level.courseId,
+      courseName: level.courseName,
+      code: level.code,
+      name: level.name,
+      description: level.description,
+      displayOrder: level.displayOrder,
+      basePrice: Number(level.basePrice || 0),
+      durationWeeks: level.durationWeeks ?? null,
+      isActive: Boolean(level.isActive),
+    };
+  },
+  create: (data: any) => api.post('levels', data),
+  update: (id: string, data: any) => api.put(`levels/${id}`, data),
+  delete: (id: string) => api.delete(`levels/${id}`),
 };
 
 export const branchApi = {
