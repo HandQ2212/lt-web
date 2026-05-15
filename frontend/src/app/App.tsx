@@ -48,7 +48,6 @@ import ProgramManagementPage from './pages/admin/ProgramManagementPage';
 
 import TeacherSchedulePage from './pages/teacher/TeacherSchedulePage';
 import TeacherClassesPage from './pages/teacher/TeacherClassesPage';
-import AttendancePage from './pages/teacher/AttendancePage';
 import AssignmentPage from './pages/teacher/AssignmentPage';
 
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -562,14 +561,6 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={['TEACHER']}>
               <TeacherClassesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/teacher/attendance"
-          element={
-            <ProtectedRoute allowedRoles={['TEACHER']}>
-              <AttendancePage />
             </ProtectedRoute>
           }
         />

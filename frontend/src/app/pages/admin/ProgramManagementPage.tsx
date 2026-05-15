@@ -180,6 +180,38 @@ const getScheduleDateLabel = (scheduleDate?: string, dayOfWeek?: string) => {
   return dayOfWeekLabelMap[(dayOfWeek || '').toUpperCase()] || dayOfWeek || '-';
 };
 
+const isScheduleDateWithinClassRange = (scheduleDate: string, classItem?: Pick<ClassDetail, 'startDate' | 'endDate'> | null) => {
+  if (!scheduleDate || !classItem) {
+    return true;
+  }
+
+  if (classItem.startDate && scheduleDate < classItem.startDate) {
+    return false;
+  }
+
+  if (classItem.endDate && scheduleDate > classItem.endDate) {
+    return false;
+  }
+
+  return true;
+};
+
+const getValidScheduleDateForClass = (classItem?: Pick<ClassDetail, 'startDate' | 'endDate'> | null, preferredDate = getDateInputValue()) => {
+  if (!classItem) {
+    return preferredDate;
+  }
+
+  if (classItem.startDate && preferredDate < classItem.startDate) {
+    return classItem.startDate;
+  }
+
+  if (classItem.endDate && preferredDate > classItem.endDate) {
+    return classItem.endDate;
+  }
+
+  return preferredDate;
+};
+
 const getTimestamp = (value?: string | null) => {
   if (!value) {
     return 0;
@@ -592,16 +624,17 @@ export default function ProgramManagementPage() {
   };
 
   const openScheduleDialog = (classId: string, schedule?: { id?: string; scheduleDate?: string; dayOfWeek?: string; startTime: string; endTime: string }) => {
+    const targetClass = selectedClassDetail?.id === classId ? selectedClassDetail : activeClass;
     setScheduleMode(schedule ? 'edit' : 'create');
     setScheduleDialog({ open: true, classId, scheduleId: schedule?.id });
     setScheduleForm(
       schedule
         ? {
-            scheduleDate: schedule.scheduleDate || getDateInputValue(),
+            scheduleDate: schedule.scheduleDate || getValidScheduleDateForClass(targetClass),
             startTime: formatTimeToHHMM(schedule.startTime),
             endTime: formatTimeToHHMM(schedule.endTime),
           }
-        : { ...defaultScheduleForm, scheduleDate: getDateInputValue() }
+        : { ...defaultScheduleForm, scheduleDate: getValidScheduleDateForClass(targetClass) }
     );
   };
 
@@ -612,6 +645,15 @@ export default function ProgramManagementPage() {
     }
     if (!scheduleForm.scheduleDate) {
       setSnackbar({ open: true, message: 'Vui lòng chọn ngày học', severity: 'error' });
+      return;
+    }
+
+    if (!isScheduleDateWithinClassRange(scheduleForm.scheduleDate, scheduleTargetClass)) {
+      setSnackbar({
+        open: true,
+        message: `NgÃ y há»c pháº£i náº±m trong khoáº£ng tá»« ${formatDateToDDMMYYYY(scheduleTargetClass?.startDate)} Ä‘áº¿n ${formatDateToDDMMYYYY(scheduleTargetClass?.endDate)}`,
+        severity: 'error',
+      });
       return;
     }
 
@@ -695,6 +737,11 @@ export default function ProgramManagementPage() {
   };
 
   const activeClass = selectedClassDetail || (selectedClass as ClassDetail | null);
+  const scheduleTargetClass = activeClass;
+  const scheduleDateRangeError =
+    scheduleForm.scheduleDate && !isScheduleDateWithinClassRange(scheduleForm.scheduleDate, scheduleTargetClass)
+      ? `Ngày học phải nằm trong khoảng từ ${formatDateToDDMMYYYY(scheduleTargetClass?.startDate)} đến ${formatDateToDDMMYYYY(scheduleTargetClass?.endDate)}`
+      : '';
   const detailLoading = loadingClassDetails;
   const attendance = classAttendance;
   const scheduleSessionRows = useMemo<ScheduleSessionRow[]>(() => {
@@ -1629,13 +1676,16 @@ export default function ProgramManagementPage() {
                         border: '1px solid rgba(25, 118, 210, 0.10)',
                       }}
                     >
-                      <TextField
-                        type="date"
-                        fullWidth
-                        label="Ngày học"
-                        value={scheduleForm.scheduleDate}
-                        onChange={(e) => setScheduleForm((prev) => ({ ...prev, scheduleDate: e.target.value }))}
-                        InputLabelProps={{ shrink: true }}
+            <TextField
+              type="date"
+              fullWidth
+              label="Ngày học"
+              value={scheduleForm.scheduleDate}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, scheduleDate: e.target.value }))}
+              inputProps={{ min: scheduleTargetClass?.startDate, max: scheduleTargetClass?.endDate }}
+              error={Boolean(scheduleDateRangeError)}
+              helperText={scheduleDateRangeError || ' '}
+              InputLabelProps={{ shrink: true }}
                         sx={{ flex: { md: '1.2 1 0%' }, minWidth: { md: 220 } }}
                       />
                       <TextField
@@ -1659,7 +1709,7 @@ export default function ProgramManagementPage() {
                       <Button
                         variant="contained"
                         fullWidth
-                        disabled={scheduleSubmitting}
+                        disabled={scheduleSubmitting || Boolean(scheduleDateRangeError)}
                         onClick={() => void handleSaveSchedule()}
                         sx={{
                           borderRadius: 2,
@@ -1870,6 +1920,9 @@ export default function ProgramManagementPage() {
               label="Ngày học"
               value={scheduleForm.scheduleDate}
               onChange={(e) => setScheduleForm((prev) => ({ ...prev, scheduleDate: e.target.value }))}
+              inputProps={{ min: scheduleTargetClass?.startDate, max: scheduleTargetClass?.endDate }}
+              error={Boolean(scheduleDateRangeError)}
+              helperText={scheduleDateRangeError || ' '}
               InputLabelProps={{ shrink: true }}
               sx={{ borderRadius: 2 }}
             />
@@ -1897,7 +1950,7 @@ export default function ProgramManagementPage() {
           </Button>
           <Button
             variant="contained"
-            disabled={scheduleSubmitting}
+            disabled={scheduleSubmitting || Boolean(scheduleDateRangeError)}
             onClick={() => void handleSaveSchedule()}
             sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
           >

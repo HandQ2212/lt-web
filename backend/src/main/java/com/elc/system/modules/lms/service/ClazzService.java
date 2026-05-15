@@ -247,6 +247,7 @@ public class ClazzService {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new RuntimeException("Class not found"));
         LocalDate scheduleDate = request.getScheduleDate();
+        validateScheduleDateWithinClassRange(clazz, scheduleDate);
         String dayOfWeek = resolveDayOfWeek(scheduleDate, request.getDayOfWeek());
 
         // Validate that start time is before end time
@@ -292,6 +293,7 @@ public class ClazzService {
             throw new IllegalArgumentException("Schedule does not belong to the given class");
         }
         LocalDate scheduleDate = request.getScheduleDate();
+        validateScheduleDateWithinClassRange(clazz, scheduleDate);
         String dayOfWeek = resolveDayOfWeek(scheduleDate, request.getDayOfWeek());
 
         if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
@@ -317,6 +319,22 @@ public class ClazzService {
         schedule.setEndTime(request.getEndTime());
 
         return mapToScheduleResponse(classScheduleRepository.save(schedule));
+    }
+
+    private void validateScheduleDateWithinClassRange(Clazz clazz, LocalDate scheduleDate) {
+        if (scheduleDate == null) {
+            throw new IllegalArgumentException("Schedule date is required");
+        }
+
+        if (clazz.getStartDate() != null && scheduleDate.isBefore(clazz.getStartDate())) {
+            throw new IllegalArgumentException(
+                    "Schedule date must be on or after class start date " + clazz.getStartDate());
+        }
+
+        if (clazz.getEndDate() != null && scheduleDate.isAfter(clazz.getEndDate())) {
+            throw new IllegalArgumentException(
+                    "Schedule date must be on or before class end date " + clazz.getEndDate());
+        }
     }
 
     @Transactional

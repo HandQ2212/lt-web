@@ -80,9 +80,16 @@ type ScheduleSessionRow = {
   attendanceDate: string;
   dateLabel: string;
   timeLabel: string;
+  startTime: string;
+  endTime: string;
   dayOfWeek: string;
   roomLabel: string;
   formatLabel: string;
+};
+
+type AttendanceAvailability = {
+  allowed: boolean;
+  reason?: string;
 };
 
 const dayOfWeekIndexMap: Record<string, number> = {
@@ -113,6 +120,109 @@ const formatSessionDateLabel = (date: Date) => {
     year: 'numeric',
   });
   return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
+const toLocalDateKey = (date: Date) =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+
+const parseTimeToMinutes = (value?: string) => {
+  if (!value) return null;
+  const [hourRaw, minuteRaw] = value.split(':');
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+};
+
+const getTodayAttendanceAvailability = (classItem: ClassItem | null, now: Date): AttendanceAvailability => {
+  if (!classItem) {
+    return { allowed: false, reason: 'Chưa chọn lớp học để điểm danh.' };
+  }
+
+  if (!classItem.schedules?.length) {
+    return { allowed: false, reason: 'Lớp này chưa được xếp lịch học nên chưa thể điểm danh.' };
+  }
+
+  const todayKey = toLocalDateKey(now);
+  const todayStart = new Date(`${todayKey}T00:00:00`);
+  const todayEnd = new Date(`${todayKey}T23:59:59`);
+
+  if (classItem.startDate) {
+    const classStart = new Date(`${classItem.startDate}T00:00:00`);
+    if (!Number.isNaN(classStart.getTime()) && todayStart < classStart) {
+      return { allowed: false, reason: `Lớp chưa bắt đầu. Ngày khai giảng là ${formatDateToDDMMYYYY(classItem.startDate)}.` };
+    }
+  }
+
+  if (classItem.endDate) {
+    const classEnd = new Date(`${classItem.endDate}T23:59:59`);
+    if (!Number.isNaN(classEnd.getTime()) && todayEnd > classEnd) {
+      return { allowed: false, reason: `Lớp đã kết thúc từ ${formatDateToDDMMYYYY(classItem.endDate)} nên không thể điểm danh hôm nay.` };
+    }
+  }
+
+  if (classItem.status === 'CANCELLED') {
+    return { allowed: false, reason: 'Lớp đã bị hủy nên không thể điểm danh.' };
+  }
+
+  if (classItem.status === 'COMPLETED') {
+    return { allowed: false, reason: 'Lớp đã hoàn thành nên không thể điểm danh thêm.' };
+  }
+
+  const todaySchedules = classItem.schedules.filter(
+    (schedule) => dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()] === now.getDay()
+  );
+
+  if (!todaySchedules.length) {
+    return { allowed: false, reason: 'Hôm nay lớp không có buổi học theo lịch.' };
+  }
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startedSchedules = todaySchedules.filter((schedule) => {
+    const startMinutes = parseTimeToMinutes(schedule.startTime);
+    return startMinutes != null && currentMinutes >= startMinutes;
+  });
+
+  if (!startedSchedules.length) {
+    const nearestSchedule = [...todaySchedules]
+      .sort((left, right) => (parseTimeToMinutes(left.startTime) ?? 0) - (parseTimeToMinutes(right.startTime) ?? 0))[0];
+    return {
+      allowed: false,
+      reason: `Hôm nay có buổi học nhưng chưa tới giờ. Có thể điểm danh từ ${formatTimeToHHMM(nearestSchedule.startTime)}.`,
+    };
+  }
+
+  return { allowed: true };
+};
+
+const getSessionAttendanceAvailability = (session: ScheduleSessionRow | null, now: Date): AttendanceAvailability => {
+  if (!session) {
+    return { allowed: false, reason: 'Chưa chọn buổi học để điểm danh.' };
+  }
+
+  const todayKey = toLocalDateKey(now);
+  if (session.attendanceDate !== todayKey) {
+    return { allowed: false, reason: 'Chỉ có thể điểm danh cho buổi học diễn ra hôm nay.' };
+  }
+
+  const startMinutes = parseTimeToMinutes(session.startTime);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  if (startMinutes != null && currentMinutes < startMinutes) {
+    return {
+      allowed: false,
+      reason: `Buổi học này chưa tới giờ. Có thể điểm danh từ ${formatTimeToHHMM(session.startTime)}.`,
+    };
+  }
+
+  return { allowed: true };
 };
 
 const getEnrollmentStatusDisplay = (status?: string) => {
@@ -147,7 +257,9 @@ export default function TeacherClassesPage() {
   });
 
   const selectedClassId = selectedClass?.id;
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = toLocalDateKey(new Date());
+  const todayAttendanceAvailability = getTodayAttendanceAvailability(selectedClass, new Date());
+  const selectedSessionAttendanceAvailability = getSessionAttendanceAvailability(sessionAttendanceDialog.session, new Date());
 
   useEffect(() => {
     void fetchClasses();
@@ -300,6 +412,8 @@ export default function TeacherClassesPage() {
             attendanceDate: occurrenceDateKey,
             dateLabel: formatSessionDateLabel(new Date(occurrence)),
             timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
             dayOfWeek: schedule.dayOfWeek,
             roomLabel: selectedClass.roomName || '-',
             formatLabel: selectedClass.roomName ? 'Trực tiếp' : 'Online',
@@ -319,6 +433,8 @@ export default function TeacherClassesPage() {
         attendanceDate: todayIso,
         dateLabel: labelDay,
         timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
         dayOfWeek: schedule.dayOfWeek,
         roomLabel: selectedClass.roomName || '-',
         formatLabel: selectedClass.roomName ? 'Trực tiếp' : 'Online',
@@ -526,6 +642,11 @@ export default function TeacherClassesPage() {
                         Tổng số: {scheduleSessionRows.length}
                       </Typography>
                     </Stack>
+                    {!todayAttendanceAvailability.allowed && (
+                      <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                        {todayAttendanceAvailability.reason}
+                      </Alert>
+                    )}
                     {scheduleSessionRows.length ? (
                       <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
                         <Table size="small" stickyHeader>
@@ -540,7 +661,9 @@ export default function TeacherClassesPage() {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {scheduleSessionRows.map((session, index) => (
+                            {scheduleSessionRows.map((session, index) => {
+                              const sessionAvailability = getSessionAttendanceAvailability(session, new Date());
+                              return (
                               <TableRow key={session.key} hover>
                                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
                                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.dateLabel}</TableCell>
@@ -556,17 +679,25 @@ export default function TeacherClassesPage() {
                                   />
                                 </TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>
+                                  <Stack spacing={0.75} alignItems="center">
                                   <Button
                                     size="small"
                                     variant="outlined"
                                     onClick={() => setSessionAttendanceDialog({ open: true, session })}
+                                    disabled={!sessionAvailability.allowed}
                                     sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 2 }}
                                   >
                                     Điểm danh
                                   </Button>
+                                    {!sessionAvailability.allowed && (
+                                      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 180, whiteSpace: 'normal', lineHeight: 1.35 }}>
+                                        {sessionAvailability.reason}
+                                      </Typography>
+                                    )}
+                                  </Stack>
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            )})}
                           </TableBody>
                         </Table>
                       </TableContainer>
@@ -613,6 +744,11 @@ export default function TeacherClassesPage() {
                     <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>
                       Điểm danh hôm nay - {formatDateToDDMMYYYY(todayIso)}
                     </Typography>
+                    {!todayAttendanceAvailability.allowed && (
+                      <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                        {todayAttendanceAvailability.reason}
+                      </Alert>
+                    )}
                     {enrollments.length === 0 ? (
                       <Alert severity="info" sx={{ borderRadius: 2 }}>Chưa có học viên trong lớp.</Alert>
                     ) : (
@@ -638,7 +774,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'PRESENT' ? 'success' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'PRESENT', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                       sx={{ fontWeight: 700 }}
                                     >
                                       <CheckIcon fontSize="small" />
@@ -649,7 +785,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'ABSENT' ? 'error' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'ABSENT', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                     >
                                       <CloseIcon fontSize="small" />
                                     </IconButton>
@@ -659,7 +795,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'LATE' ? 'warning' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'LATE', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                     >
                                       <SchoolOutlinedIcon fontSize="small" />
                                     </IconButton>
@@ -669,7 +805,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'EXCUSED' ? 'info' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'EXCUSED', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                     >
                                       <SchoolOutlinedIcon fontSize="small" />
                                     </IconButton>
@@ -698,6 +834,11 @@ export default function TeacherClassesPage() {
               </Typography>
             </DialogTitle>
             <DialogContent dividers sx={{ p: 3 }}>
+              {!selectedSessionAttendanceAvailability.allowed && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  {selectedSessionAttendanceAvailability.reason}
+                </Alert>
+              )}
               {enrollments.length === 0 ? (
                 <Alert severity="info">Chưa có học viên trong lớp.</Alert>
               ) : (
@@ -721,11 +862,14 @@ export default function TeacherClassesPage() {
                                 select
                                 size="small"
                                 value={currentStatus}
+                                disabled={!selectedSessionAttendanceAvailability.allowed || attendanceLoading}
                                 onChange={(e) => {
                                   const newStatus = e.target.value;
                                   setAttendanceForm((prev) => ({ ...prev, [attendanceKey]: newStatus }));
                                   // Auto save
-                                  handleMarkAttendance(enrollment.id, newStatus, sessionAttendanceDialog.session?.attendanceDate || todayIso);
+                                  if (selectedSessionAttendanceAvailability.allowed) {
+                                    handleMarkAttendance(enrollment.id, newStatus, sessionAttendanceDialog.session?.attendanceDate || todayIso);
+                                  }
                                 }}
                                 sx={{ width: 120 }}
                               >

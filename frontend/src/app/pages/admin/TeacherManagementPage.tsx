@@ -187,6 +187,38 @@ const getScheduleDateLabel = (scheduleDate?: string, dayOfWeek?: string) => {
   return dayOfWeekLabelMap[(dayOfWeek || '').toUpperCase()] || dayOfWeek || '-';
 };
 
+const isScheduleDateWithinClassRange = (scheduleDate: string, classItem?: Pick<ClassItem, 'startDate' | 'endDate'> | null) => {
+  if (!scheduleDate || !classItem) {
+    return true;
+  }
+
+  if (classItem.startDate && scheduleDate < classItem.startDate) {
+    return false;
+  }
+
+  if (classItem.endDate && scheduleDate > classItem.endDate) {
+    return false;
+  }
+
+  return true;
+};
+
+const getValidScheduleDateForClass = (classItem?: Pick<ClassItem, 'startDate' | 'endDate'> | null, preferredDate = getDateInputValue()) => {
+  if (!classItem) {
+    return preferredDate;
+  }
+
+  if (classItem.startDate && preferredDate < classItem.startDate) {
+    return classItem.startDate;
+  }
+
+  if (classItem.endDate && preferredDate > classItem.endDate) {
+    return classItem.endDate;
+  }
+
+  return preferredDate;
+};
+
 export default function TeacherManagementPage() {
   const [teachers, setTeachers] = useState<AppUser[]>([]);
   const [filteredTeachers, setFilteredTeachers] = useState<AppUser[]>([]);
@@ -216,6 +248,10 @@ export default function TeacherManagementPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const todayIso = new Date().toISOString().slice(0, 10);
+  const scheduleDateRangeError =
+    scheduleForm.scheduleDate && !isScheduleDateWithinClassRange(scheduleForm.scheduleDate, selectedClassDetail)
+      ? `Ngày học phải nằm trong khoảng từ ${formatDateToDDMMYYYY(selectedClassDetail?.startDate)} đến ${formatDateToDDMMYYYY(selectedClassDetail?.endDate)}`
+      : '';
 
   useEffect(() => { void fetchTeachers(); }, []);
 
@@ -240,6 +276,10 @@ export default function TeacherManagementPage() {
       return;
     }
 
+    if (!isScheduleDateWithinClassRange(scheduleForm.scheduleDate, selectedClassDetail)) {
+      return;
+    }
+
     const payload = {
       ...scheduleForm,
       dayOfWeek: getDayOfWeekFromDate(scheduleForm.scheduleDate),
@@ -259,7 +299,7 @@ export default function TeacherManagementPage() {
       const updatedClass = (await classApi.getAll()).find((c: ClassItem) => c.id === selectedClassDetail.id);
       if (updatedClass) setSelectedClassDetail(updatedClass);
       setEditingScheduleId(null);
-      setScheduleForm({ scheduleDate: getDateInputValue(), startTime: '18:00', endTime: '20:00' });
+      setScheduleForm({ scheduleDate: getValidScheduleDateForClass(selectedClassDetail), startTime: '18:00', endTime: '20:00' });
     } catch (err: any) {
       setSnackbar({ open: true, message: err?.response?.data?.message || 'Không thể lưu lịch học', severity: 'error' });
     } finally {
@@ -279,7 +319,7 @@ export default function TeacherManagementPage() {
 
   const handleCancelEditSchedule = () => {
     setEditingScheduleId(null);
-    setScheduleForm({ scheduleDate: getDateInputValue(), startTime: '18:00', endTime: '20:00' });
+    setScheduleForm({ scheduleDate: getValidScheduleDateForClass(selectedClassDetail), startTime: '18:00', endTime: '20:00' });
   };
 
   const handleDeleteSchedule = async (scheduleId: string) => {
@@ -639,6 +679,9 @@ export default function TeacherManagementPage() {
                           label="Ngày học"
                           value={scheduleForm.scheduleDate}
                           onChange={(e) => setScheduleForm(prev => ({ ...prev, scheduleDate: e.target.value }))}
+                          inputProps={{ min: selectedClassDetail?.startDate, max: selectedClassDetail?.endDate }}
+                          error={Boolean(scheduleDateRangeError)}
+                          helperText={scheduleDateRangeError || ' '}
                           InputLabelProps={{ shrink: true }}
                         />
                       </Box>
@@ -666,7 +709,7 @@ export default function TeacherManagementPage() {
                         <Button
                           fullWidth
                           variant="contained"
-                          disabled={scheduleSubmitting}
+                          disabled={scheduleSubmitting || Boolean(scheduleDateRangeError)}
                           onClick={() => void handleSaveSchedule()}
                           sx={{ height: 56, borderRadius: 2, fontWeight: 700, whiteSpace: 'nowrap' }}
                         >

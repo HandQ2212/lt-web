@@ -33,7 +33,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { text: 'Trang chủ', icon: <HomeIcon />, path: '/', roles: ['STUDENT', 'LEAD', 'TEACHER', 'MANAGER', 'ACCOUNTANT'] },
   { text: 'Khám phá khóa học', icon: <ExploreIcon />, path: '/courses', roles: ['STUDENT', 'LEAD'] },
-  
+
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard', roles: ['MANAGER'] },
   { text: 'Người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
   { text: 'Lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
@@ -46,7 +46,6 @@ const menuItems: MenuItem[] = [
 
   { text: 'Lịch giảng dạy', icon: <CalendarTodayIcon />, path: '/teacher/schedule', roles: ['TEACHER'] },
   { text: 'Lớp phụ trách', icon: <ClassIcon />, path: '/teacher/classes', roles: ['TEACHER'] },
-  { text: 'Điểm danh', icon: <AssignmentIcon />, path: '/teacher/attendance', roles: ['TEACHER'] },
   { text: 'Bài tập giao', icon: <AssignmentIcon />, path: '/teacher/assignments', roles: ['TEACHER'] },
 
   { text: 'Khóa học của tôi', icon: <SchoolIcon />, path: '/student/courses', roles: ['STUDENT'] },
@@ -79,9 +78,7 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
   const theme = useTheme();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const filteredMenuItems = menuItems.filter(item =>
-    user && item.roles.includes(user.role)
-  );
+  const filteredMenuItems = menuItems.filter((item) => user && item.roles.includes(user.role));
 
   const isActive = (item: MenuItem) => {
     return location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -89,29 +86,37 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
 
   const getRoleLabel = (role?: string) => {
     switch (role) {
-      case 'MANAGER': return 'Quản trị viên';
-      case 'TEACHER': return 'Giảng viên';
-      case 'STUDENT': return 'Học viên';
-      case 'ACCOUNTANT': return 'Kế toán';
-      case 'LEAD': return 'Khách hàng';
-      default: return 'Thành viên';
+      case 'MANAGER':
+        return 'Quản trị viên';
+      case 'TEACHER':
+        return 'Giảng viên';
+      case 'STUDENT':
+        return 'Học viên';
+      case 'ACCOUNTANT':
+        return 'Kế toán';
+      case 'LEAD':
+        return 'Khách hàng';
+      default:
+        return 'Thành viên';
     }
   };
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Box sx={{ 
-        p: open ? 2.5 : 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        alignItems: open ? 'flex-start' : 'center',
-        justifyContent: 'center',
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-        color: 'white',
-        borderBottom: '2px solid #1E293B',
-        minHeight: 100,
-        transition: 'all 0.3s ease'
-      }}>
+      <Box
+        sx={{
+          p: open ? 2.5 : 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: open ? 'flex-start' : 'center',
+          justifyContent: 'center',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+          color: 'white',
+          borderBottom: '2px solid #1E293B',
+          minHeight: 100,
+          transition: 'all 0.3s ease',
+        }}
+      >
         {open ? (
           <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
@@ -129,17 +134,19 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
             )}
           </Box>
         ) : (
-          <Typography variant="h6" fontWeight={900} color="inherit">ELC</Typography>
+          <Typography variant="h6" fontWeight={900} color="inherit">
+            ELC
+          </Typography>
         )}
       </Box>
-      
+
       <Divider />
-      
+
       <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 2, overflowX: 'hidden' }}>
         <List sx={{ px: open ? 1.5 : 1 }}>
           {filteredMenuItems.map((item) => (
             <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
-              <Tooltip title={!open ? item.text : ""} placement="right">
+              <Tooltip title={!open ? item.text : ''} placement="right">
                 <ListItemButton
                   selected={isActive(item)}
                   onClick={() => {
@@ -162,31 +169,33 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
                       borderColor: '#1E293B',
                       boxShadow: '4px 4px 0 #1E293B',
                       '&:hover': { bgcolor: 'primary.main' },
-                      '& .MuiListItemIcon-root': { color: 'white' }
+                      '& .MuiListItemIcon-root': { color: 'white' },
                     },
                     '&:hover': {
                       bgcolor: 'rgba(251, 191, 36, 0.35)',
                       borderColor: '#1E293B',
-                    }
+                    },
                   }}
                 >
-                  <ListItemIcon sx={{ 
-                    minWidth: 0,
-                    mr: open ? 2 : 'auto',
-                    justifyContent: 'center',
-                    color: isActive(item) ? 'white' : 'text.secondary',
-                    transition: 'color 0.2s'
-                  }}>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: open ? 2 : 'auto',
+                      justifyContent: 'center',
+                      color: isActive(item) ? 'white' : 'text.secondary',
+                      transition: 'color 0.2s',
+                    }}
+                  >
                     {item.icon}
                   </ListItemIcon>
                   {open && (
-                    <ListItemText 
-                      primary={item.text} 
-                      primaryTypographyProps={{ 
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{
                         fontWeight: isActive(item) ? 800 : 600,
                         fontSize: '0.875rem',
-                        noWrap: true
-                      }} 
+                        noWrap: true,
+                      }}
                     />
                   )}
                 </ListItemButton>
@@ -196,17 +205,16 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
         </List>
       </Box>
 
-      {/* Toggle Button for Desktop */}
       {!isMobile && (
         <Box sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
-          <IconButton 
+          <IconButton
             onClick={onToggle}
-            sx={{ 
-              bgcolor: '#FFFFFF', 
+            sx={{
+              bgcolor: '#FFFFFF',
               border: '2px solid #1E293B',
               boxShadow: '3px 3px 0 #1E293B',
               '&:hover': { bgcolor: '#FBBF24' },
-              borderRadius: 3
+              borderRadius: 3,
             }}
           >
             {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
