@@ -493,6 +493,10 @@ public class ClazzService {
         List<ScheduleResponse> schedules = classScheduleRepository.findByClazzId(clazz.getId()).stream()
                 .map(this::mapToScheduleResponse)
                 .collect(Collectors.toList());
+        int currentStudents = (int) enrollmentRepository.countByClazzIdAndStatusIn(
+                clazz.getId(),
+                List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE)
+        );
 
         Level level = null;
         Course course = null;
@@ -543,7 +547,7 @@ public class ClazzService {
                 .startDate(clazz.getStartDate())
                 .endDate(clazz.getEndDate())
                 .maxStudents(clazz.getMaxStudents())
-                .currentStudents(clazz.getCurrentStudents())
+                .currentStudents(currentStudents)
                 .schedules(schedules)
                 .build();
     }

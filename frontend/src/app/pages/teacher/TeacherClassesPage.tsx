@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Alert,
@@ -277,9 +277,6 @@ export default function TeacherClassesPage() {
       const data = await classApi.getAll();
       const mine = (data || []).filter((cls: ClassItem) => !user?.id || cls.teacherId === user.id);
       setClasses(mine);
-      if (mine.length > 0 && !selectedClass) {
-        setSelectedClass(mine[0]);
-      }
     } catch (err: any) {
       setSnackbar({
         open: true,

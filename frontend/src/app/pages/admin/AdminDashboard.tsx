@@ -518,9 +518,6 @@ export default function AdminDashboard() {
                 <Typography variant="h6" fontWeight={900}>
                   Doanh thu theo tháng
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Dữ liệu lấy từ báo cáo tài chính backend, không còn dùng số cứng trong giao diện.
-                </Typography>
               </Box>
               <Chip
                 icon={<BarChartIcon />}

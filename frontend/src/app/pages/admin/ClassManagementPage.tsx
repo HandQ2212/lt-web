@@ -362,8 +362,16 @@ export default function ClassManagementPage() {
 
       const classData = classRes?.data || {};
       const scheduleData = Array.isArray(schedRes?.data) ? schedRes.data : Array.isArray(classData?.schedules) ? classData.schedules : [];
+      const enrollmentData = Array.isArray(enrollmentResponse?.data) ? enrollmentResponse.data : [];
       setSelectedClass((prev) => (prev ? { ...prev, ...classData, schedules: scheduleData } : prev));
-      setEnrollments(Array.isArray(enrollmentResponse?.data) ? enrollmentResponse.data : []);
+      setEnrollments(enrollmentData);
+      setClasses((prev) =>
+        prev.map((item) =>
+          item.id === classId
+            ? { ...item, ...classData, schedules: scheduleData, currentStudents: enrollmentData.length }
+            : item
+        )
+      );
       setAttendance(Array.isArray(attendanceResponse?.data) ? attendanceResponse.data : []);
     } catch (error: any) {
       setSnackbar({
@@ -763,8 +771,8 @@ export default function ClassManagementPage() {
         <Grid container spacing={3}>
           {filteredClasses.map((cls) => {
             const scheduleCount = cls.schedules?.length || 0;
-            const enrolCount = cls.id === selectedClassId ? enrollments.length : undefined;
-            const fillRate = cls.maxStudents ? Math.min(100, Math.round(((enrolCount || 0) / cls.maxStudents) * 100)) : 0;
+            const enrolCount = cls.id === selectedClassId ? enrollments.length : (cls.currentStudents ?? 0);
+            const fillRate = cls.maxStudents ? Math.min(100, Math.round((enrolCount / cls.maxStudents) * 100)) : 0;
             const lifecycleIndex = getLifecycleIndex(cls.status);
             const lifecyclePct = Math.min(100, Math.round((lifecycleIndex / 3) * 100));
 
@@ -808,7 +816,7 @@ export default function ClassManagementPage() {
                       </Grid>
                       <Grid item xs={4}>
                         <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                          <Typography variant="h6" fontWeight={800}>{enrolCount ?? '-'}</Typography>
+                          <Typography variant="h6" fontWeight={800}>{enrolCount}</Typography>
                           <Typography variant="caption" color="text.secondary" fontWeight={600}>Học viên</Typography>
                         </Box>
                       </Grid>
