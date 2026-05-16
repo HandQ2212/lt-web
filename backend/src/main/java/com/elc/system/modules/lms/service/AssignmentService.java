@@ -28,6 +28,13 @@ public class AssignmentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<AssignmentResponse> getAssignmentsByTeacher(UUID teacherId) {
+        return assignmentRepository.findByClazzTeacherIdOrderByDueDateDesc(teacherId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public AssignmentResponse createAssignment(AssignmentRequest request, User teacher) {
         Clazz clazz = clazzRepository.findById(request.getClassId())
@@ -47,21 +54,54 @@ public class AssignmentService {
     }
 
     private AssignmentResponse mapToResponse(Assignment assignment) {
-        Clazz clazz = assignment.getClazz();
-        User createdBy = assignment.getCreatedBy();
+        Clazz clazz = null;
+        User createdBy = null;
+
+        try {
+            clazz = assignment.getClazz();
+        } catch (RuntimeException ignored) {
+            // Keep assignment visible even if class relation is inconsistent.
+        }
+
+        try {
+            createdBy = assignment.getCreatedBy();
+        } catch (RuntimeException ignored) {
+            // Keep assignment visible even if creator relation is inconsistent.
+        }
 
         return AssignmentResponse.builder()
                 .id(assignment.getId())
-                .classId(clazz != null ? clazz.getId() : null)
-                .className(clazz != null ? clazz.getName() : null)
+                .classId(clazz != null ? safeUuid(clazz::getId) : null)
+                .className(clazz != null ? safeString(clazz::getName) : null)
                 .title(assignment.getTitle())
                 .description(assignment.getDescription())
                 .dueDate(assignment.getDueDate())
                 .fileUrl(assignment.getFileUrl())
                 .externalLink(assignment.getExternalLink())
-                .createdById(createdBy != null ? createdBy.getId() : null)
-                .createdByName(createdBy != null ? createdBy.getFullName() : null)
+                .createdById(createdBy != null ? safeUuid(createdBy::getId) : null)
+                .createdByName(createdBy != null ? safeString(createdBy::getFullName) : null)
                 .createdAt(assignment.getCreatedAt())
                 .build();
+    }
+
+    private UUID safeUuid(SupplierWithRuntimeException<UUID> supplier) {
+        try {
+            return supplier.get();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private String safeString(SupplierWithRuntimeException<String> supplier) {
+        try {
+            return supplier.get();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    @FunctionalInterface
+    private interface SupplierWithRuntimeException<T> {
+        T get();
     }
 }

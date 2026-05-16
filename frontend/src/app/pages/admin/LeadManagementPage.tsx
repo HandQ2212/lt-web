@@ -126,7 +126,7 @@ export default function LeadManagementPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await leadApi.getAll({ size: 100 });
+      const response = await leadApi.getAll({ size: 30 });
 
       let leadsData: LeadItem[] = [];
       if (Array.isArray(response)) {

@@ -25,12 +25,14 @@ import ChatMessageList, { ChatMessage } from './chat-message-list';
 
 const STORAGE_PREFIX = 'elc-chatbot-history';
 const MAX_STORED_MESSAGES = 30;
+const CHATBOT_POLL_INTERVAL_MS = 3000;
+const CHATBOT_POLL_TIMEOUT_MS = 90000;
 
 const getDisplayName = (user: any) => user?.name || user?.fullName || '';
 
 const createWelcomeMessage = (displayName: string): ChatMessage => ({
   id: 'welcome',
-  text: `Xin chào${displayName ? ` ${displayName}` : ''}! Tôi là trợ lý ELC. Bạn cần tư vấn khóa học, lịch học hay học phí?`,
+  text: `Xin chao${displayName ? ` ${displayName}` : ''}! Toi la tro ly ELC. Ban can tu van khoa hoc, lich hoc hay hoc phi?`,
   sender: 'bot',
   timestamp: new Date(),
 });
@@ -62,6 +64,7 @@ export default function ChatWidget() {
   const [isSending, setIsSending] = useState(false);
   const [errorText, setErrorText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,6 +83,36 @@ export default function ChatWidget() {
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
   }, [messages, storageKey]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const pollChatbotTask = async (taskId: string, pollAfterMs?: number) => {
+    const startedAt = Date.now();
+    const intervalMs = Math.max(pollAfterMs ?? CHATBOT_POLL_INTERVAL_MS, 1000);
+
+    while (Date.now() - startedAt < CHATBOT_POLL_TIMEOUT_MS) {
+      await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+
+      const status = await chatbotApi.getTaskStatus(taskId);
+      if (status.status === 'SUCCESS' && status.message) {
+        return {
+          message: status.message,
+          source: status.source || 'LOCAL_FALLBACK',
+          timestamp: status.timestamp || new Date().toISOString(),
+        };
+      }
+
+      if (status.status === 'FAILED') {
+        throw new Error(status.error || 'Khong the xu ly yeu cau luc nay.');
+      }
+    }
+
+    throw new Error('Tro ly ELC dang xu ly cham hon du kien. Vui long thu lai sau it phut.');
+  };
 
   const handleSend = async () => {
     const trimmedText = inputText.trim();
@@ -103,11 +136,16 @@ export default function ChatWidget() {
     setErrorText('');
 
     try {
-      const response = await chatbotApi.sendMessage({
+      const accepted = await chatbotApi.submitMessage({
         message: trimmedText,
         history,
         currentPath: window.location.pathname,
       });
+
+      const response = await pollChatbotTask(accepted.taskId, accepted.pollAfterMs);
+      if (!isMountedRef.current) {
+        return;
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -118,23 +156,29 @@ export default function ChatWidget() {
           timestamp: new Date(response.timestamp || Date.now()),
         },
       ]);
-    } catch {
-      setErrorText('Chưa kết nối được với trợ lý ELC. Vui lòng thử lại sau ít phút.');
+    } catch (error: any) {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setErrorText(error?.message || 'Chua ket noi duoc voi tro ly ELC. Vui long thu lai sau it phut.');
       setMessages((prev) => [
         ...prev,
         {
           id: `${Date.now()}-error`,
-          text: 'Xin lỗi, trợ lý ELC đang tạm thời chưa phản hồi được. Bạn có thể thử lại hoặc gửi form liên hệ.',
+          text: 'Xin loi, tro ly ELC dang tam thoi chua phan hoi duoc. Ban co the thu lai hoac gui form lien he.',
           sender: 'bot',
           timestamp: new Date(),
         },
       ]);
     } finally {
-      setIsSending(false);
+      if (isMountedRef.current) {
+        setIsSending(false);
+      }
     }
   };
 
-  const subtitle = isSending ? 'Đang trả lời...' : user ? 'Hỗ trợ theo tài khoản' : 'Tư vấn khóa học';
+  const subtitle = isSending ? 'Dang tra loi...' : user ? 'Ho tro theo tai khoan' : 'Tu van khoa hoc';
 
   return (
     <>
@@ -183,7 +227,7 @@ export default function ChatWidget() {
                 <BotIcon />
               </Avatar>
               <Box>
-                <Typography variant="subtitle1" fontWeight={700}>Trợ lý ELC</Typography>
+                <Typography variant="subtitle1" fontWeight={700}>Tro ly ELC</Typography>
                 <Typography variant="caption" sx={{ opacity: 0.85 }}>{subtitle}</Typography>
               </Box>
             </Box>
@@ -217,14 +261,14 @@ export default function ChatWidget() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Nhập tin nhắn..."
+                placeholder="Nhap tin nhan..."
                 value={inputText}
                 disabled={isSending}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    handleSend();
+                    void handleSend();
                   }
                 }}
                 multiline
@@ -234,7 +278,7 @@ export default function ChatWidget() {
               <IconButton
                 color="primary"
                 disabled={!inputText.trim() || isSending}
-                onClick={handleSend}
+                onClick={() => void handleSend()}
                 sx={{ border: '2px solid #1E293B', bgcolor: '#FBBF24', boxShadow: '3px 3px 0 #1E293B' }}
               >
                 {isSending ? <CircularProgress size={22} /> : <SendIcon />}

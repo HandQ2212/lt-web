@@ -26,7 +26,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,15 +47,17 @@ public class ClazzService {
 
     @Transactional(readOnly = true)
     public List<ClassResponse> getAllClasses() {
-        return clazzRepository.findAll().stream()
-                .map(this::mapToResponse)
+        List<Clazz> classes = clazzRepository.findAll();
+        ClassResponseContext context = buildResponseContext(classes);
+        return classes.stream()
+                .map(clazz -> mapToResponse(clazz, context))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ClassResponse getClassById(UUID id) {
-        return clazzRepository.findById(id)
-                .map(this::mapToResponse)
+        return clazzRepository.findWithRelationsById(id)
+                .map(clazz -> mapToResponse(clazz, buildResponseContext(List.of(clazz))))
                 .orElseThrow(() -> new RuntimeException("Class not found"));
     }
 
@@ -490,13 +495,14 @@ public class ClazzService {
     }
 
     private ClassResponse mapToResponse(Clazz clazz) {
-        List<ScheduleResponse> schedules = classScheduleRepository.findByClazzId(clazz.getId()).stream()
+        return mapToResponse(clazz, null);
+    }
+
+    private ClassResponse mapToResponse(Clazz clazz, ClassResponseContext context) {
+        List<ScheduleResponse> schedules = resolveSchedules(clazz.getId(), context).stream()
                 .map(this::mapToScheduleResponse)
                 .collect(Collectors.toList());
-        int currentStudents = (int) enrollmentRepository.countByClazzIdAndStatusIn(
-                clazz.getId(),
-                List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE)
-        );
+        int currentStudents = resolveCurrentStudents(clazz.getId(), context);
 
         Level level = null;
         Course course = null;
@@ -552,6 +558,48 @@ public class ClazzService {
                 .build();
     }
 
+    private ClassResponseContext buildResponseContext(List<Clazz> classes) {
+        if (classes == null || classes.isEmpty()) {
+            return ClassResponseContext.empty();
+        }
+
+        List<UUID> classIds = classes.stream()
+                .map(Clazz::getId)
+                .toList();
+
+        Map<UUID, List<ClassSchedule>> schedulesByClassId = classScheduleRepository.findByClazzIdIn(classIds).stream()
+                .sorted(Comparator
+                        .comparing(ClassSchedule::getScheduleDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(ClassSchedule::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.groupingBy(schedule -> schedule.getClazz().getId()));
+
+        Map<UUID, Integer> currentStudentsByClassId = new HashMap<>();
+        enrollmentRepository.countByClazzIdInAndStatusIn(
+                        classIds,
+                        List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE)
+                )
+                .forEach(row -> currentStudentsByClassId.put((UUID) row[0], ((Long) row[1]).intValue()));
+
+        return new ClassResponseContext(schedulesByClassId, currentStudentsByClassId);
+    }
+
+    private List<ClassSchedule> resolveSchedules(UUID classId, ClassResponseContext context) {
+        if (context == null) {
+            return classScheduleRepository.findByClazzId(classId);
+        }
+        return context.schedulesByClassId.getOrDefault(classId, List.of());
+    }
+
+    private int resolveCurrentStudents(UUID classId, ClassResponseContext context) {
+        if (context == null) {
+            return (int) enrollmentRepository.countByClazzIdAndStatusIn(
+                    classId,
+                    List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE)
+            );
+        }
+        return context.currentStudentsByClassId.getOrDefault(classId, 0);
+    }
+
     private ScheduleResponse mapToScheduleResponse(ClassSchedule schedule) {
         return ScheduleResponse.builder()
                 .id(schedule.getId())
@@ -582,5 +630,14 @@ public class ClazzService {
     @FunctionalInterface
     private interface SupplierWithRuntimeException<T> {
         T get();
+    }
+
+    private record ClassResponseContext(
+            Map<UUID, List<ClassSchedule>> schedulesByClassId,
+            Map<UUID, Integer> currentStudentsByClassId
+    ) {
+        private static ClassResponseContext empty() {
+            return new ClassResponseContext(Map.of(), Map.of());
+        }
     }
 }

@@ -83,18 +83,15 @@ export default function AssignmentPage() {
 
   const fetchClassesAndAssignments = async () => {
     try {
-      const data = await classApi.getAll();
+      const [data, assignmentResponse] = await Promise.all([
+        classApi.getAll(),
+        assignmentApi.getMine(),
+      ]);
       const mine = (data || []).filter((cls: any) => !user?.id || cls.teacherId === user.id);
       setClasses(mine);
       setForm((prev) => ({ ...prev, classId: prev.classId || mine[0]?.id || '' }));
 
-      const assignmentLists = await Promise.all(
-        mine.map(async (cls: any) => {
-          const response = await assignmentApi.getByClass(cls.id);
-          return Array.isArray(response.data) ? response.data : [];
-        })
-      );
-      setAssignments(assignmentLists.flat());
+      setAssignments(Array.isArray(assignmentResponse.data) ? assignmentResponse.data : []);
     } catch (err: any) {
       setSnackbar({ open: true, message: err?.response?.data?.message || 'Không thể tải bài tập', severity: 'error' });
     }
@@ -188,6 +185,13 @@ export default function AssignmentPage() {
     }
   };
 
+  const assignmentClassIds = new Set(
+    assignments
+      .map((assignment) => assignment.classId)
+      .filter((classId): classId is string => Boolean(classId))
+  );
+  const classesWithoutAssignments = classes.filter((cls) => !assignmentClassIds.has(cls.id));
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -198,7 +202,12 @@ export default function AssignmentPage() {
       </Box>
 
       <Grid container spacing={3}>
-        {assignments.length === 0 && (
+        {classes.length === 0 && (
+          <Grid item xs={12}>
+            <Alert severity="info">Báº¡n chÆ°a Ä‘Æ°á»£c phÃ¢n cÃ´ng lá»›p há»c nÃ o</Alert>
+          </Grid>
+        )}
+        {classes.length > 0 && assignments.length === 0 && (
           <Grid item xs={12}>
             <Alert severity="info">Chưa có bài tập nào cho các lớp của bạn</Alert>
           </Grid>
@@ -219,6 +228,22 @@ export default function AssignmentPage() {
                 <Button variant="outlined" fullWidth sx={{ mt: 2 }} startIcon={<GradeIcon />} onClick={() => void openSubmissions(assignment)}>
                   Bài nộp & chấm điểm
                 </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+        {classesWithoutAssignments.map((cls) => (
+          <Grid item xs={12} md={4} key={`empty-${cls.id}`}>
+            <Card variant="outlined" sx={{ borderStyle: 'dashed' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                  <AssignmentIcon color="disabled" />
+                  <Chip label={cls.name || 'Lá»›p há»c'} variant="outlined" size="small" />
+                </Box>
+                <Typography variant="h6" gutterBottom fontWeight={600}>ChÆ°a cÃ³ bÃ i táº­p</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Lá»›p nÃ y hiá»‡n chÆ°a cÃ³ bÃ i táº­p nÃ o. Báº¡n cÃ³ thá»ƒ táº¡o bÃ i táº­p má»›i cho lá»›p nÃ y.
+                </Typography>
               </CardContent>
             </Card>
           </Grid>

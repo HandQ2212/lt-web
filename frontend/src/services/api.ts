@@ -386,6 +386,7 @@ export const attendanceApi = {
 
 export const assignmentApi = {
   getByClass: (classId: string) => api.get(`assignments/class/${classId}`),
+  getMine: () => api.get('assignments/mine'),
   create: (data: any) => api.post('assignments', data),
 };
 

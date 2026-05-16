@@ -25,6 +25,12 @@ public class AssignmentController {
         return ResponseEntity.ok(assignmentService.getAssignmentsByClass(classId));
     }
 
+    @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER')")
+    public ResponseEntity<List<AssignmentResponse>> getMyAssignments(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(assignmentService.getAssignmentsByTeacher(currentUser.getId()));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER')")
     public ResponseEntity<AssignmentResponse> createAssignment(

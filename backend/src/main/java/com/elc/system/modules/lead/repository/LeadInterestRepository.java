@@ -15,6 +15,9 @@ public interface LeadInterestRepository extends JpaRepository<LeadInterest, UUID
     @EntityGraph(attributePaths = {"course", "clazz", "clazz.level"})
     List<LeadInterest> findByLeadIdOrderByCreatedAtDesc(UUID leadId);
 
+    @EntityGraph(attributePaths = {"course", "clazz", "clazz.level"})
+    List<LeadInterest> findByLeadIdInOrderByCreatedAtDesc(List<UUID> leadIds);
+
     Optional<LeadInterest> findByLeadIdAndCourseId(UUID leadId, UUID courseId);
 
     Optional<LeadInterest> findByLeadIdAndClazzId(UUID leadId, UUID clazzId);

@@ -1,6 +1,7 @@
 package com.elc.system.modules.sms.repository;
 
 import com.elc.system.modules.sms.entity.ClassSchedule;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,5 +10,9 @@ import java.util.UUID;
 
 @Repository
 public interface ClassScheduleRepository extends JpaRepository<ClassSchedule, UUID> {
+    @EntityGraph(attributePaths = {"clazz"})
     List<ClassSchedule> findByClazzId(UUID classId);
+
+    @EntityGraph(attributePaths = {"clazz"})
+    List<ClassSchedule> findByClazzIdIn(List<UUID> classIds);
 }

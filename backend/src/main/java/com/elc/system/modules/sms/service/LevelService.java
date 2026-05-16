@@ -34,7 +34,7 @@ public class LevelService {
 
     @Transactional(readOnly = true)
     public LevelResponse getLevelById(UUID id) {
-        return levelRepository.findById(id)
+        return levelRepository.findWithCourseById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("Level not found"));
     }

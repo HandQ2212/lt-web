@@ -18,6 +18,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     @Query("SELECT e FROM Enrollment e JOIN FETCH e.clazz c LEFT JOIN FETCH c.teacher WHERE e.student.id = :studentId")
     List<Enrollment> findByStudentId(@Param("studentId") UUID studentId);
 
+    @Query("SELECT e FROM Enrollment e JOIN FETCH e.clazz c LEFT JOIN FETCH c.teacher WHERE e.student.id IN :studentIds")
+    List<Enrollment> findByStudentIdIn(@Param("studentIds") List<UUID> studentIds);
+
     @Query("SELECT e FROM Enrollment e JOIN FETCH e.clazz c LEFT JOIN FETCH c.teacher WHERE c.id = :classId")
     List<Enrollment> findByClazzId(@Param("classId") UUID classId);
 
@@ -48,4 +51,16 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     long countByClazzBranchId(UUID branchId);
 
     long countByClazzIdAndStatusIn(UUID classId, List<EnrollmentStatus> statuses);
+
+    @Query("""
+            SELECT e.clazz.id, COUNT(e)
+            FROM Enrollment e
+            WHERE e.clazz.id IN :classIds
+              AND e.status IN :statuses
+            GROUP BY e.clazz.id
+            """)
+    List<Object[]> countByClazzIdInAndStatusIn(
+            @Param("classIds") List<UUID> classIds,
+            @Param("statuses") List<EnrollmentStatus> statuses
+    );
 }

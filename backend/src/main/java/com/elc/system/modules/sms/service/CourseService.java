@@ -29,7 +29,7 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public CourseResponse getCourseById(UUID id) {
-        return courseRepository.findById(id)
+        return courseRepository.findWithLevelsById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
     }
