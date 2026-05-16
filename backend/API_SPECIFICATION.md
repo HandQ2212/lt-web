@@ -112,6 +112,7 @@ Announcements and user alerts.
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/announcements` | Get public/role-based announcements | AUTHENTICATED |
 | `POST` | `/api/announcements` | Post a new center-wide news | MANAGER |
+| `DELETE` | `/api/announcements/{id}` | Delete an announcement and delivered notifications | MANAGER or creator |
 | `GET` | `/api/notifications` | Get unread alerts for current user | AUTHENTICATED |
 | `PUT` | `/api/notifications/{id}/read` | Mark notification as read | AUTHENTICATED |
 

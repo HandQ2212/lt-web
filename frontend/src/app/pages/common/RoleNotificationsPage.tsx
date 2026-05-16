@@ -22,6 +22,8 @@ import {
   CircularProgress,
   useTheme,
   InputAdornment,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -36,11 +38,13 @@ import {
   Settings as SettingsIcon,
   LocalOffer as LocalOfferIcon,
   AdminPanelSettings as AdminPanelSettingsIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../../store';
 import { announcementApi, classApi, notificationApi } from '../../../services/api';
+import { XssLabText } from '../../security/xssLab';
 
 export default function RoleNotificationsPage() {
   const theme = useTheme();
@@ -60,6 +64,8 @@ export default function RoleNotificationsPage() {
   // Dialog / Popup chi tiết
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form tiện ích gửi thông báo (dành cho Teacher / Accountant)
   const [utilForm, setUtilForm] = useState({
@@ -175,6 +181,30 @@ export default function RoleNotificationsPage() {
       setSnackbar({ open: true, message: 'Không thể gửi thông báo lúc này', severity: 'error' });
     } finally {
       setSubmittingUtil(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?.id) return;
+
+    try {
+      setDeleting(true);
+      await announcementApi.delete(deleteTarget.id);
+      setSnackbar({ open: true, message: 'Xóa thông báo thành công', severity: 'success' });
+      setDeleteTarget(null);
+      if (selectedItem?.id === deleteTarget.id) {
+        setOpenDetail(false);
+        setSelectedItem(null);
+      }
+      await fetchData();
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || 'Không thể xóa thông báo',
+        severity: 'error',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -375,7 +405,7 @@ export default function RoleNotificationsPage() {
                     >
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 1 }}>
                         <Typography variant="subtitle1" fontWeight={item.read ? 600 : 800} color={item.read ? 'text.secondary' : 'text.primary'} sx={{ minWidth: 0, overflowWrap: 'anywhere', pr: 1 }}>
-                          {item.title || item.message}
+                          <XssLabText value={item.title || item.message} />
                         </Typography>
                         <Chip
                           size="small"
@@ -421,10 +451,10 @@ export default function RoleNotificationsPage() {
                         <Chip size="small" label={item.scope === 'CENTER' ? 'Toàn trung tâm' : item.scope === 'ROLE' ? 'Vai trò' : 'Lớp học'} variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
                       </Stack>
                       <Typography variant="h6" fontWeight={800} sx={{ mb: 0.5, color: 'text.primary', fontSize: '1.1rem' }}>
-                        {item.title}
+                        <XssLabText value={item.title} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {item.message}
+                        <XssLabText value={item.message} />
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block', fontWeight: 600 }}>
                         Đăng bởi: {item.createdByFullName || item.createdByEmail || 'Ban Quản trị'} • {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}
@@ -460,13 +490,26 @@ export default function RoleNotificationsPage() {
                           sx={{ fontWeight: 800, fontSize: '0.65rem' }}
                         />
                         <Chip size="small" label={getScopeLabel(item)} variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
+                        <Tooltip title="Xóa thông báo">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDeleteTarget(item);
+                            }}
+                            sx={{ border: '1px solid rgba(211, 47, 47, 0.3)' }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Chip size="small" label={item.isDelivered ? 'Đã phát' : 'Đang xử lý'} color={item.isDelivered ? 'success' : 'warning'} variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
                       </Stack>
                       <Typography variant="h6" fontWeight={800} sx={{ mb: 0.5, color: 'text.primary', fontSize: '1.1rem' }}>
-                        {item.title}
+                        <XssLabText value={item.title} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {item.message}
+                        <XssLabText value={item.message} />
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block', fontWeight: 600 }}>
                         Đã gửi tới: {getScopeLabel(item)} • {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}
@@ -762,7 +805,7 @@ export default function RoleNotificationsPage() {
       {/* Popup / Dialog hiển thị thông tin chi tiết */}
       <Dialog open={openDetail} onClose={() => setOpenDetail(false)} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}>
         <DialogTitle sx={{ fontWeight: 900, bgcolor: selectedItem?.isPersonal ? 'primary.main' : 'secondary.main', color: 'white', pb: 2 }}>
-          {selectedItem?.title || 'Thông tin chi tiết'}
+          <XssLabText value={selectedItem?.title} fallback="Thông tin chi tiết" />
         </DialogTitle>
         <DialogContent sx={{ p: 4 }}>
           <Box sx={{ mb: 3 }}>
@@ -776,7 +819,7 @@ export default function RoleNotificationsPage() {
             )}
 
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', color: 'text.primary', lineHeight: 1.7, fontSize: '1.05rem' }}>
-              {selectedItem?.message || 'Không có nội dung'}
+              <XssLabText value={selectedItem?.message} fallback="Không có nội dung" />
             </Typography>
           </Box>
           <Divider sx={{ my: 2 }} />
@@ -792,6 +835,33 @@ export default function RoleNotificationsPage() {
         <DialogActions sx={{ px: 3, py: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
           <Button variant="contained" onClick={() => setOpenDetail(false)} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>
             Đóng cửa sổ
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} onClose={() => !deleting && setDeleteTarget(null)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ fontWeight: 900 }}>Xóa thông báo?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            Thông báo này sẽ bị xóa vĩnh viễn cùng các thông báo đã phát tới người nhận.
+          </Typography>
+          <Typography variant="subtitle2" fontWeight={800} sx={{ mt: 2, overflowWrap: 'anywhere' }}>
+            <XssLabText value={deleteTarget?.title} fallback="Thông báo đã chọn" />
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button color="inherit" disabled={deleting} onClick={() => setDeleteTarget(null)} sx={{ fontWeight: 700 }}>
+            Hủy bỏ
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            disabled={deleting}
+            onClick={() => void handleConfirmDelete()}
+            sx={{ fontWeight: 700, borderRadius: 2 }}
+          >
+            {deleting ? 'Đang xóa...' : 'Xóa thông báo'}
           </Button>
         </DialogActions>
       </Dialog>

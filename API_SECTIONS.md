@@ -709,6 +709,22 @@ Format chi tiết: từng API + role + status code
 
 ---
 
+### 3. DELETE /api/announcements/{id}
+**Description:** Delete an announcement and its delivered notifications
+**Auth Required:** ✅ Yes (Bearer token)
+**Path Params:** id
+
+| Role | Status Expected | Response |
+|------|---|---|
+| MANAGER | 204 | Announcement deleted |
+| TEACHER | 204/403 | Own announcement deleted or forbidden |
+| ACCOUNTANT | 204/403 | Own announcement deleted or forbidden |
+| STUDENT | 403 | Forbidden |
+
+**Test Status:** [ ] TEACHER [ ] MANAGER [ ] STUDENT [ ] ACCOUNTANT
+
+---
+
 ## 🔔 **Notification**
 
 ### 1. GET /api/notifications
@@ -997,7 +1013,7 @@ Format chi tiết: từng API + role + status code
 | 💰 Finance - Invoice | 5 | [ ] |
 | 🎁 Finance - Promotion | 1 | [ ] |
 | 💳 Finance - Transaction | 1 | [ ] |
-| 📢 Announcement | 2 | [ ] |
+| 📢 Announcement | 3 | [ ] |
 | 🔔 Notification | 4 | [ ] |
 | 📊 Analytics | 4 | [ ] |
 | 📄 Report | 1 | [ ] |

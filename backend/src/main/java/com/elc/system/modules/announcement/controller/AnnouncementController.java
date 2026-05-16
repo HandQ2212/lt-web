@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/announcements")
@@ -43,5 +44,12 @@ public class AnnouncementController {
             @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(announcementService.getMySentAnnouncements(pageable));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER', 'ACCOUNTANT')")
+    public ResponseEntity<Void> deleteAnnouncement(@PathVariable UUID id) {
+        announcementService.deleteAnnouncement(id);
+        return ResponseEntity.noContent().build();
     }
 }

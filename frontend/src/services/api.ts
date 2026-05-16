@@ -470,6 +470,7 @@ export const announcementApi = {
     return Array.isArray(raw) ? raw : (raw?.content ?? raw?.data ?? []);
   },
   create: (payload: any) => api.post('announcements', payload),
+  delete: (id: string) => api.delete(`announcements/${id}`),
 };
 
 export const analyticsApi = {

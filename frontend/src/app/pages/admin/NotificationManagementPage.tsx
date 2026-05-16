@@ -13,17 +13,20 @@ import {
   DialogTitle,
   Divider,
   Grid,
+  IconButton,
   MenuItem,
   Paper,
   Snackbar,
   Stack,
   TextField,
   Typography,
+  Tooltip,
   InputAdornment,
 } from '@mui/material';
-import { Add as AddIcon, Search as SearchIcon, Send as SendIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Search as SearchIcon, Send as SendIcon } from '@mui/icons-material';
 import { announcementApi, classApi } from '../../../services/api';
 import { formatDateTimeToPattern } from '../../utils/dateFormatter';
+import { XssLabText } from '../../security/xssLab';
 
 type AnnouncementItem = {
   id: string;
@@ -69,6 +72,8 @@ export default function NotificationManagementPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AnnouncementItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState<AnnouncementForm>(defaultForm);
   const [classes, setClasses] = useState<any[]>([]);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -181,6 +186,26 @@ export default function NotificationManagementPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?.id) return;
+
+    try {
+      setDeleting(true);
+      await announcementApi.delete(deleteTarget.id);
+      setSnackbar({ open: true, message: 'Xóa thông báo thành công', severity: 'success' });
+      setDeleteTarget(null);
+      await loadData();
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Không thể xóa thông báo',
+        severity: 'error',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -324,7 +349,7 @@ export default function NotificationManagementPage() {
                     </Stack>
 
                     <Typography variant="h6" fontWeight={900} sx={{ mb: 1, color: 'text.primary' }}>
-                      {item.title}
+                      <XssLabText value={item.title} />
                     </Typography>
                     <Typography
                       variant="body2"
@@ -338,7 +363,7 @@ export default function NotificationManagementPage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {item.message}
+                      <XssLabText value={item.message} />
                     </Typography>
                   </Box>
 
@@ -371,6 +396,19 @@ export default function NotificationManagementPage() {
                           Hết hạn: {formatDateTimeToPattern(item.expiresAt, 'dd/MM/yyyy HH:mm')}
                         </Typography>
                       )}
+                      <Tooltip title="Xóa thông báo">
+                        <IconButton
+                          color="error"
+                          onClick={() => setDeleteTarget(item)}
+                          sx={{
+                            alignSelf: 'flex-start',
+                            border: '1px solid rgba(211, 47, 47, 0.3)',
+                            mt: 0.5,
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   </Paper>
                 </Stack>
@@ -482,6 +520,33 @@ export default function NotificationManagementPage() {
             sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}
           >
             {submitting ? 'Đang gửi...' : 'Gửi thông báo'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ fontWeight: 900 }}>Xóa thông báo?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            Thông báo này sẽ bị xóa vĩnh viễn cùng các thông báo đã phát tới người nhận.
+          </Typography>
+          <Typography variant="subtitle2" fontWeight={800} sx={{ mt: 2, overflowWrap: 'anywhere' }}>
+            <XssLabText value={deleteTarget?.title} fallback="Thông báo đã chọn" />
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setDeleteTarget(null)} color="inherit" disabled={deleting} sx={{ fontWeight: 700 }}>
+            Hủy bỏ
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            disabled={deleting}
+            onClick={() => void handleConfirmDelete()}
+            sx={{ borderRadius: 2, fontWeight: 700 }}
+          >
+            {deleting ? 'Đang xóa...' : 'Xóa thông báo'}
           </Button>
         </DialogActions>
       </Dialog>

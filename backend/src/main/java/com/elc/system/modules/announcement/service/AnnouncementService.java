@@ -5,6 +5,7 @@ import com.elc.system.modules.announcement.dto.AnnouncementDto.CreateAnnouncemen
 import com.elc.system.modules.announcement.entity.Announcement;
 import com.elc.system.modules.announcement.entity.AnnouncementScope;
 import com.elc.system.modules.announcement.entity.AnnouncementType;
+import com.elc.system.modules.announcement.exception.AnnouncementNotFoundException;
 import com.elc.system.modules.announcement.repository.AnnouncementRepository;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.entity.UserRole;
@@ -210,6 +211,24 @@ public class AnnouncementService {
         }
         return announcementRepository.findByCreatedByIdOrderByCreatedAtDesc(currentUser.getId(), pageable)
                 .map(this::mapToResponse);
+    }
+
+    @Transactional
+    public void deleteAnnouncement(UUID announcementId) {
+        User currentUser = userService.getCurrentUser();
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new AnnouncementNotFoundException("Announcement not found with id: " + announcementId));
+
+        boolean isManager = currentUser.getRole() == UserRole.MANAGER;
+        boolean isCreator = announcement.getCreatedBy() != null
+                && announcement.getCreatedBy().getId().equals(currentUser.getId());
+
+        if (!isManager && !isCreator) {
+            throw new InsufficientPermissionException("You do not have permission to delete this announcement");
+        }
+
+        announcementRepository.delete(announcement);
+        log.info("Announcement {} deleted by user {}", announcementId, currentUser.getEmail());
     }
 
     private boolean canCreateAnnouncements(UserRole role) {

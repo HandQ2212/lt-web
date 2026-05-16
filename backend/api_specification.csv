@@ -44,6 +44,7 @@ Finance,POST,/api/expenses,ExpenseRequest,ExpenseResponse,ACCOUNTANT,Log operati
 Finance,GET,/api/promotions,None,List<PromotionResponse>,ACCOUNTANT/MANAGER,List active discount codes
 Notification,GET,/api/announcements,None,List<AnnouncementResponse>,AUTHENTICATED,Get public/role-based announcements
 Notification,POST,/api/announcements,AnnouncementRequest,AnnouncementResponse,MANAGER,Post a new center-wide news
+Notification,DELETE,/api/announcements/{id},None,None,MANAGER_OR_CREATOR,Delete an announcement and delivered notifications
 Notification,GET,/api/notifications,None,List<NotificationResponse>,AUTHENTICATED,Get unread alerts for current user
 Notification,PUT,/api/notifications/{id}/read,None,None,AUTHENTICATED,Mark notification as read
 Reports,GET,/api/reports/revenue,None,RevenueReport,MANAGER/ACCOUNTANT,Revenue trends (Line/Bar chart data)
