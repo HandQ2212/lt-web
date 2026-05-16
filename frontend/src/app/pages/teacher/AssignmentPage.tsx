@@ -25,11 +25,35 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Add as AddIcon, Assignment as AssignmentIcon, ContentCopy as ContentCopyIcon, Grade as GradeIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  Assignment as AssignmentIcon,
+  ContentCopy as ContentCopyIcon,
+  Grade as GradeIcon,
+  Visibility as VisibilityIcon,
+} from '@mui/icons-material';
 import { assignmentApi, classApi, submissionApi } from '../../../services/api';
 import { RootState } from '../../../store';
 
 const toDatetimeWithOffset = (date: string) => `${date}T23:59:00+07:00`;
+
+const formatLateDuration = (lateMinutes?: number | null) => {
+  const totalMinutes = Math.max(0, Number(lateMinutes || 0));
+  if (totalMinutes === 0) {
+    return '0 phút';
+  }
+
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts: string[] = [];
+
+  if (days > 0) parts.push(`${days} ngày`);
+  if (hours > 0) parts.push(`${hours} giờ`);
+  if (minutes > 0) parts.push(`${minutes} phút`);
+
+  return parts.join(' ');
+};
 
 export default function AssignmentPage() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -233,6 +257,7 @@ export default function AssignmentPage() {
                 <TableRow>
                   <TableCell>Học viên</TableCell>
                   <TableCell>Ngày nộp</TableCell>
+                  <TableCell>Tình trạng</TableCell>
                   <TableCell>Điểm</TableCell>
                   <TableCell>Trạng thái</TableCell>
                   <TableCell align="right">Thao tác</TableCell>
@@ -240,12 +265,24 @@ export default function AssignmentPage() {
               </TableHead>
               <TableBody>
                 {submissions.length === 0 && (
-                  <TableRow><TableCell colSpan={5}>Chưa có bài nộp</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6}>Chưa có bài nộp</TableCell></TableRow>
                 )}
                 {submissions.map((submission) => (
                   <TableRow key={submission.id}>
                     <TableCell>{submission.studentName || submission.studentId}</TableCell>
                     <TableCell>{submission.submissionDate ? new Date(submission.submissionDate).toLocaleString('vi-VN') : '-'}</TableCell>
+                    <TableCell>
+                      {submission.isLate ? (
+                        <Chip
+                          label={`Nộp muộn ${formatLateDuration(submission.lateMinutes)}`}
+                          color="error"
+                          size="small"
+                          sx={{ fontWeight: 700 }}
+                        />
+                      ) : (
+                        <Chip label="Đúng hạn" color="success" variant="outlined" size="small" sx={{ fontWeight: 700 }} />
+                      )}
+                    </TableCell>
                     <TableCell>{submission.grade != null ? <Chip label={submission.grade} color="success" size="small" /> : <Chip label="Chưa chấm" color="warning" size="small" />}</TableCell>
                     <TableCell><Chip label={submission.status || 'SUBMITTED'} color={submission.grade != null ? 'success' : 'warning'} size="small" /></TableCell>
                     <TableCell align="right">
@@ -306,6 +343,16 @@ export default function AssignmentPage() {
                 label={selectedSubmissionDetail?.status || 'SUBMITTED'}
                 color={selectedSubmissionDetail?.grade != null ? 'success' : 'warning'}
                 variant="outlined"
+                sx={{ fontWeight: 800, height: 36, fontSize: '0.95rem' }}
+              />
+              <Chip
+                label={
+                  selectedSubmissionDetail?.isLate
+                    ? `Nộp muộn ${formatLateDuration(selectedSubmissionDetail?.lateMinutes)}`
+                    : 'Nộp đúng hạn'
+                }
+                color={selectedSubmissionDetail?.isLate ? 'error' : 'success'}
+                variant={selectedSubmissionDetail?.isLate ? 'filled' : 'outlined'}
                 sx={{ fontWeight: 800, height: 36, fontSize: '0.95rem' }}
               />
             </Box>
@@ -398,6 +445,11 @@ export default function AssignmentPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             {selectedSubmission?.studentName || selectedSubmission?.studentId}
           </Typography>
+          {selectedSubmission?.isLate && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Bài này nộp muộn {formatLateDuration(selectedSubmission?.lateMinutes)}.
+            </Alert>
+          )}
           <TextField
             fullWidth
             type="number"

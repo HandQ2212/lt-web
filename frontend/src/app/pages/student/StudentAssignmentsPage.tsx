@@ -17,7 +17,6 @@ import {
   Alert,
   CircularProgress,
   Snackbar,
-  IconButton,
   Divider,
   useTheme,
   useMediaQuery,
@@ -33,11 +32,29 @@ import {
 import { enrollmentApi, assignmentApi, submissionApi } from '../../../services/api';
 import { RootState } from '../../../store';
 
+const formatLateDuration = (lateMinutes?: number | null) => {
+  const totalMinutes = Math.max(0, Number(lateMinutes || 0));
+  if (totalMinutes === 0) {
+    return '0 phút';
+  }
+
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts: string[] = [];
+
+  if (days > 0) parts.push(`${days} ngày`);
+  if (hours > 0) parts.push(`${hours} giờ`);
+  if (minutes > 0) parts.push(`${minutes} phút`);
+
+  return parts.join(' ');
+};
+
 export default function StudentAssignmentsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state: RootState) => state.auth.user);
-  
+
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -46,7 +63,7 @@ export default function StudentAssignmentsPage() {
   const [fileUrl, setFileUrl] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -67,8 +84,8 @@ export default function StudentAssignmentsPage() {
       const enrollments = Array.isArray(enrollmentsResponse.data) ? enrollmentsResponse.data : [];
 
       const [assignmentsResponse, mySubmissionsResponse] = await Promise.all([
-        Promise.all(enrollments.filter(e => e.classId).map(e => assignmentApi.getByClass(e.classId))),
-        submissionApi.getMine()
+        Promise.all(enrollments.filter((e) => e.classId).map((e) => assignmentApi.getByClass(e.classId))),
+        submissionApi.getMine(),
       ]);
 
       const allAssignments: any[] = [];
@@ -81,11 +98,11 @@ export default function StudentAssignmentsPage() {
 
       assignmentsResponse.forEach((res, index) => {
         const classAssignments = Array.isArray(res.data) ? res.data : [];
-        const enrollment = enrollments.filter(e => e.classId)[index];
+        const enrollment = enrollments.filter((e) => e.classId)[index];
         classAssignments.forEach((assignment: any) => {
           allAssignments.push({
             ...assignment,
-            className: enrollment.className
+            className: enrollment.className,
           });
         });
       });
@@ -118,26 +135,24 @@ export default function StudentAssignmentsPage() {
       setSubmitting(true);
       await submissionApi.submit({
         assignmentId: selectedAssignment.id,
-        fileUrl: fileUrl,
-        content: content
+        fileUrl,
+        content,
       });
       setSnackbar({ open: true, message: 'Nộp bài tập thành công!', severity: 'success' });
       setSubmitDialogOpen(false);
       await fetchAssignments();
     } catch (error: any) {
-      setSnackbar({ 
-        open: true, 
-        message: error?.response?.data?.message || 'Không thể nộp bài tập. Vui lòng kiểm tra lại.', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Không thể nộp bài tập. Vui lòng kiểm tra lại.',
+        severity: 'error',
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date();
-  };
+  const isOverdue = (dueDate: string) => new Date(dueDate) < new Date();
 
   return (
     <Box sx={{ pb: 6 }}>
@@ -170,40 +185,51 @@ export default function StudentAssignmentsPage() {
 
             return (
               <Grid item xs={12} md={6} lg={4} key={assignment.id}>
-                <Card sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  borderRadius: 4,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
-                  border: overdue ? '2px solid rgba(244, 67, 54, 0.2)' : '1px solid rgba(0,0,0,0.05)',
-                  transition: 'transform 0.2s',
-                  '&:hover': { transform: 'translateY(-4px)' }
-                }}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: 4,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+                    border: overdue ? '2px solid rgba(244, 67, 54, 0.2)' : '1px solid rgba(0,0,0,0.05)',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' },
+                  }}
+                >
                   <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Chip 
-                        label={assignment.className} 
-                        size="small" 
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 1, flexWrap: 'wrap' }}>
+                      <Chip
+                        label={assignment.className}
+                        size="small"
                         color="primary"
-                        variant="outlined" 
+                        variant="outlined"
                         sx={{ fontWeight: 700, borderRadius: 1.5 }}
                       />
                       {overdue && (
-                        <Chip 
+                        <Chip
                           icon={<ErrorIcon sx={{ fontSize: '14px !important' }} />}
-                          label="Quá hạn" 
-                          size="small" 
-                          color="error" 
+                          label="Quá hạn"
+                          size="small"
+                          color="error"
                           sx={{ fontWeight: 800, borderRadius: 1.5 }}
                         />
                       )}
-                      {submission && (
-                        <Chip 
+                      {submission && !submission.isLate && (
+                        <Chip
                           icon={<CheckCircleIcon sx={{ fontSize: '14px !important' }} />}
-                          label="Đã hoàn thành" 
-                          size="small" 
-                          color="success" 
+                          label="Đã hoàn thành"
+                          size="small"
+                          color="success"
+                          sx={{ fontWeight: 800, borderRadius: 1.5 }}
+                        />
+                      )}
+                      {submission?.isLate && (
+                        <Chip
+                          icon={<ErrorIcon sx={{ fontSize: '14px !important' }} />}
+                          label={`Nộp muộn ${formatLateDuration(submission.lateMinutes)}`}
+                          size="small"
+                          color="warning"
                           sx={{ fontWeight: 800, borderRadius: 1.5 }}
                         />
                       )}
@@ -213,14 +239,18 @@ export default function StudentAssignmentsPage() {
                       {assignment.title}
                     </Typography>
 
-                    <Typography variant="body2" color="text.secondary" sx={{ 
-                      mb: 2,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      minHeight: 40
-                    }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mb: 2,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        minHeight: 40,
+                      }}
+                    >
                       {assignment.description || 'Không có mô tả chi tiết từ giảng viên.'}
                     </Typography>
 
@@ -233,6 +263,16 @@ export default function StudentAssignmentsPage() {
                       </Typography>
                     </Box>
 
+                    {submission && (
+                      <Box sx={{ mt: 1.5 }}>
+                        <Typography variant="caption" fontWeight={700} color={submission.isLate ? 'warning.main' : 'success.main'}>
+                          {submission.isLate
+                            ? `Bạn đã nộp muộn ${formatLateDuration(submission.lateMinutes)}`
+                            : 'Bạn đã nộp đúng hạn'}
+                        </Typography>
+                      </Box>
+                    )}
+
                     {submission?.grade != null && (
                       <Box sx={{ mt: 2, p: 1.5, bgcolor: 'success.light', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'success.contrastText' }}>
                         <Typography variant="subtitle2" fontWeight={800}>Điểm số:</Typography>
@@ -242,15 +282,15 @@ export default function StudentAssignmentsPage() {
                   </CardContent>
 
                   <Box sx={{ p: 2, pt: 0 }}>
-                    <Button 
-                      variant={submission ? "outlined" : "contained"} 
-                      fullWidth 
+                    <Button
+                      variant={submission ? 'outlined' : 'contained'}
+                      fullWidth
                       startIcon={submission ? <CheckCircleIcon /> : <UploadIcon />}
                       onClick={() => handleOpenSubmit(assignment)}
-                      color={overdue ? "error" : "primary"}
+                      color={overdue ? 'error' : 'primary'}
                       sx={{ borderRadius: 2, py: 1, fontWeight: 700 }}
                     >
-                      {submission ? "Xem bài làm / Nộp lại" : "Nộp bài ngay"}
+                      {submission ? 'Xem bài làm / Nộp lại' : 'Nộp bài ngay'}
                     </Button>
                   </Box>
                 </Card>
@@ -260,7 +300,6 @@ export default function StudentAssignmentsPage() {
         </Grid>
       )}
 
-      {/* Submission Dialog */}
       <Dialog open={submitDialogOpen} onClose={() => setSubmitDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
         <DialogTitle sx={{ fontWeight: 800 }}>
           {submissions[selectedAssignment?.id] ? 'Cập nhật bài nộp' : 'Nộp bài tập'}
@@ -269,7 +308,16 @@ export default function StudentAssignmentsPage() {
           <Typography variant="h6" fontWeight={700} color="primary.main" gutterBottom>
             {selectedAssignment?.title}
           </Typography>
-          
+
+          {selectedAssignment?.dueDate && (
+            <Alert severity={submissions[selectedAssignment?.id]?.isLate ? 'warning' : 'info'} sx={{ mb: 2, borderRadius: 3 }}>
+              Hạn nộp: {new Date(selectedAssignment.dueDate).toLocaleString('vi-VN')}
+              {submissions[selectedAssignment?.id]?.isLate
+                ? ` | Bài trước nộp muộn ${formatLateDuration(submissions[selectedAssignment?.id]?.lateMinutes)}`
+                : ''}
+            </Alert>
+          )}
+
           <Alert severity="warning" sx={{ mb: 3, borderRadius: 3 }}>
             <Typography variant="body2" fontWeight={600}>Lưu ý quan trọng:</Typography>
             <Typography variant="caption">
@@ -289,7 +337,7 @@ export default function StudentAssignmentsPage() {
             }}
             sx={{ mb: 2 }}
           />
-          
+
           <TextField
             fullWidth
             label="Ghi chú gửi giảng viên"
@@ -312,24 +360,25 @@ export default function StudentAssignmentsPage() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setSubmitDialogOpen(false)} color="inherit">Hủy bỏ</Button>
-          <Button 
-            variant="contained" 
-            onClick={() => void handleSubmit()} 
+        <DialogActions sx={{ p: 3, flexDirection: isMobile ? 'column' : 'row', gap: 1 }}>
+          <Button onClick={() => setSubmitDialogOpen(false)} color="inherit" fullWidth={isMobile}>Hủy bỏ</Button>
+          <Button
+            variant="contained"
+            onClick={() => void handleSubmit()}
             disabled={!fileUrl || submitting}
             startIcon={submitting ? <CircularProgress size={20} /> : <UploadIcon />}
             sx={{ borderRadius: 2, px: 4, fontWeight: 700 }}
+            fullWidth={isMobile}
           >
             {submitting ? 'Đang nộp bài...' : 'Xác nhận nộp bài'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
         <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2 }}>
           {snackbar.message}

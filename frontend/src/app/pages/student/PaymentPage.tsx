@@ -141,7 +141,7 @@ export default function PaymentPage() {
         invoiceId: invoice.id,
         returnUrl: window.location.origin + '/student/payments?status=success',
         cancelUrl: window.location.origin + '/student/payments?status=cancelled'
-      });
+      } as any);
       
       if (response.data && response.data.checkoutUrl) {
         window.open(response.data.checkoutUrl, '_blank');
