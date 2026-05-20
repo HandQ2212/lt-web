@@ -12,6 +12,7 @@ import com.elc.system.modules.finance.repository.PaymentRepository;
 import com.elc.system.modules.lms.entity.Enrollment;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +36,24 @@ public class InvoiceService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public InvoiceResponse getInvoiceById(UUID id) {
-        Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Invoice not found"));
-        return mapToResponse(invoice);
-    }
+
+
+
+     @Transactional(readOnly = true)
+     public InvoiceResponse getInvoiceById(UUID id, User user) {
+         Invoice invoice = invoiceRepository.findById(id)
+                 .orElseThrow(() -> new RuntimeException("Invoice not found"));
+
+         // Check if user has permission to access this invoice
+         if (user.getRole() == UserRole.STUDENT || user.getRole() == UserRole.LEAD) {
+             if (!invoice.getEnrollment().getStudent().getId().equals(user.getId())) {
+                 throw new AccessDeniedException("You can only view your own invoices");
+             }
+         }
+
+         return mapToResponse(invoice);
+         // ✅ SECURE: Checks ownership before returning invoice
+     }
 
     @Transactional(readOnly = true)
     public List<InvoiceResponse> getInvoicesForUser(User user) {

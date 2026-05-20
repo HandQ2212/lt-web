@@ -65,27 +65,23 @@ public class UserController {
         return ResponseEntity.ok(userService.createUser(request));
     }
 
-    /**
-     * Update user role and/or status
-     * PUT /api/users/{id}
-     */
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<UserResponse> updateUser(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateUserRequest request
-    ) {
-        return ResponseEntity.ok(userService.updateUser(id, request));
-    }
 
-    /**
-     * Deactivate user account (soft delete)
-     * DELETE /api/users/{id}
-     */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Void> deactivateUser(@PathVariable UUID id) {
-        userService.deactivateUser(id);
-        return ResponseEntity.noContent().build();
-    }
+     @PutMapping("/{id}")
+     @PreAuthorize("hasRole('MANAGER')")  //  SECURE: Only managers can update users
+     public ResponseEntity<UserResponse> updateUser(
+             @PathVariable UUID id,
+             @Valid @RequestBody UpdateUserRequest request
+     ) {
+         return ResponseEntity.ok(userService.updateUser(id, request));
+     }
+
+
+
+
+     @DeleteMapping("/{id}")
+     @PreAuthorize("hasRole('MANAGER')")  //  SECURE: Only managers can delete users
+     public ResponseEntity<Void> deactivateUser(@PathVariable UUID id) {
+         userService.deactivateUser(id);
+         return ResponseEntity.noContent().build();
+     }
 }
