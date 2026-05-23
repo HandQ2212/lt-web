@@ -336,7 +336,8 @@ export const userApi = {
   deactivate: (id: string) => api.delete(`users/${id}`),
   getTeachers: async () => {
     const response = await api.get('users/teachers');
-    return (response.data as BackendUser[]).map(normalizeUser);
+    const list = Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
+    return list.map(normalizeUser);
   },
 };
 

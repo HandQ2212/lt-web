@@ -155,40 +155,45 @@ public class UserService {
         return mapToUserResponse(savedUser);
     }
 
-    /**
-     * Update user role and/or status (admin function)
-     */
+    
+    // SECURE VERSION (commented out):
     @Transactional
-    public UserResponse updateUser(UUID userId, UpdateUserRequest request) {
+    public UserResponse updateUser(UUID userId, UpdateUserRequest request, User currentUser) {
         log.info("Updating user with ID: {}", userId);
-
+    
+        // Only managers can update users
+        if (currentUser.getRole() != UserRole.MANAGER) {
+            throw new AccessDeniedException("Only managers can update users");
+        }
+    
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
-
+    
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
-
+    
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
         }
-
+    
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
         }
-
+    
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }
-
+    
         if (request.getAddress() != null) {
             user.setAddress(request.getAddress());
         }
-
+    
         User updatedUser = userRepository.save(user);
         syncStudentEnrollmentsForStatus(updatedUser);
         log.info("User updated successfully: {}", updatedUser.getId());
         return mapToUserResponse(updatedUser);
+        // ✅ SECURE: Only managers can update users
     }
 
     /**

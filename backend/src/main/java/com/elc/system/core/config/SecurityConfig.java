@@ -1,17 +1,20 @@
 package com.elc.system.core.config;
 
-import com.elc.system.core.security.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -20,8 +23,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.List;
+import com.elc.system.core.security.JwtAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -30,6 +34,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Value("${app.frontend.origin-patterns:https://elc.handq2212.site,https://*.handq2212.site,http://localhost:*,http://127.0.0.1:*,http://26.150.15.154:*}")
+    private String frontendOriginPatterns;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,9 +58,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/levels/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/payment/payos-webhook").permitAll()
-                        
+
+
+
+
                         // Error endpoint
                         .requestMatchers("/error").permitAll()
+
+                         // Analytics endpoints should require MANAGER or ACCOUNTANT role
+                         .requestMatchers("/api/analytics/**").hasAnyRole("MANAGER", "ACCOUNTANT")
+                         // Admin endpoints should require authentication
+                         .requestMatchers("/api/admin/**").authenticated()
 
                         // Các API khác yêu cầu đăng nhập
                         .requestMatchers("/api/**").authenticated()
@@ -74,18 +88,17 @@ public class SecurityConfig {
         
         // Cho phép các Origin (Frontend) được phép truy cập
         // Bạn có thể thêm port 3000 hoặc các port khác nếu cần
-        configuration.setAllowedOriginPatterns(List.of(
-            "https://elc.handq2212.site",
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-            "http://26.150.15.154:*"
-        ));
-        // Cho phép các phương thức HTTP
+        configuration.setAllowedOriginPatterns(Arrays.stream(frontendOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(pattern -> !pattern.isEmpty())
+                .collect(Collectors.toList()));
+        // Cho phép các phương thức HTTP mà frontend gọi xuống backend
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // Với các request phức tạp như POST, PUT, DELETE, hoặc request có header Authorization, trình duyệt thường gửi request OPTIONS trước.
         
         // Cho phép các Header cần thiết
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));//frontend được phép đọc những response header nào từ backend.
         
         // Cho phép gửi Credentials (Cookies, Auth Headers)
         configuration.setAllowCredentials(true);
@@ -94,7 +107,7 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", configuration); // áp dụng cors cho tất cả endpoint
         return source;
     }
 

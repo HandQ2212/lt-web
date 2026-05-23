@@ -1,6 +1,7 @@
 package com.elc.system.modules.lms.service;
 
 import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.auth.repository.UserRepository;
 import com.elc.system.modules.lms.dto.ClassDto.ClassRequest;
 import com.elc.system.modules.lms.dto.ClassDto.ClassResponse;
@@ -22,6 +23,7 @@ import com.elc.system.modules.sms.repository.ClassScheduleRepository;
 import com.elc.system.modules.sms.repository.LevelRepository;
 import com.elc.system.modules.room.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,12 +56,35 @@ public class ClazzService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public ClassResponse getClassById(UUID id) {
-        return clazzRepository.findWithRelationsById(id)
-                .map(clazz -> mapToResponse(clazz, buildResponseContext(List.of(clazz))))
-                .orElseThrow(() -> new RuntimeException("Class not found"));
-    }
+
+
+    // SECURE VERSION (commented out):
+     @Transactional(readOnly = true)
+     public ClassResponse getClassById(UUID id, User currentUser) {
+         Clazz clazz = clazzRepository.findWithRelationsById(id)
+                 .orElseThrow(() -> new RuntimeException("Class not found"));
+
+         if (currentUser.getRole() == UserRole.TEACHER) {
+             if (clazz.getTeacher() == null || !clazz.getTeacher().getId().equals(currentUser.getId())) {
+                 throw new AccessDeniedException("You can only view your own classes");
+             }
+         }
+
+         if (currentUser.getRole() == UserRole.STUDENT) {
+             boolean isEnrolledInClass = enrollmentRepository.findByStudentIdAndClazzId(currentUser.getId(), id)
+                     .filter(enrollment -> enrollment.getStatus() != EnrollmentStatus.REJECTED
+                             && enrollment.getStatus() != EnrollmentStatus.DROPPED
+                             && enrollment.getStatus() != EnrollmentStatus.CANCELLED)
+                     .isPresent();
+
+             if (!isEnrolledInClass) {
+                 throw new AccessDeniedException("You can only view classes you are enrolled in");
+             }
+         }
+
+         return mapToResponse(clazz, buildResponseContext(List.of(clazz)));
+         // ✅ SECURE: Teachers can only view their own assigned classes
+     }
 
     @Transactional
     public ClassResponse createClass(ClassRequest request) {

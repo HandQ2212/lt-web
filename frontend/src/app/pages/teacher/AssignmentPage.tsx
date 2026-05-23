@@ -204,7 +204,7 @@ export default function AssignmentPage() {
       <Grid container spacing={3}>
         {classes.length === 0 && (
           <Grid item xs={12}>
-            <Alert severity="info">Báº¡n chÆ°a Ä‘Æ°á»£c phÃ¢n cÃ´ng lá»›p há»c nÃ o</Alert>
+            <Alert severity="info">Bạn chưa được phân công lớp học nào</Alert>
           </Grid>
         )}
         {classes.length > 0 && assignments.length === 0 && (
@@ -238,11 +238,11 @@ export default function AssignmentPage() {
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                   <AssignmentIcon color="disabled" />
-                  <Chip label={cls.name || 'Lá»›p há»c'} variant="outlined" size="small" />
+                  <Chip label={cls.name || 'Lớp học'} variant="outlined" size="small" />
                 </Box>
-                <Typography variant="h6" gutterBottom fontWeight={600}>ChÆ°a cÃ³ bÃ i táº­p</Typography>
+                <Typography variant="h6" gutterBottom fontWeight={600}>Chưa có bài tập</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Lá»›p nÃ y hiá»‡n chÆ°a cÃ³ bÃ i táº­p nÃ o. Báº¡n cÃ³ thá»ƒ táº¡o bÃ i táº­p má»›i cho lá»›p nÃ y.
+                  Lớp này hiện chưa có bài tập nào. Bạn có thể tạo bài tập mới cho lớp này.
                 </Typography>
               </CardContent>
             </Card>

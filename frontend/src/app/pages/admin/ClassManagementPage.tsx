@@ -290,8 +290,12 @@ export default function ClassManagementPage() {
   const todayIso = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    void fetchClasses();
-    void fetchOptions();
+    const loadInitialData = async () => {
+      await fetchClasses();
+      await fetchOptions();
+    };
+
+    void loadInitialData();
   }, []);
 
   useEffect(() => {
@@ -328,19 +332,46 @@ export default function ClassManagementPage() {
 
   const fetchOptions = async () => {
     try {
-      const [courseList, levelList, roomList, branchList, userPage] = await Promise.all([
-        courseApi.getAll(),
-        levelApi.getAll(),
-        roomApi.getAll(),
-        branchApi.getAll(),
-        userApi.getAll({ size: 200, sort: 'fullName,asc' }),
-      ]);
+      const loadOption = async <T,>(loader: () => Promise<T>, onSuccess: (value: T) => void, label: string) => {
+        try {
+          const value = await loader();
+          onSuccess(value);
+          return null;
+        } catch {
+          return label;
+        }
+      };
 
-      setCourses(Array.isArray(courseList) ? courseList : []);
-      setLevels(Array.isArray(levelList) ? levelList : []);
-      setRooms(Array.isArray(roomList) ? roomList : []);
-      setBranches(Array.isArray(branchList) ? branchList : []);
-      setTeachers((userPage?.content || []).filter((user: any) => user.role === 'TEACHER'));
+      const failedSources: string[] = [];
+
+      const firstBatchResults = await Promise.all([
+        loadOption(courseApi.getAll, (value) => setCourses(Array.isArray(value) ? value : []), 'khoa hoc'),
+        loadOption(levelApi.getAll, (value) => setLevels(Array.isArray(value) ? value : []), 'trinh do'),
+      ]);
+      failedSources.push(...firstBatchResults.filter(Boolean));
+
+      const secondBatchResults = await Promise.all([
+        loadOption(roomApi.getAll, (value) => setRooms(Array.isArray(value) ? value : []), 'phong hoc'),
+        loadOption(branchApi.getAll, (value) => setBranches(Array.isArray(value) ? value : []), 'chi nhanh'),
+      ]);
+      failedSources.push(...secondBatchResults.filter(Boolean));
+
+      const teachersFailure = await loadOption(
+        userApi.getTeachers,
+        (value) => setTeachers(Array.isArray(value) ? value : []),
+        'giao vien'
+      );
+      if (teachersFailure) {
+        failedSources.push(teachersFailure);
+      }
+
+      if (failedSources.length > 0) {
+        setSnackbar({
+          open: true,
+          message: `Khong the tai mot so du lieu tuy chon: ${failedSources.join(', ')}`,
+          severity: 'error',
+        });
+      }
     } catch (error: any) {
       setSnackbar({
         open: true,
