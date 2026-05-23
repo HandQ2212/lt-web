@@ -1,0 +1,116 @@
+{
+  "common": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "noData": "No data",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning"
+  },
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "teachers": "Teachers",
+    "about": "About",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "loginSuccess": "Login successful",
+    "loginError": "Login failed",
+    "registerSuccess": "Registration successful",
+    "registerError": "Registration failed"
+  },
+  "course": {
+    "title": "Courses",
+    "name": "Course name",
+    "level": "Level",
+    "price": "Price",
+    "duration": "Duration",
+    "description": "Description",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "enroll": "Enroll"
+  },
+  "class": {
+    "title": "Classes",
+    "name": "Class name",
+    "schedule": "Schedule",
+    "teacher": "Teacher",
+    "room": "Room",
+    "status": "Status",
+    "accepting": "Accepting",
+    "full": "Full",
+    "closed": "Closed"
+  },
+  "student": {
+    "title": "Students",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "status": "Status",
+    "enrolledAt": "Enrolled at"
+  },
+  "teacher": {
+    "title": "Teachers",
+    "name": "Name",
+    "specialty": "Specialty",
+    "rating": "Rating"
+  },
+  "attendance": {
+    "title": "Attendance",
+    "present": "Present",
+    "absent": "Absent",
+    "late": "Late"
+  },
+  "assignment": {
+    "title": "Assignments",
+    "name": "Assignment name",
+    "deadline": "Deadline",
+    "submit": "Submit",
+    "grade": "Grade"
+  },
+  "finance": {
+    "title": "Finance",
+    "revenue": "Revenue",
+    "expense": "Expense",
+    "invoice": "Invoice",
+    "payment": "Payment",
+    "debt": "Debt",
+    "paid": "Paid",
+    "pending": "Pending",
+    "overdue": "Overdue"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "recentActivities": "Recent Activities"
+  }
+}

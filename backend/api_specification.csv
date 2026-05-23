@@ -1,0 +1,53 @@
+Module,Method,Endpoint,Input DTO,Output DTO,Role Access,Description
+Auth,POST,/api/auth/login,LoginRequest,AuthResponse,PUBLIC,Authenticate user and return JWT
+Auth,POST,/api/auth/register,RegisterRequest,AuthResponse,PUBLIC,Student self-registration
+Auth,POST,/api/auth/logout,None,None,AUTHENTICATED,Invalidate token
+Auth,POST,/api/auth/refresh,RefreshRequest,AuthResponse,AUTHENTICATED,Refresh JWT token
+Auth,POST,/api/auth/forgot-password,ForgotPasswordRequest,None,PUBLIC,Send reset password email
+Auth,POST,/api/auth/reset-password,ResetPasswordRequest,None,PUBLIC,Update password using reset token
+Auth,GET,/api/profile,None,ProfileResponse,AUTHENTICATED,Get current user profile details
+Auth,PUT,/api/profile,ProfileRequest,ProfileResponse,AUTHENTICATED,Update personal profile info
+Auth,PUT,/api/profile/password,ChangePasswordRequest,None,AUTHENTICATED,Change current password
+User Management,GET,/api/users,None,List<UserResponse>,MANAGER,List all users (with filters & pagination)
+User Management,GET,/api/users/{id},None,UserResponse,MANAGER,Get specific user details
+User Management,POST,/api/users,UserRequest,UserResponse,MANAGER,Create a new user account (Staff/Teacher)
+User Management,PUT,/api/users/{id},UserRequest,UserResponse,MANAGER,Update user role, status, or info
+User Management,DELETE,/api/users/{id},None,None,MANAGER,Deactivate/Soft-delete user
+SMS,GET,/api/branches,None,List<BranchResponse>,PUBLIC,List all center branches
+SMS,GET,/api/courses,None,List<CourseResponse>,PUBLIC,List courses (filtering by level/status)
+SMS,POST,/api/courses,CourseRequest,CourseResponse,MANAGER,Create new course training program
+SMS,GET,/api/rooms,None,List<RoomResponse>,MANAGER,List classrooms and status
+SMS,GET,/api/classes,None,List<ClassResponse>,AUTHENTICATED,List active/upcoming classes
+SMS,POST,/api/classes,ClassRequest,ClassResponse,MANAGER,Open a new class session
+SMS,GET,/api/classes/{id}/schedule,None,List<ScheduleResponse>,AUTHENTICATED,Get weekly timetable for a class
+SMS,POST,/api/classes/check-conflict,ConflictRequest,ConflictResponse,MANAGER,Detect teacher/room schedule conflicts
+LMS,POST,/api/enrollments,EnrollmentRequest,EnrollmentResponse,STUDENT,Student requests to join a class
+LMS,GET,/api/enrollments,None,List<EnrollmentResponse>,MANAGER,List and filter enrollment requests
+LMS,PUT,/api/enrollments/{id},EnrollmentStatusRequest,None,MANAGER,Approve, reject, or drop enrollment
+LMS,POST,/api/attendance,AttendanceRequest,None,TEACHER,Record daily attendance for a class
+LMS,GET,/api/attendance/{classId},None,List<AttendanceResponse>,TEACHER/MANAGER,View attendance history/heatmap
+LMS,POST,/api/assignments,AssignmentRequest,AssignmentResponse,TEACHER,Create homework/assignments
+LMS,GET,/api/assignments/class/{id},None,List<AssignmentResponse>,STUDENT/TEACHER,List assignments for a class
+LMS,POST,/api/assignments/{id}/submit,SubmissionRequest,SubmissionResponse,STUDENT,Upload student work
+LMS,GET,/api/assignments/{id}/submissions,None,List<SubmissionResponse>,TEACHER,List student submissions
+LMS,PUT,/api/submissions/{id}/grade,GradeRequest,None,TEACHER,Grade submission and add feedback
+CRM,POST,/api/leads,LeadRequest,LeadResponse,PUBLIC,Create lead from landing page form
+CRM,GET,/api/leads,None,List<LeadResponse>,MANAGER,List leads (CRM Pipeline view)
+CRM,PUT,/api/leads/{id}/status,LeadStatusRequest,None,MANAGER,Update lead stage (Contacted, Interested...)
+CRM,POST,/api/leads/{id}/consultations,ConsultationRequest,None,MANAGER,Log a consultation session
+CRM,POST,/api/leads/{id}/convert,None,UserResponse,MANAGER,Convert lead to Student account
+Finance,GET,/api/invoices,None,List<InvoiceResponse>,ACCOUNTANT,List invoices and payment status
+Finance,GET,/api/invoices/student/me,None,List<InvoiceResponse>,STUDENT,Student views their own bills
+Finance,POST,/api/transactions,TransactionRequest,TransactionResponse,ACCOUNTANT,Record a payment (QR, Cash, etc.)
+Finance,PUT,/api/transactions/{id}/verify,None,None,ACCOUNTANT,Confirm pending transaction
+Finance,POST,/api/expenses,ExpenseRequest,ExpenseResponse,ACCOUNTANT,Log operational expense
+Finance,GET,/api/promotions,None,List<PromotionResponse>,ACCOUNTANT/MANAGER,List active discount codes
+Notification,GET,/api/announcements,None,List<AnnouncementResponse>,AUTHENTICATED,Get public/role-based announcements
+Notification,POST,/api/announcements,AnnouncementRequest,AnnouncementResponse,MANAGER,Post a new center-wide news
+Notification,GET,/api/notifications,None,List<NotificationResponse>,AUTHENTICATED,Get unread alerts for current user
+Notification,PUT,/api/notifications/{id}/read,None,None,AUTHENTICATED,Mark notification as read
+Reports,GET,/api/reports/revenue,None,RevenueReport,MANAGER/ACCOUNTANT,Revenue trends (Line/Bar chart data)
+Reports,GET,/api/reports/enrollment,None,EnrollmentReport,MANAGER,Stats on new students and class fill rate
+Reports,GET,/api/reports/performance,None,PerformanceReport,MANAGER,Student grading & teacher utilization stats
+Reports,GET,/api/reports/salary,None,SalaryReport,ACCOUNTANT,Payroll calculation preview
+Reports,GET,/api/reports/branch-performance,None,BranchReport,MANAGER,Branch performance dashboard

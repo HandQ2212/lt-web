@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "Role-Based API Testing Guide",
+    "description": "Hướng dẫn test API theo từng role với Postman"
+  },
+  "scripts": {
+    "pre_request_script": {
+      "type": "Login & Set Token",
+      "description": "Script cho Login request - tự động lưu token",
+      "code": "// Lấy credentials từ environment\nconst email = pm.environment.get('email');\nconst password = pm.environment.get('password');\nconst role = pm.environment.get('role');\n\n// Log info\nconsole.log(`\\n🔐 Logging in as ${role}`);\nconsole.log(`📧 Email: ${email}`);\n\n// Set request body\npm.request.body = JSON.stringify({\n  email: email,\n  password: password\n});"
+    },
+    "test_script": {
+      "type": "Auto-save Token",
+      "description": "Script cho Login response - lưu token tự động",
+      "code": "// Check login success\nif (pm.response.code === 200) {\n    let responseData = pm.response.json();\n    \n    // Save token\n    pm.environment.set('accessToken', responseData.accessToken);\n    pm.environment.set('refreshToken', responseData.refreshToken);\n    \n    // Save user info\n    if (responseData.user) {\n        pm.environment.set('userId', responseData.user.id);\n    }\n    \n    // Show success\n    pm.test('✅ Login Success', function() {\n        pm.expect(pm.response.code).to.equal(200);\n    });\n    \n    console.log(`\\n✅ Token saved for ${pm.environment.get('role')}`);\n    console.log(`🔑 Token: ${responseData.accessToken.substring(0, 20)}...`);\n} else {\n    pm.test('❌ Login Failed', function() {\n        pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n    });\n    console.log(`\\n❌ Login failed: ${pm.response.code}`);\n}"
+    }
+  },
+  "test_scenarios": {
+    "scenario_1": {
+      "name": "Test All Teacher APIs",
+      "steps": [
+        "1. Select TEACHER-env.json environment",
+        "2. Run Login request",
+        "3. Copy token từ response",
+        "4. Run Teacher Permissions folder (all requests)",
+        "5. Check kết quả: ✅ 200 OK hoặc ❌ 403 Forbidden nếu không có quyền"
+      ]
+    },
+    "scenario_2": {
+      "name": "Test All Manager APIs",
+      "steps": [
+        "1. Select MANAGER-env.json environment",
+        "2. Run Login request",
+        "3. Copy token từ response",
+        "4. Run Manager Permissions folder (all requests)",
+        "5. Check kết quả: ✅ 200 OK cho manager endpoints"
+      ]
+    },
+    "scenario_3": {
+      "name": "Compare Role Permissions",
+      "steps": [
+        "1. Test same API với 2 role khác nhau",
+        "2. VD: POST /api/users với TEACHER vs MANAGER",
+        "3. TEACHER nên nhận 403 Forbidden",
+        "4. MANAGER nên nhận 201 Created (hoặc validation error)"
+      ]
+    }
+  },
+  "permission_matrix": {
+    "TEACHER": {
+      "allowed": [
+        "GET /api/classes",
+        "GET /api/assignments/class/{classId}",
+        "POST /api/assignments",
+        "POST /api/attendance",
+        "GET /api/profile",
+        "POST /api/announcements"
+      ],
+      "denied": [
+        "POST /api/users (403)",
+        "POST /api/courses (403)",
+        "PATCH /api/invoices/{id}/status (403)",
+        "PUT /api/users/{id} (403)"
+      ]
+    },
+    "MANAGER": {
+      "allowed": [
+        "GET /api/users",
+        "POST /api/users",
+        "POST /api/courses",
+        "POST /api/classes",
+        "PATCH /api/invoices/{id}/status",
+        "GET /api/leads",
+        "PUT /api/leads/{id}/status"
+      ],
+      "denied": [
+        "DELETE /api/courses/{id} (check backend)",
+        "Khác: phải verify từ backend code"
+      ]
+    },
+    "STUDENT": {
+      "allowed": [
+        "GET /api/profile",
+        "PUT /api/profile",
+        "GET /api/enrollments/student/{studentId}",
+        "POST /api/submissions",
+        "GET /api/notifications",
+        "POST /api/leads"
+      ],
+      "denied": [
+        "POST /api/users (403)",
+        "POST /api/assignments (403)",
+        "POST /api/invoices (403)"
+      ]
+    },
+    "ACCOUNTANT": {
+      "allowed": [
+        "POST /api/announcements",
+        "GET /api/invoices",
+        "POST /api/invoices",
+        "PATCH /api/invoices/{id}/status",
+        "POST /api/invoices/{id}/refund",
+        "GET /api/transactions",
+        "GET /api/analytics"
+      ],
+      "denied": [
+        "POST /api/users (403)",
+        "POST /api/courses (403)"
+      ]
+    }
+  },
+  "postman_collection_modifications": {
+    "add_this_to_login_request": {
+      "tab": "Tests",
+      "code": "// Auto-save token sau login\nif (pm.response.code === 200) {\n    let body = pm.response.json();\n    pm.environment.set('accessToken', body.accessToken);\n    pm.environment.set('refreshToken', body.refreshToken);\n    pm.environment.set('userId', body.user.id);\n    \n    pm.test('✅ Login thành công', function() {\n        pm.expect(pm.response.code).to.equal(200);\n        pm.expect(body.accessToken).to.be.a('string');\n    });\n}"
+    },
+    "add_this_to_each_request": {
+      "tab": "Tests",
+      "code": "// Test role permissions\nlet currentRole = pm.environment.get('role');\nlet expectedRoles = pm.request.headers.get('X-Allowed-Roles'); // Add này trong collection\n\nif (pm.response.code === 403) {\n    pm.test(`⚠️  ${currentRole} không có quyền endpoint này`, function() {\n        pm.expect(pm.response.code).to.equal(403);\n    });\n} else if (pm.response.code === 200 || pm.response.code === 201) {\n    pm.test(`✅ ${currentRole} có quyền`, function() {\n        pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n    });\n} else {\n    pm.test(`Error: ${pm.response.code}`, function() {\n        pm.expect(true).to.be.false; // Fail for unexpected codes\n    });\n}"
+    }
+  },
+  "cli_automation": {
+    "test_all_roles": {
+      "description": "Chạy collection với tất cả roles (dùng Newman)",
+      "commands": [
+        "# Test TEACHER",
+        "newman run ELC_System_API_Postman_Collection_v2.json -e postman-environments/TEACHER-env.json --reporters cli,json --reporter-json-export teacher-results.json",
+        "",
+        "# Test MANAGER",
+        "newman run ELC_System_API_Postman_Collection_v2.json -e postman-environments/MANAGER-env.json --reporters cli,json --reporter-json-export manager-results.json",
+        "",
+        "# Test STUDENT",
+        "newman run ELC_System_API_Postman_Collection_v2.json -e postman-environments/STUDENT-env.json --reporters cli,json --reporter-json-export student-results.json",
+        "",
+        "# Test ACCOUNTANT",
+        "newman run ELC_System_API_Postman_Collection_v2.json -e postman-environments/ACCOUNTANT-env.json --reporters cli,json --reporter-json-export accountant-results.json"
+      ]
+    },
+    "test_specific_folder": {
+      "description": "Test specific folder (VD: Teacher Permissions)",
+      "command": "newman run ELC_System_API_Postman_Collection_v2.json -e postman-environments/TEACHER-env.json --folder 'Teacher Permissions' -v"
+    }
+  },
+  "expected_outcomes": {
+    "success_criteria": [
+      "TEACHER: Có access vào Teacher endpoints, 403 vào Manager/Admin endpoints",
+      "MANAGER: Có access vào tất cả endpoints",
+      "STUDENT: Có access vào Student endpoints, 403 vào Management endpoints",
+      "ACCOUNTANT: Có access vào Finance endpoints, 403 vào khác"
+    ],
+    "failure_examples": [
+      "Nếu TEACHER vẫn access được POST /api/users → lỗi Authorization",
+      "Nếu MANAGER không access được POST /api/courses → lỗi Role check",
+      "Nếu STUDENT access được POST /api/invoices → Backend không check role"
+    ]
+  }
+}

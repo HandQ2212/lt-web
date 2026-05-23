@@ -1,0 +1,383 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, ButtonGroup, Chip, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import { formatDateToDDMMYYYY } from '../../utils/dateFormatter';
+import { dayOfWeekIndexMap, getWeekDates, timeToMinutes, toIsoDate } from '../../utils/timetable';
+
+export type WeeklyTimetableSession = {
+  key: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  subtitle?: string;
+  roomLabel?: string;
+  teacherLabel?: string;
+  statusLabel?: string;
+  dateLabel?: string;
+};
+
+type WeeklyTimetableProps = {
+  sessions: WeeklyTimetableSession[];
+  title?: string;
+  emptyMessage?: string;
+  referenceDate?: Date;
+  onSessionClick?: (session: WeeklyTimetableSession) => void;
+  onWeekChange?: (startIso: string, endIso: string) => void;
+  showControls?: boolean;
+};
+
+const PERIOD_START_HOUR = 7;
+const MIN_PERIOD_END_HOUR = 18;
+
+export default function WeeklyTimetable({
+  sessions,
+  title = 'Thời khóa biểu tuần',
+  emptyMessage = 'Chưa có lịch cho tuần này.',
+  referenceDate,
+  onSessionClick,
+  onWeekChange,
+  showControls = true,
+}: WeeklyTimetableProps) {
+  const [refDate, setRefDate] = useState<Date>(() => (referenceDate ? new Date(referenceDate) : new Date()));
+  const onWeekChangeRef = useRef(onWeekChange);
+
+  useEffect(() => {
+    onWeekChangeRef.current = onWeekChange;
+  }, [onWeekChange]);
+
+  useEffect(() => {
+    if (!referenceDate) {
+      return;
+    }
+
+    setRefDate((current) => (
+      toIsoDate(current) === toIsoDate(referenceDate) ? current : new Date(referenceDate)
+    ));
+  }, [referenceDate]);
+
+  const weekDates = useMemo(() => getWeekDates(refDate), [refDate]);
+  const weekRange = useMemo(() => ({
+    startIso: toIsoDate(weekDates[0]),
+    endIso: toIsoDate(weekDates[6]),
+  }), [weekDates]);
+  const periodHours = useMemo(() => {
+    const latestEndHour = sessions.reduce((latest, session) => {
+      const startMinutes = timeToMinutes(session.startTime);
+      const endMinutes = timeToMinutes(session.endTime);
+      const safeEndMinutes = Math.max(endMinutes, startMinutes + 60);
+      return Math.max(latest, Math.ceil(safeEndMinutes / 60));
+    }, MIN_PERIOD_END_HOUR);
+
+    const periodCount = Math.max(1, latestEndHour - PERIOD_START_HOUR);
+    return Array.from({ length: periodCount }, (_, index) => PERIOD_START_HOUR + index);
+  }, [sessions]);
+
+  const board = useMemo(() => {
+    const cells: Record<string, { span: number; items: WeeklyTimetableSession[] }> = {};
+    const coveredCells = new Set<string>();
+    const periodCount = periodHours.length;
+
+    sessions.forEach((session) => {
+      const dayIndex = dayOfWeekIndexMap[session.dayOfWeek.toUpperCase()];
+      if (dayIndex === undefined) {
+        return;
+      }
+
+      const startMinutes = timeToMinutes(session.startTime);
+      const endMinutes = timeToMinutes(session.endTime);
+      const startRow = Math.max(0, Math.min(periodCount - 1, Math.floor(startMinutes / 60) - PERIOD_START_HOUR));
+      const span = Math.max(1, Math.min(periodCount - startRow, Math.ceil(Math.max(endMinutes - startMinutes, 60) / 60)));
+      const cellKey = `${dayIndex}-${startRow}`;
+      const existing = cells[cellKey];
+
+      if (!existing) {
+        cells[cellKey] = { span, items: [session] };
+        for (let coveredRow = startRow + 1; coveredRow < startRow + span; coveredRow += 1) {
+          coveredCells.add(`${dayIndex}-${coveredRow}`);
+        }
+        return;
+      }
+
+      existing.span = Math.max(existing.span, span);
+      existing.items.push(session);
+    });
+
+    return { cells, coveredCells };
+  }, [sessions, periodHours.length]);
+
+  useEffect(() => {
+    onWeekChangeRef.current?.(weekRange.startIso, weekRange.endIso);
+  }, [weekRange.startIso, weekRange.endIso]);
+
+  const gotoPrevWeek = () => setRefDate((d) => new Date(d.getTime() - 7 * 24 * 3600 * 1000));
+  const gotoNextWeek = () => setRefDate((d) => new Date(d.getTime() + 7 * 24 * 3600 * 1000));
+  const gotoToday = () => setRefDate(new Date());
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        overflow: 'hidden',
+        borderRadius: 4,
+        border: '2px solid #1E293B',
+        boxShadow: '5px 5px 0 #1E293B',
+        bgcolor: '#FFFFFF',
+      }}
+    >
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: '2px solid #1E293B',
+          display: 'flex',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          gap: 2,
+          flexWrap: 'wrap',
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7DF 100%)',
+        }}
+      >
+        <Box>
+          <Typography variant="subtitle1" fontWeight={900} color="primary.main" sx={{ letterSpacing: 0 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" fontWeight={600}>
+            Tuần {formatDateToDDMMYYYY(weekDates[0])} - {formatDateToDDMMYYYY(weekDates[6])}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          {showControls && (
+            <ButtonGroup variant="outlined" size="small" sx={{ mr: 1, '& .MuiButtonGroup-grouped': { borderColor: '#1E293B' } }}>
+              <IconButton size="small" onClick={gotoPrevWeek} aria-label="Tuần trước">
+                <ChevronLeftIcon />
+              </IconButton>
+              <Button onClick={gotoToday} startIcon={<CalendarTodayIcon />} sx={{ fontWeight: 700 }}>
+                Hôm nay
+              </Button>
+              <IconButton size="small" onClick={gotoNextWeek} aria-label="Tuần sau">
+                <ChevronRightIcon />
+              </IconButton>
+            </ButtonGroup>
+          )}
+          <Chip
+            label={`Từ ${formatDateToDDMMYYYY(weekDates[0])} đến ${formatDateToDDMMYYYY(weekDates[6])}`}
+            variant="outlined"
+            sx={{ fontWeight: 800, borderColor: '#1E293B', color: 'primary.main', bgcolor: '#FFFFFF' }}
+          />
+        </Box>
+      </Box>
+
+      {sessions.length === 0 ? (
+        <Box sx={{ p: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            {emptyMessage}
+          </Typography>
+        </Box>
+      ) : (
+        <TableContainer sx={{ maxHeight: 640 }}>
+          <Table stickyHeader size="small" sx={{ minWidth: 1100, tableLayout: 'fixed' }}>
+            <TableHead>
+              <TableRow>
+                <TableCell
+                  sx={{
+                    width: 72,
+                    bgcolor: '#8B5CF6',
+                    color: '#fff',
+                    fontWeight: 900,
+                    textAlign: 'center',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                  }}
+                />
+                {weekDates.map((date, index) => (
+                  <TableCell
+                    key={date.toISOString()}
+                    sx={{
+                      width: `${100 / 7}%`,
+                      textAlign: 'center',
+                      fontWeight: 800,
+                      py: 1.5,
+                      bgcolor: index === 0 ? 'rgba(251,191,36,0.22)' : '#fff',
+                    }}
+                  >
+                    <Typography variant="subtitle2" fontWeight={900} sx={{ lineHeight: 1.2 }}>
+                      {index === 6 ? 'Chủ Nhật' : `Thứ ${index + 2}`}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                      {formatDateToDDMMYYYY(date).slice(0, 5)}
+                    </Typography>
+                  </TableCell>
+                ))}
+                <TableCell
+                  sx={{
+                    width: 78,
+                    bgcolor: '#8B5CF6',
+                    color: '#fff',
+                    fontWeight: 900,
+                    textAlign: 'center',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                  }}
+                />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {periodHours.map((startHour, periodIndex) => {
+                return (
+                  <TableRow key={startHour} hover>
+                    <TableCell
+                      sx={{
+                        bgcolor: '#8B5CF6',
+                        color: '#fff',
+                        fontWeight: 800,
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      Tiết {periodIndex + 1}
+                    </TableCell>
+
+                    {Array.from({ length: 7 }, (_, dayIndex) => {
+                      const cellKey = `${dayIndex}-${periodIndex}`;
+                      if (board.coveredCells.has(cellKey)) {
+                        return null;
+                      }
+
+                      const cell = board.cells[cellKey];
+
+                      if (!cell) {
+                        return (
+                          <TableCell
+                            key={cellKey}
+                            sx={{
+                              height: 86,
+                              verticalAlign: 'top',
+                              bgcolor: periodIndex % 2 === 0 ? '#fff' : 'rgba(248, 250, 252, 0.8)',
+                            }}
+                          />
+                        );
+                      }
+
+                      return (
+                        <TableCell
+                          key={cellKey}
+                          rowSpan={cell.span}
+                          sx={{
+                            p: 0.75,
+                            verticalAlign: 'top',
+                              bgcolor: 'rgba(251, 191, 36, 0.18)',
+                            borderColor: 'rgba(30, 41, 59, 0.24)',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              minHeight: cell.span * 86 - 12,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 0.75,
+                              p: 1,
+                              borderRadius: 2,
+                              background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,247,223,0.92))',
+                              border: '2px solid #1E293B',
+                              boxShadow: '3px 3px 0 #1E293B',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {cell.items.map((item) => (
+                              <Box
+                                key={item.key}
+                                role={onSessionClick ? 'button' : undefined}
+                                tabIndex={onSessionClick ? 0 : undefined}
+                                onClick={onSessionClick ? () => onSessionClick(item) : undefined}
+                                onKeyDown={
+                                  onSessionClick
+                                    ? (event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                          event.preventDefault();
+                                          onSessionClick(item);
+                                        }
+                                      }
+                                    : undefined
+                                }
+                                sx={{
+                                  p: 1,
+                                  borderRadius: 1.5,
+                                  bgcolor: 'rgba(139, 92, 246, 0.12)',
+                                  border: '2px solid rgba(30, 41, 59, 0.28)',
+                                  cursor: onSessionClick ? 'pointer' : 'default',
+                                  transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                                  '&:hover': onSessionClick
+                                    ? {
+                                        transform: 'translateY(-1px)',
+                                        borderColor: '#1E293B',
+                                        boxShadow: '3px 3px 0 #1E293B',
+                                      }
+                                    : undefined,
+                                  '&:focus-visible': onSessionClick
+                                    ? {
+                                        outline: '3px solid rgba(139, 92, 246, 0.45)',
+                                        outlineOffset: 2,
+                                      }
+                                    : undefined,
+                                }}
+                              >
+                                <Typography variant="body2" fontWeight={900} sx={{ lineHeight: 1.25, mb: 0.25 }}>
+                                  {item.title}
+                                </Typography>
+                                {item.subtitle && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
+                                    {item.subtitle}
+                                  </Typography>
+                                )}
+                                {item.teacherLabel && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    GV: {item.teacherLabel}
+                                  </Typography>
+                                )}
+                                {item.roomLabel && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    Phòng: {item.roomLabel}
+                                  </Typography>
+                                )}
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  {item.dateLabel ? `${item.dateLabel} • ` : ''}{item.startTime} - {item.endTime}
+                                </Typography>
+                                {item.statusLabel && (
+                                  <Chip
+                                    size="small"
+                                    label={item.statusLabel}
+                                    variant="outlined"
+                                    sx={{ mt: 0.75, height: 22, fontSize: 11, fontWeight: 800 }}
+                                  />
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+                        </TableCell>
+                      );
+                    })}
+
+                    <TableCell
+                      sx={{
+                        bgcolor: '#8B5CF6',
+                        color: '#fff',
+                        fontWeight: 900,
+                        textAlign: 'center',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {String(startHour).padStart(2, '0')}:00
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Paper>
+  );
+}

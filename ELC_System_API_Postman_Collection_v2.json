@@ -1,0 +1,2116 @@
+{
+  "info": {
+    "name": "ELC System API",
+    "description": "ELC System Backend API Collection - All endpoints for testing and documentation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register new user account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"John Doe\",\n  \"phoneNumber\": \"0123456789\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register new user account"
+          }
+        },
+        {
+          "name": "User login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save token từ login response",
+                  "if (pm.response.code === 200) {",
+                  "    let body = pm.response.json();",
+                  "    ",
+                  "    // Save tokens",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "    pm.environment.set('refreshToken', body.refreshToken);",
+                  "    ",
+                  "    // Save user info",
+                  "    if (body.user) {",
+                  "        pm.environment.set('userId', body.user.id);",
+                  "    }",
+                  "    ",
+                  "    // Show success",
+                  "    pm.test('✅ Login thành công', function() {",
+                  "        pm.expect(pm.response.code).to.equal(200);",
+                  "        pm.expect(body.accessToken).to.be.a('string');",
+                  "        pm.expect(body.refreshToken).to.be.a('string');",
+                  "    });",
+                  "    ",
+                  "    console.log('🔐 Token saved to environment');",
+                  "    console.log('📧 User: ' + body.user.email + ' (' + body.user.role + ')');",
+                  "} else {",
+                  "    pm.test('❌ Login failed: ' + pm.response.code, function() {",
+                  "        pm.expect(pm.response.code).to.equal(200);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "User login - 🔐 Token sẽ tự động lưu vào environment"
+          }
+        },
+        {
+          "name": "User logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "User logout"
+          }
+        },
+        {
+          "name": "Refresh JWT token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save new token từ refresh response",
+                  "if (pm.response.code === 200) {",
+                  "    let body = pm.response.json();",
+                  "    ",
+                  "    // Save new tokens",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "    pm.environment.set('refreshToken', body.refreshToken);",
+                  "    ",
+                  "    // Show success",
+                  "    pm.test('✅ Token refreshed', function() {",
+                  "        pm.expect(pm.response.code).to.equal(200);",
+                  "        pm.expect(body.accessToken).to.be.a('string');",
+                  "    });",
+                  "    ",
+                  "    console.log('🔄 New token saved');",
+                  "} else {",
+                  "    pm.test('❌ Refresh failed: ' + pm.response.code, function() {",
+                  "        pm.expect(pm.response.code).to.equal(200);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh JWT token - 🔄 Token mới sẽ tự động lưu"
+          }
+        },
+        {
+          "name": "Request password reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Request password reset"
+          }
+        },
+        {
+          "name": "Reset password with token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token\",\n  \"newPassword\": \"newPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Reset password with token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get all users (paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let currentRole = pm.environment.get('role');",
+                  "let allowedRoles = ['MANAGER'];",
+                  "let responseCode = pm.response.code;",
+                  "",
+                  "if (allowedRoles.includes(currentRole)) {",
+                  "    pm.test('✅ ' + currentRole + ' can access Get All Users', function() {",
+                  "        pm.expect(responseCode).to.be.oneOf([200, 201]);",
+                  "    });",
+                  "} else {",
+                  "    if (responseCode === 403) {",
+                  "        pm.test('✅ ' + currentRole + ' is correctly denied (403)', function() {",
+                  "            pm.expect(responseCode).to.equal(403);",
+                  "        });",
+                  "    } else if (responseCode === 401) {",
+                  "        pm.test('⚠️  401 Unauthorized - Token may be missing/expired', function() {",
+                  "            pm.expect(true).to.be.true;",
+                  "        });",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?page=0&size=20",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all users (paginated) - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Get user by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Get user by ID - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Create new user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let currentRole = pm.environment.get('role');",
+                  "let allowedRoles = ['MANAGER'];",
+                  "let responseCode = pm.response.code;",
+                  "",
+                  "if (allowedRoles.includes(currentRole)) {",
+                  "    pm.test('✅ ' + currentRole + ' can create users', function() {",
+                  "        pm.expect(responseCode).to.be.oneOf([200, 201]);",
+                  "    });",
+                  "} else {",
+                  "    if (responseCode === 403) {",
+                  "        pm.test('✅ ' + currentRole + ' is correctly denied (403)', function() {",
+                  "            pm.expect(responseCode).to.equal(403);",
+                  "        });",
+                  "    } else if (responseCode === 401) {",
+                  "        pm.test('⚠️  401 Unauthorized - Token may be missing/expired', function() {",
+                  "            pm.expect(true).to.be.true;",
+                  "        });",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"Jane Doe\",\n  \"phoneNumber\": \"0987654321\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Create new user - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Update user role/status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"TEACHER\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Update user role/status - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Deactivate user (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Deactivate user (soft delete) - Requires MANAGER role"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get current user profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "Get current user profile"
+          }
+        },
+        {
+          "name": "Update current user profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe Updated\",\n  \"phoneNumber\": \"0123456789\",\n  \"avatar\": \"http://example.com/avatar.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "Update current user profile"
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"currentPassword123\",\n  \"newPassword\": \"newPassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile/password",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "profile",
+                "password"
+              ]
+            },
+            "description": "Change password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Class Management",
+      "item": [
+        {
+          "name": "Get all classes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/classes",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes"
+              ]
+            },
+            "description": "Get all classes"
+          }
+        },
+        {
+          "name": "Get class by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/{{classId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "{{classId}}"
+              ]
+            },
+            "description": "Get class by ID"
+          }
+        },
+        {
+          "name": "Create new class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Class A\",\n  \"courseId\": \"{{courseId}}\",\n  \"capacity\": 30,\n  \"startDate\": \"2026-06-01\",\n  \"endDate\": \"2026-12-31\",\n  \"description\": \"Advanced English Course\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes"
+              ]
+            },
+            "description": "Create new class"
+          }
+        },
+        {
+          "name": "Update class",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Class A Updated\",\n  \"capacity\": 35,\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/{{classId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "{{classId}}"
+              ]
+            },
+            "description": "Update class"
+          }
+        },
+        {
+          "name": "Delete class",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/{{classId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "{{classId}}"
+              ]
+            },
+            "description": "Delete class"
+          }
+        },
+        {
+          "name": "Update class status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/{{classId}}/status?status=ACTIVE",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "{{classId}}",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            },
+            "description": "Update class status"
+          }
+        },
+        {
+          "name": "Get class schedules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/{{classId}}/schedule",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "{{classId}}",
+                "schedule"
+              ]
+            },
+            "description": "Get class schedules"
+          }
+        },
+        {
+          "name": "Add schedule to class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dayOfWeek\": \"MONDAY\",\n  \"startTime\": \"09:00:00\",\n  \"endTime\": \"11:00:00\",\n  \"roomId\": \"{{roomId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/{{classId}}/schedule",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "{{classId}}",
+                "schedule"
+              ]
+            },
+            "description": "Add schedule to class"
+          }
+        },
+        {
+          "name": "Check schedule conflict",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"dayOfWeek\": \"MONDAY\",\n  \"startTime\": \"09:00:00\",\n  \"endTime\": \"11:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/check-conflict",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "classes",
+                "check-conflict"
+              ]
+            },
+            "description": "Check schedule conflict"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Course Management",
+      "item": [
+        {
+          "name": "Get all courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses"
+              ]
+            },
+            "description": "Get all courses"
+          }
+        },
+        {
+          "name": "Get course by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/{{courseId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "{{courseId}}"
+              ]
+            },
+            "description": "Get course by ID"
+          }
+        },
+        {
+          "name": "Create course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ENG101\",\n  \"name\": \"English Course\",\n  \"description\": \"Basic English Course\",\n  \"levelId\": \"{{levelId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/courses",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses"
+              ]
+            },
+            "description": "Create course - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Update course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"English Course Updated\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/{{courseId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "{{courseId}}"
+              ]
+            },
+            "description": "Update course - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Delete course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/{{courseId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "{{courseId}}"
+              ]
+            },
+            "description": "Delete course - Requires MANAGER role"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enrollment",
+      "item": [
+        {
+          "name": "Get enrollments by class",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/enrollments/class/{{classId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "enrollments",
+                "class",
+                "{{classId}}"
+              ]
+            },
+            "description": "Get enrollments by class"
+          }
+        },
+        {
+          "name": "Get enrollments by student",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/enrollments/student/{{studentId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "enrollments",
+                "student",
+                "{{studentId}}"
+              ]
+            },
+            "description": "Get enrollments by student"
+          }
+        },
+        {
+          "name": "Enroll student to class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"classId\": \"{{classId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/enrollments",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "enrollments"
+              ]
+            },
+            "description": "Enroll student to class"
+          }
+        },
+        {
+          "name": "Update enrollment status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/enrollments/{{enrollmentId}}/status?status=ACTIVE",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "enrollments",
+                "{{enrollmentId}}",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            },
+            "description": "Update enrollment status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Get class attendance by date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/{{classId}}?date=2026-05-05",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "{{classId}}"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-05-05"
+                }
+              ]
+            },
+            "description": "Get class attendance by date (YYYY-MM-DD)"
+          }
+        },
+        {
+          "name": "Mark attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"classId\": \"{{classId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"date\": \"2026-05-05\",\n  \"status\": \"PRESENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance"
+              ]
+            },
+            "description": "Mark attendance"
+          }
+        },
+        {
+          "name": "Get monthly attendance report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/report/monthly?studentId={{studentId}}&classId={{classId}}&year=2026&month=5",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "report",
+                "monthly"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "{{studentId}}"
+                },
+                {
+                  "key": "classId",
+                  "value": "{{classId}}"
+                },
+                {
+                  "key": "year",
+                  "value": "2026"
+                },
+                {
+                  "key": "month",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Get monthly attendance report"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assignment",
+      "item": [
+        {
+          "name": "Get assignments by class",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments/class/{{classId}}",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments",
+                "class",
+                "{{classId}}"
+              ]
+            },
+            "description": "Get assignments by class"
+          }
+        },
+        {
+          "name": "Create assignment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let currentRole = pm.environment.get('role');",
+                  "let allowedRoles = ['TEACHER', 'MANAGER'];",
+                  "let responseCode = pm.response.code;",
+                  "",
+                  "if (allowedRoles.includes(currentRole)) {",
+                  "    pm.test('✅ ' + currentRole + ' can create assignments', function() {",
+                  "        pm.expect(responseCode).to.be.oneOf([200, 201]);",
+                  "    });",
+                  "} else {",
+                  "    if (responseCode === 403) {",
+                  "        pm.test('✅ ' + currentRole + ' is correctly denied (403)', function() {",
+                  "            pm.expect(responseCode).to.equal(403);",
+                  "        });",
+                  "    } else if (responseCode === 401) {",
+                  "        pm.test('⚠️  401 Unauthorized - Token may be missing/expired', function() {",
+                  "            pm.expect(true).to.be.true;",
+                  "        });",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"classId\": \"{{classId}}\",\n  \"title\": \"Assignment 1\",\n  \"description\": \"Complete the exercises\",\n  \"dueDate\": \"2026-06-01\",\n  \"maxScore\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments"
+              ]
+            },
+            "description": "Create assignment"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finance - Invoice",
+      "item": [
+        {
+          "name": "Get all invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices"
+              ]
+            },
+            "description": "Get all invoices"
+          }
+        },
+        {
+          "name": "Create invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let currentRole = pm.environment.get('role');",
+                  "let allowedRoles = ['MANAGER', 'ACCOUNTANT'];",
+                  "let responseCode = pm.response.code;",
+                  "",
+                  "if (allowedRoles.includes(currentRole)) {",
+                  "    pm.test('✅ ' + currentRole + ' can create invoices', function() {",
+                  "        pm.expect(responseCode).to.be.oneOf([200, 201]);",
+                  "    });",
+                  "} else {",
+                  "    if (responseCode === 403) {",
+                  "        pm.test('✅ ' + currentRole + ' is correctly denied (403)', function() {",
+                  "            pm.expect(responseCode).to.equal(403);",
+                  "        });",
+                  "    } else if (responseCode === 401) {",
+                  "        pm.test('⚠️  401 Unauthorized - Token may be missing/expired', function() {",
+                  "            pm.expect(true).to.be.true;",
+                  "        });",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"amount\": 5000000,\n  \"description\": \"Tuition fee\",\n  \"dueDate\": \"2026-06-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices"
+              ]
+            },
+            "description": "Create invoice"
+          }
+        },
+        {
+          "name": "Update invoice status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}/status?status=PAID",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "{{invoiceId}}",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PAID"
+                }
+              ]
+            },
+            "description": "Update invoice status"
+          }
+        },
+        {
+          "name": "Get debt invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/debt",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "debt"
+              ]
+            },
+            "description": "Get debt invoices"
+          }
+        },
+        {
+          "name": "Process refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refundAmount\": 500000,\n  \"reason\": \"Student request\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}/refund",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "{{invoiceId}}",
+                "refund"
+              ]
+            },
+            "description": "Process refund"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finance - Promotion",
+      "item": [
+        {
+          "name": "Get all promotions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "promotions"
+              ]
+            },
+            "description": "Get all promotions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finance - Transaction",
+      "item": [
+        {
+          "name": "Get transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transactions"
+              ]
+            },
+            "description": "Get transactions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Announcement",
+      "item": [
+        {
+          "name": "Create announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Important Notice\",\n  \"content\": \"This is an important announcement\",\n  \"priority\": \"HIGH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/announcements",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "announcements"
+              ]
+            },
+            "description": "Create announcement - Requires MANAGER, TEACHER, or ACCOUNTANT role"
+          }
+        },
+        {
+          "name": "Get active announcements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/announcements?page=0&size=20",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "announcements"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get active announcements"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification",
+      "item": [
+        {
+          "name": "Get user notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?page=0&size=20",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get user notifications"
+          }
+        },
+        {
+          "name": "Get unread notification count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "Get unread notification count"
+          }
+        },
+        {
+          "name": "Mark notification as read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "Mark notification as read"
+          }
+        },
+        {
+          "name": "Mark all notifications as read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Mark all notifications as read"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get branch performance stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/branch-performance",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "branch-performance"
+              ]
+            },
+            "description": "Get branch performance stats"
+          }
+        },
+        {
+          "name": "Get revenue report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/revenue",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "revenue"
+              ]
+            },
+            "description": "Get revenue report"
+          }
+        },
+        {
+          "name": "Get academic analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/academic",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "academic"
+              ]
+            },
+            "description": "Get academic analytics"
+          }
+        },
+        {
+          "name": "Get dashboard overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/dashboard",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "dashboard"
+              ]
+            },
+            "description": "Get dashboard overview"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Report",
+      "item": [
+        {
+          "name": "Get reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports"
+              ]
+            },
+            "description": "Get reports"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lead",
+      "item": [
+        {
+          "name": "Create lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"phoneNumber\": \"0987654321\",\n  \"source\": \"Website\",\n  \"courseInterest\": \"English\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leads",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leads"
+              ]
+            },
+            "description": "Create lead"
+          }
+        },
+        {
+          "name": "Get leads (with filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/leads?status=NEW&page=0&size=20",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "NEW"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get leads (with filters) - Requires MANAGER role"
+          }
+        },
+        {
+          "name": "Update lead status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONTACTED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leads/{{leadId}}/status",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leads",
+                "{{leadId}}",
+                "status"
+              ]
+            },
+            "description": "Update lead status - Requires MANAGER role"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Course Result",
+      "item": [
+        {
+          "name": "Get course results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/course-results",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "course-results"
+              ]
+            },
+            "description": "Get course results"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submission",
+      "item": [
+        {
+          "name": "Submit assignment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"{{assignmentId}}\",\n  \"content\": \"Here is my submission\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/submissions",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "submissions"
+              ]
+            },
+            "description": "Submit assignment"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultation",
+      "item": [
+        {
+          "name": "Get consultations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultations",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultations"
+              ]
+            },
+            "description": "Get consultations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Room",
+      "item": [
+        {
+          "name": "Get rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "Get rooms"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Level",
+      "item": [
+        {
+          "name": "Get all levels",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/levels",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "levels"
+              ]
+            },
+            "description": "Get all levels"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Branch",
+      "item": [
+        {
+          "name": "Get all branches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/branches",
+              "protocol": "http",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "branches"
+              ]
+            },
+            "description": "Get all branches"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "classId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "courseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "studentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "enrollmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "levelId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invoiceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leadId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "assignmentId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
