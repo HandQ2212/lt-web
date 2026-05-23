@@ -1,6 +1,7 @@
 package com.elc.system.modules.lms.service;
 
 import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.auth.repository.UserRepository;
 import com.elc.system.modules.lms.dto.EnrollmentDto.*;
 import com.elc.system.modules.lms.entity.ClassStatus;
@@ -13,6 +14,7 @@ import com.elc.system.modules.finance.entity.InvoiceStatus;
 import com.elc.system.modules.lms.repository.ClazzRepository;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,15 +32,41 @@ public class EnrollmentService {
     private final UserRepository userRepository;
     private final com.elc.system.modules.finance.repository.InvoiceRepository invoiceRepository;
 
+    // ✅ SECURE: Added User parameter for access control check
     @Transactional(readOnly = true)
-    public List<EnrollmentResponse> getEnrollmentsByClass(UUID classId) {
+    public List<EnrollmentResponse> getEnrollmentsByClass(UUID classId, User currentUser) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        // ✅ FIXED: Check if user has permission to view enrollments for this class
+        if (currentUser.getRole() == UserRole.TEACHER) {
+            if (clazz.getTeacher() == null || !clazz.getTeacher().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view enrollments for your own classes");
+            }
+        } else if (currentUser.getRole() == UserRole.STUDENT) {
+            // Students can only view enrollments for classes they're enrolled in
+            if (!enrollmentRepository.existsByStudentIdAndClazzId(currentUser.getId(), classId)) {
+                throw new AccessDeniedException("You can only view enrollments for your enrolled classes");
+            }
+        }
+        // Managers can view all enrollments
+
         return enrollmentRepository.findByClazzId(classId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    // ✅ SECURE: Added User parameter for access control check
     @Transactional(readOnly = true)
-    public List<EnrollmentResponse> getEnrollmentsByStudent(UUID studentId) {
+    public List<EnrollmentResponse> getEnrollmentsByStudent(UUID studentId, User currentUser) {
+        // ✅ FIXED: Check if user has permission to view enrollments for this student
+        if (currentUser.getRole() == UserRole.STUDENT) {
+            if (!studentId.equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view your own enrollments");
+            }
+        }
+        // Managers and teachers can view all student enrollments
+
         return enrollmentRepository.findByStudentId(studentId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

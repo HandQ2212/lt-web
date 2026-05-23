@@ -20,9 +20,15 @@ public class AssignmentController {
 
     private final AssignmentService assignmentService;
 
+    // ✅ SECURE: Added @PreAuthorize and @AuthenticationPrincipal for access control
     @GetMapping("/class/{classId}")
-    public ResponseEntity<List<AssignmentResponse>> getAssignmentsByClass(@PathVariable UUID classId) {
-        return ResponseEntity.ok(assignmentService.getAssignmentsByClass(classId));
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER', 'STUDENT')")
+    public ResponseEntity<List<AssignmentResponse>> getAssignmentsByClass(
+            @PathVariable UUID classId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(assignmentService.getAssignmentsByClass(classId, currentUser));
+        // ✅ FIXED: Service layer now checks if user has permission to view assignments for this class
     }
 
     @GetMapping("/mine")

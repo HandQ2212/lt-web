@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&preferQueryMode=simple
+    username: postgres.imkovwxqodirvqjxujra
+    password: hieuhailinhluc
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: hn235930@gmail.com
+    password: owgl nnyo galy bmim
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+payos:
+  client-id: "9e8ff38a-06a0-4d67-a8c5-a008e4c32857"
+  api-key: "ab6b9eb1-8c6e-48d0-a8a8-4c948a918b30"
+  checksum-key: "15163da3e9c376578f1c77f13b8bf31e9dd13256e0dafa946968d349dc55346c"

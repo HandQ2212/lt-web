@@ -1,5 +1,7 @@
 package com.elc.system.modules.lms.service;
 
+import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.lms.dto.AttendanceDto.*;
 import com.elc.system.modules.lms.entity.Attendance;
 import com.elc.system.modules.lms.entity.AttendanceStatus;
@@ -10,6 +12,7 @@ import com.elc.system.modules.lms.repository.AttendanceRepository;
 import com.elc.system.modules.lms.repository.ClazzRepository;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +40,24 @@ public class AttendanceService {
         this.clazzRepository = clazzRepository;
     }
 
-    public List<AttendanceResponse> getAttendanceByClass(UUID classId, LocalDate date) {
+    // ✅ SECURE: Added User parameter for access control check
+    public List<AttendanceResponse> getAttendanceByClass(UUID classId, LocalDate date, User currentUser) {
+        Clazz clazz = clazzRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        // ✅ FIXED: Check if user has permission to view this class's attendance
+        if (currentUser.getRole() == UserRole.TEACHER) {
+            if (clazz.getTeacher() == null || !clazz.getTeacher().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view attendance for your own classes");
+            }
+        } else if (currentUser.getRole() == UserRole.STUDENT) {
+            // Students can only view attendance for classes they're enrolled in
+            if (!enrollmentRepository.existsByStudentIdAndClazzId(currentUser.getId(), classId)) {
+                throw new AccessDeniedException("You can only view attendance for your enrolled classes");
+            }
+        }
+        // Managers can view all attendance
+
         List<Attendance> attendanceList = date != null
                 ? attendanceRepository.findByEnrollmentClazzIdAndAttendanceDate(classId, date)
                 : attendanceRepository.findByEnrollmentClazzId(classId);
@@ -47,7 +67,25 @@ public class AttendanceService {
                 .collect(Collectors.toList());
     }
 
-    public List<AttendanceResponse> getAttendanceByEnrollment(UUID enrollmentId) {
+    // ✅ SECURE: Added User parameter for access control check
+    public List<AttendanceResponse> getAttendanceByEnrollment(UUID enrollmentId, User currentUser) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+
+        // ✅ FIXED: Check if user has permission to view this enrollment's attendance
+        if (currentUser.getRole() == UserRole.STUDENT) {
+            if (!enrollment.getStudent().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view your own attendance records");
+            }
+        } else if (currentUser.getRole() == UserRole.TEACHER) {
+            // Teachers can only view attendance for their own classes
+            if (enrollment.getClazz().getTeacher() == null ||
+                !enrollment.getClazz().getTeacher().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view attendance for your own classes");
+            }
+        }
+        // Managers can view all attendance
+
         return attendanceRepository.findByEnrollmentId(enrollmentId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -78,7 +116,8 @@ public class AttendanceService {
         return mapToResponse(attendanceRepository.save(attendance));
     }
 
-    public AttendanceReportResponse getMonthlyReport(UUID studentId, UUID classId, Integer year, Integer month) {
+    // ✅ SECURE: Added User parameter for access control check
+    public AttendanceReportResponse getMonthlyReport(UUID studentId, UUID classId, Integer year, Integer month, User currentUser) {
         // Validate enrollment exists
         Enrollment enrollment = enrollmentRepository.findByStudentIdAndClazzId(studentId, classId)
                 .orElseThrow(() -> new RuntimeException("Student not enrolled in this class"));
@@ -86,6 +125,18 @@ public class AttendanceService {
         // Get class info
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        // ✅ FIXED: Check if user has permission to view this student's attendance report
+        if (currentUser.getRole() == UserRole.STUDENT) {
+            if (!studentId.equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view your own attendance reports");
+            }
+        } else if (currentUser.getRole() == UserRole.TEACHER) {
+            if (clazz.getTeacher() == null || !clazz.getTeacher().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view attendance reports for your own classes");
+            }
+        }
+        // Managers can view all attendance reports
 
         // Determine date range for the month
         YearMonth yearMonth = year != null && month != null

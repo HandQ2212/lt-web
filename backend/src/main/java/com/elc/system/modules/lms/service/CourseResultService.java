@@ -1,5 +1,7 @@
 package com.elc.system.modules.lms.service;
 
+import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.lms.dto.CourseResultDto.CourseResultRequest;
 import com.elc.system.modules.lms.dto.CourseResultDto.CourseResultResponse;
 import com.elc.system.modules.lms.entity.CourseResult;
@@ -7,6 +9,7 @@ import com.elc.system.modules.lms.entity.Enrollment;
 import com.elc.system.modules.lms.repository.CourseResultRepository;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +22,25 @@ public class CourseResultService {
     private final CourseResultRepository courseResultRepository;
     private final EnrollmentRepository enrollmentRepository;
 
-    public CourseResultResponse getResultByEnrollment(UUID enrollmentId) {
+    // ✅ SECURE: Added User parameter for access control check
+    public CourseResultResponse getResultByEnrollment(UUID enrollmentId, User currentUser) {
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+
+        // ✅ FIXED: Check if user has permission to view results for this enrollment
+        if (currentUser.getRole() == UserRole.STUDENT) {
+            if (!enrollment.getStudent().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view your own course results");
+            }
+        } else if (currentUser.getRole() == UserRole.TEACHER) {
+            // Teachers can only view results for their own classes
+            if (enrollment.getClazz().getTeacher() == null ||
+                !enrollment.getClazz().getTeacher().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view course results for your own classes");
+            }
+        }
+        // Managers can view all course results
+
         return courseResultRepository.findByEnrollmentId(enrollmentId)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("Result not found"));

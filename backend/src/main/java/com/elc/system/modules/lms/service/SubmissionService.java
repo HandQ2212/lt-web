@@ -1,15 +1,18 @@
 package com.elc.system.modules.lms.service;
 
 import com.elc.system.modules.auth.entity.User;
+import com.elc.system.modules.auth.entity.UserRole;
 import com.elc.system.modules.lms.dto.SubmissionDto.*;
 import com.elc.system.modules.lms.entity.Assignment;
 import com.elc.system.modules.lms.entity.Submission;
 import com.elc.system.modules.lms.entity.SubmissionStatus;
 import com.elc.system.modules.lms.repository.AssignmentRepository;
 import com.elc.system.modules.lms.repository.SubmissionRepository;
+import com.elc.system.modules.lms.repository.EnrollmentRepository;
 import com.elc.system.modules.notification.entity.NotificationType;
 import com.elc.system.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +28,29 @@ public class SubmissionService {
 
     private final SubmissionRepository submissionRepository;
     private final AssignmentRepository assignmentRepository;
+    private final EnrollmentRepository enrollmentRepository; // ✅ FIXED: Added for student enrollment check
     private final NotificationService notificationService;
 
+    // ✅ SECURE: Added User parameter for access control check
     @Transactional(readOnly = true)
-    public List<SubmissionResponse> getSubmissionsByAssignment(UUID assignmentId) {
+    public List<SubmissionResponse> getSubmissionsByAssignment(UUID assignmentId, User currentUser) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+        // ✅ FIXED: Check if user has permission to view submissions for this assignment
+        if (currentUser.getRole() == UserRole.TEACHER) {
+            if (assignment.getClazz().getTeacher() == null ||
+                !assignment.getClazz().getTeacher().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only view submissions for assignments in your own classes");
+            }
+        } else if (currentUser.getRole() == UserRole.STUDENT) {
+            // Students can only view submissions for assignments in their enrolled classes
+            if (!enrollmentRepository.existsByStudentIdAndClazzId(currentUser.getId(), assignment.getClazz().getId())) {
+                throw new AccessDeniedException("You can only view submissions for your enrolled classes");
+            }
+        }
+        // Managers can view all submissions
+
         return submissionRepository.findByAssignmentId(assignmentId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -69,10 +91,21 @@ public class SubmissionService {
         return mapToResponse(submissionRepository.save(submission));
     }
 
+    // ✅ SECURE: Added teacher parameter for authorization check
     @Transactional
-    public SubmissionResponse gradeSubmission(UUID submissionId, GradeRequest request) {
+    public SubmissionResponse gradeSubmission(UUID submissionId, GradeRequest request, User teacher) {
         Submission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        // ✅ FIXED: Check if teacher has permission to grade this submission
+        if (teacher.getRole() == UserRole.TEACHER) {
+            Assignment assignment = submission.getAssignment();
+            if (assignment.getClazz().getTeacher() == null ||
+                !assignment.getClazz().getTeacher().getId().equals(teacher.getId())) {
+                throw new AccessDeniedException("You can only grade submissions for assignments in your own classes");
+            }
+        }
+        // Managers can grade any submission
 
         submission.setGrade(request.getGrade());
         submission.setFeedback(request.getFeedback());

@@ -20,9 +20,15 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
 
+    // ✅ SECURE: Added @PreAuthorize and @AuthenticationPrincipal for access control
     @GetMapping("/assignment/{assignmentId}")
-    public ResponseEntity<List<SubmissionResponse>> getSubmissionsByAssignment(@PathVariable UUID assignmentId) {
-        return ResponseEntity.ok(submissionService.getSubmissionsByAssignment(assignmentId));
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER', 'STUDENT')")
+    public ResponseEntity<List<SubmissionResponse>> getSubmissionsByAssignment(
+            @PathVariable UUID assignmentId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(submissionService.getSubmissionsByAssignment(assignmentId, currentUser));
+        // ✅ FIXED: Service layer now checks if user has permission to view submissions for this assignment
     }
 
     @GetMapping("/me")
@@ -39,11 +45,15 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.submitWork(request, student));
     }
 
+    // ✅ SECURE: Added @AuthenticationPrincipal to pass teacher for authorization check
     @PutMapping("/{id}/grade")
     @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER')")
     public ResponseEntity<SubmissionResponse> gradeSubmission(
             @PathVariable UUID id,
-            @Valid @RequestBody GradeRequest request) {
-        return ResponseEntity.ok(submissionService.gradeSubmission(id, request));
+            @Valid @RequestBody GradeRequest request,
+            @AuthenticationPrincipal User teacher
+    ) {
+        return ResponseEntity.ok(submissionService.gradeSubmission(id, request, teacher));
+        // ✅ FIXED: Service layer now checks if teacher has permission to grade this submission
     }
 }

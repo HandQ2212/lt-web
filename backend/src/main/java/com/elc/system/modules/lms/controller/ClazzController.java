@@ -1,5 +1,6 @@
 package com.elc.system.modules.lms.controller;
 
+import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.lms.dto.ClassDto.*;
 import com.elc.system.modules.lms.entity.ClassStatus;
 import com.elc.system.modules.lms.service.ClazzService;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,10 +27,18 @@ public class ClazzController {
         return ResponseEntity.ok(clazzService.getAllClasses());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ClassResponse> getClassById(@PathVariable UUID id) {
-        return ResponseEntity.ok(clazzService.getClassById(id));
-    }
+
+
+    // SECURE VERSION (commented out):
+     @GetMapping("/{id}")
+     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER')")
+     public ResponseEntity<ClassResponse> getClassById(
+             @PathVariable UUID id,
+             @AuthenticationPrincipal User user
+     ) {
+         return ResponseEntity.ok(clazzService.getClassById(id, user));
+         // ✅ SECURE: Service checks if teacher is assigned to this class
+     }
 
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
