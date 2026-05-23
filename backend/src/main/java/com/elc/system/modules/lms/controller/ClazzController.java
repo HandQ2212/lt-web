@@ -31,7 +31,7 @@ public class ClazzController {
 
     // SECURE VERSION (commented out):
      @GetMapping("/{id}")
-     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER')")
+     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'STUDENT')")
      public ResponseEntity<ClassResponse> getClassById(
              @PathVariable UUID id,
              @AuthenticationPrincipal User user

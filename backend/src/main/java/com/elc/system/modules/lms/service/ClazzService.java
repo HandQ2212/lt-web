@@ -64,10 +64,21 @@ public class ClazzService {
          Clazz clazz = clazzRepository.findWithRelationsById(id)
                  .orElseThrow(() -> new RuntimeException("Class not found"));
 
-         // Check if user is teacher assigned to this class
          if (currentUser.getRole() == UserRole.TEACHER) {
              if (clazz.getTeacher() == null || !clazz.getTeacher().getId().equals(currentUser.getId())) {
                  throw new AccessDeniedException("You can only view your own classes");
+             }
+         }
+
+         if (currentUser.getRole() == UserRole.STUDENT) {
+             boolean isEnrolledInClass = enrollmentRepository.findByStudentIdAndClazzId(currentUser.getId(), id)
+                     .filter(enrollment -> enrollment.getStatus() != EnrollmentStatus.REJECTED
+                             && enrollment.getStatus() != EnrollmentStatus.DROPPED
+                             && enrollment.getStatus() != EnrollmentStatus.CANCELLED)
+                     .isPresent();
+
+             if (!isEnrolledInClass) {
+                 throw new AccessDeniedException("You can only view classes you are enrolled in");
              }
          }
 
