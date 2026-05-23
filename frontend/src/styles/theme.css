@@ -2,43 +2,54 @@
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
+  --background: #fffdf5;
+  --foreground: #1e293b;
   --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #f472b6;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #fbbf24;
+  --accent-foreground: #1e293b;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --border: #1e293b;
+  --input: #ffffff;
+  --input-background: #ffffff;
+  --switch-background: #e2e8f0;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --ring: #8b5cf6;
+  --chart-1: #8b5cf6;
+  --chart-2: #f472b6;
+  --chart-3: #fbbf24;
+  --chart-4: #34d399;
+  --chart-5: #38bdf8;
+  --radius: 1rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #8b5cf6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fbbf24;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #8b5cf6;
+  --playful-cream: #fffdf5;
+  --playful-ink: #1e293b;
+  --playful-violet: #8b5cf6;
+  --playful-pink: #f472b6;
+  --playful-yellow: #fbbf24;
+  --playful-mint: #34d399;
+  --playful-border: #1e293b;
+  --playful-soft-border: #e2e8f0;
+  --playful-shadow: 4px 4px 0 0 #1e293b;
+  --playful-shadow-lg: 8px 8px 0 0 #1e293b;
+  --playful-dot-pattern: radial-gradient(circle, rgba(30, 41, 59, 0.16) 1px, transparent 1px);
 }
 
 .dark {
@@ -128,6 +139,26 @@
     @apply bg-background text-foreground;
   }
 
+  body {
+    font-family: var(--font-body);
+    background:
+      radial-gradient(circle at 12% 10%, rgba(251, 191, 36, 0.22), transparent 22rem),
+      radial-gradient(circle at 90% 0%, rgba(139, 92, 246, 0.14), transparent 20rem),
+      linear-gradient(180deg, #fffdf5 0%, #fff7df 100%);
+    color: var(--foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    color: var(--foreground);
+    letter-spacing: 0;
+  }
+
   /**
   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
@@ -177,5 +208,122 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+.playful-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.playful-page::before {
+  background-image: var(--playful-dot-pattern);
+  background-size: 22px 22px;
+  content: "";
+  inset: 0;
+  opacity: 0.26;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.MuiCard-root {
+  border: 2px solid var(--playful-border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--playful-shadow) !important;
+  background-image: none !important;
+}
+
+.MuiPaper-root:not(.MuiDrawer-paper):not(.MuiAppBar-root):not(.MuiMenu-paper):not(.MuiPopover-paper) {
+  background-image: none !important;
+  border-radius: 10px !important;
+}
+
+.MuiPaper-elevation1:not(.MuiDrawer-paper),
+.MuiPaper-elevation2:not(.MuiDrawer-paper),
+.MuiPaper-elevation3:not(.MuiDrawer-paper),
+.MuiPaper-elevation4:not(.MuiDrawer-paper),
+.MuiPaper-elevation5:not(.MuiDrawer-paper),
+.MuiPaper-elevation6:not(.MuiDrawer-paper),
+.MuiPaper-elevation7:not(.MuiDrawer-paper),
+.MuiPaper-elevation8:not(.MuiDrawer-paper),
+.MuiPaper-elevation9:not(.MuiDrawer-paper),
+.MuiPaper-elevation10:not(.MuiDrawer-paper),
+.MuiPaper-elevation11:not(.MuiDrawer-paper),
+.MuiPaper-elevation12:not(.MuiDrawer-paper) {
+  border: 2px solid var(--playful-border) !important;
+  box-shadow: var(--playful-shadow) !important;
+}
+
+.MuiTableContainer-root {
+  border: 2px solid var(--playful-border);
+  border-radius: 10px !important;
+  box-shadow: var(--playful-shadow);
+  background: #fff;
+}
+
+.MuiTableHead-root .MuiTableCell-root {
+  background: #fff7df !important;
+  color: var(--playful-ink) !important;
+  font-weight: 800 !important;
+}
+
+.MuiDialog-paper {
+  border: 2px solid var(--playful-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--playful-shadow-lg) !important;
+}
+
+.MuiTabs-root {
+  border-radius: 8px !important;
+}
+
+.MuiTab-root,
+.MuiButton-root,
+.MuiIconButton-root,
+.MuiOutlinedInput-root {
+  border-radius: 8px !important;
+}
+
+.MuiAlert-root {
+  border-radius: 10px !important;
+}
+
+.MuiTab-root.Mui-selected {
+  background: var(--playful-yellow) !important;
+  color: var(--playful-ink) !important;
+}
+
+.MuiChip-root {
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+}
+
+.MuiButton-contained {
+  border: 2px solid var(--playful-border) !important;
+  box-shadow: var(--playful-shadow) !important;
+}
+
+.MuiButton-outlined {
+  border: 2px solid var(--playful-border) !important;
+  background: #fff;
+}
+
+.MuiOutlinedInput-root {
+  background: #fff;
+}
+
+.MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 4px 4px 0 0 var(--playful-violet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

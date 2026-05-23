@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -55,7 +54,10 @@ export default function CourseListPage() {
     }
 
     if (levelFilter !== 'ALL') {
-      filtered = filtered.filter((course) => course.level === levelFilter);
+      filtered = filtered.filter((course) =>
+        course.level === levelFilter ||
+        (course.levels || []).some((level) => level.code === levelFilter || level.name === levelFilter)
+      );
     }
 
     setFilteredCourses(filtered);
@@ -144,16 +146,35 @@ export default function CourseListPage() {
     }
   };
 
+  const getPrimaryLevel = (course: Course) => course.levels?.[0] || null;
+  const getDisplayLevel = (course: Course) => {
+    const level = getPrimaryLevel(course);
+    return level?.name || level?.code || course.level || 'Chưa phân cấp';
+  };
+  const getDisplayPrice = (course: Course) => Number(getPrimaryLevel(course)?.basePrice || course.price || 0);
+
   return (
-    <Container maxWidth="xl" sx={{ py: 8 }}>
-      <Typography variant="h3" gutterBottom fontWeight={700} align="center" sx={{ mb: 2 }}>
+    <Container maxWidth="xl" sx={{ py: 8, position: 'relative' }}>
+      <Typography variant="h3" gutterBottom fontWeight={800} align="center" sx={{ mb: 2, color: '#1E293B' }}>
         Khóa học
       </Typography>
-      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6 }}>
+      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
         Khám phá các khóa học tiếng Anh phù hợp với trình độ của bạn
       </Typography>
 
-      <Box sx={{ mb: 4, display: 'flex', gap: 2 }}>
+      <Box
+        sx={{
+          mb: 5,
+          display: 'flex',
+          gap: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          p: 2,
+          bgcolor: '#FFFFFF',
+          border: '2px solid #1E293B',
+          borderRadius: 4,
+          boxShadow: '5px 5px 0 #1E293B',
+        }}
+      >
         <TextField
           fullWidth
           placeholder="Tìm kiếm khóa học..."
@@ -180,57 +201,75 @@ export default function CourseListPage() {
           <CircularProgress />
         </Box>
       ) : filteredCourses.length === 0 ? (
-        <Typography align="center" color="text.secondary" sx={{ py: 6 }}>
+        <Typography align="center" color="text.secondary" sx={{ py: 6, fontWeight: 700 }}>
           Không tìm thấy khóa học phù hợp.
         </Typography>
       ) : (
-      <Grid container spacing={3}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(3, minmax(0, 1fr))',
+          },
+          gap: 3,
+          alignItems: 'stretch',
+        }}
+      >
         {filteredCourses.map((course) => (
-          <Grid item xs={12} md={4} key={course.id}>
+          <Box key={course.id}>
             <Card
               sx={{
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: 'pointer',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-8px)' },
+                border: '2px solid #1E293B',
+                borderRadius: 4,
+                boxShadow: '4px 4px 0 #1E293B',
+                transition: 'all 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '6px 6px 0 #1E293B' },
               }}
               onClick={() => navigate(`/courses/${course.id}`)}
             >
               <CardMedia
                 component="img"
-                height="200"
-                image={course.imageUrl}
+                image={course.imageUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800'}
                 alt={course.name}
+                sx={{
+                  height: { xs: 180, md: 150 },
+                  objectFit: 'cover',
+                }}
               />
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ mb: 2 }}>
+              <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
+                <Box sx={{ mb: 1.5 }}>
                   <Chip
-                    label={getLevelText(course.level)}
-                    color={getLevelColor(course.level)}
+                    label={getLevelText(getDisplayLevel(course))}
+                    color={getLevelColor(getPrimaryLevel(course)?.code || course.level || '')}
                     size="small"
+                    sx={{ border: '2px solid #1E293B', fontWeight: 800 }}
                   />
                 </Box>
-                <Typography variant="h6" gutterBottom fontWeight={600}>
+                <Typography variant="h6" gutterBottom fontWeight={800} sx={{ fontSize: '1rem', lineHeight: 1.35 }}>
                   {course.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 40 }}>
                   {course.description}
                 </Typography>
-                <Typography variant="h6" color="primary" fontWeight={700}>
-                  {course.price.toLocaleString('vi-VN')}đ
+                <Typography variant="h6" color="primary" fontWeight={800} sx={{ fontSize: '1.05rem' }}>
+                  {getDisplayPrice(course).toLocaleString('vi-VN')}đ
                 </Typography>
               </CardContent>
-              <Box sx={{ p: 2 }}>
-                <Button variant="contained" fullWidth>
+              <Box sx={{ p: 2.5, pt: 0 }}>
+                <Button variant="contained" fullWidth size="small" sx={{ py: 1 }}>
                   Xem chi tiết
                 </Button>
               </Box>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
       )}
     </Container>
   );

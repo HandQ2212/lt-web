@@ -20,14 +20,14 @@ public class ProfileDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ProfileUpdateRequest {
-        @NotBlank(message = "Full name is required")
         private String fullName;
 
         private String phone;
         private LocalDate dateOfBirth;
         private String gender;
         private String address;
-        private String avatarUrl;
+        // Bỏ phần ảnh đi (chưa xử lý upload)
+        // private String avatarUrl;
     }
 
     @Data

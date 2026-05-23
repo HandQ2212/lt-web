@@ -65,6 +65,33 @@ type LeadProfile = {
   interests?: LeadInterest[];
 };
 
+const readAvatarFile = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const image = new Image();
+    const reader = new FileReader();
+
+    reader.onerror = reject;
+    reader.onload = () => {
+      image.onload = () => {
+        const maxSize = 360;
+        const ratio = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * ratio));
+        canvas.height = Math.max(1, Math.round(image.height * ratio));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('Không thể xử lý ảnh'));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      image.onerror = reject;
+      image.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+
 export default function ProfilePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -116,6 +143,10 @@ export default function ProfilePage() {
       gender: user?.gender || '',
     });
   }, [user]);
+
+  useEffect(() => {
+    setNewAvatarUrl(user?.avatarUrl || '');
+  }, [user?.avatarUrl]);
 
   useEffect(() => {
     if (!isLead) return;
@@ -171,6 +202,7 @@ export default function ProfilePage() {
     try {
       setSaving(true);
       const updated = await profileApi.update({
+        fullName: formData.fullName || user?.fullName || '',
         avatarUrl: newAvatarUrl,
       });
       dispatch(setCurrentUser(updated));
@@ -418,12 +450,12 @@ export default function ProfilePage() {
                   setSnackbar({ open: true, message: 'Kích thước ảnh quá lớn (tối đa 2MB)', severity: 'error' });
                   return;
                 }
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const result = reader.result as string;
+                try {
+                  const result = await readAvatarFile(f);
                   setNewAvatarUrl(result);
-                };
-                reader.readAsDataURL(f);
+                } catch {
+                  setSnackbar({ open: true, message: 'Không thể đọc ảnh đã chọn', severity: 'error' });
+                }
               }}
             />
             <Button variant="outlined" onClick={() => fileInputRef.current?.click()} startIcon={<PhotoCameraIcon />}>Tải ảnh lên</Button>

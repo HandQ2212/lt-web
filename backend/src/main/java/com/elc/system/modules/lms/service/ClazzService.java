@@ -25,7 +25,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,15 +47,17 @@ public class ClazzService {
 
     @Transactional(readOnly = true)
     public List<ClassResponse> getAllClasses() {
-        return clazzRepository.findAll().stream()
-                .map(this::mapToResponse)
+        List<Clazz> classes = clazzRepository.findAll();
+        ClassResponseContext context = buildResponseContext(classes);
+        return classes.stream()
+                .map(clazz -> mapToResponse(clazz, context))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ClassResponse getClassById(UUID id) {
-        return clazzRepository.findById(id)
-                .map(this::mapToResponse)
+        return clazzRepository.findWithRelationsById(id)
+                .map(clazz -> mapToResponse(clazz, buildResponseContext(List.of(clazz))))
                 .orElseThrow(() -> new RuntimeException("Class not found"));
     }
 
@@ -245,6 +251,9 @@ public class ClazzService {
     public ScheduleResponse addSchedule(UUID classId, ScheduleRequest request) {
         Clazz clazz = clazzRepository.findById(classId)
                 .orElseThrow(() -> new RuntimeException("Class not found"));
+        LocalDate scheduleDate = request.getScheduleDate();
+        validateScheduleDateWithinClassRange(clazz, scheduleDate);
+        String dayOfWeek = resolveDayOfWeek(scheduleDate, request.getDayOfWeek());
 
         // Validate that start time is before end time
         if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
@@ -255,7 +264,8 @@ public class ClazzService {
         ConflictCheckRequest conflictRequest = ConflictCheckRequest.builder()
                 .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
                 .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
-                .dayOfWeek(request.getDayOfWeek())
+                .scheduleDate(scheduleDate)
+                .dayOfWeek(dayOfWeek)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .build();
@@ -267,7 +277,8 @@ public class ClazzService {
 
         ClassSchedule schedule = ClassSchedule.builder()
                 .clazz(clazz)
-                .dayOfWeek(request.getDayOfWeek())
+                .dayOfWeek(dayOfWeek)
+                .scheduleDate(scheduleDate)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .build();
@@ -286,6 +297,9 @@ public class ClazzService {
         if (schedule.getClazz() == null || !schedule.getClazz().getId().equals(clazz.getId())) {
             throw new IllegalArgumentException("Schedule does not belong to the given class");
         }
+        LocalDate scheduleDate = request.getScheduleDate();
+        validateScheduleDateWithinClassRange(clazz, scheduleDate);
+        String dayOfWeek = resolveDayOfWeek(scheduleDate, request.getDayOfWeek());
 
         if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().equals(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be strictly before end time. Start: " + request.getStartTime() + ", End: " + request.getEndTime());
@@ -294,7 +308,8 @@ public class ClazzService {
         ConflictCheckResponse conflict = checkConflictExcludingSchedule(scheduleId, ConflictCheckRequest.builder()
                 .teacherId(clazz.getTeacher() != null ? clazz.getTeacher().getId() : null)
                 .roomId(clazz.getRoom() != null ? clazz.getRoom().getId() : null)
-                .dayOfWeek(request.getDayOfWeek())
+                .scheduleDate(scheduleDate)
+                .dayOfWeek(dayOfWeek)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .build());
@@ -303,11 +318,28 @@ public class ClazzService {
             throw new RuntimeException("Schedule conflict detected: " + conflict.getConflictMessage());
         }
 
-        schedule.setDayOfWeek(request.getDayOfWeek());
+        schedule.setDayOfWeek(dayOfWeek);
+        schedule.setScheduleDate(scheduleDate);
         schedule.setStartTime(request.getStartTime());
         schedule.setEndTime(request.getEndTime());
 
         return mapToScheduleResponse(classScheduleRepository.save(schedule));
+    }
+
+    private void validateScheduleDateWithinClassRange(Clazz clazz, LocalDate scheduleDate) {
+        if (scheduleDate == null) {
+            throw new IllegalArgumentException("Schedule date is required");
+        }
+
+        if (clazz.getStartDate() != null && scheduleDate.isBefore(clazz.getStartDate())) {
+            throw new IllegalArgumentException(
+                    "Schedule date must be on or after class start date " + clazz.getStartDate());
+        }
+
+        if (clazz.getEndDate() != null && scheduleDate.isAfter(clazz.getEndDate())) {
+            throw new IllegalArgumentException(
+                    "Schedule date must be on or before class end date " + clazz.getEndDate());
+        }
     }
 
     @Transactional
@@ -341,8 +373,7 @@ public class ClazzService {
         List<ClassSchedule> existingSchedules = classScheduleRepository.findAll();
         
         for (ClassSchedule existing : existingSchedules) {
-            // Check if same day of week
-            if (!existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek())) {
+            if (!isSameScheduleDay(existing, request)) {
                 continue;
             }
 
@@ -396,7 +427,7 @@ public class ClazzService {
                 continue;
             }
 
-            if (!existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek())) {
+            if (!isSameScheduleDay(existing, request)) {
                 continue;
             }
 
@@ -437,10 +468,41 @@ public class ClazzService {
         return start1.isBefore(end2) && start2.isBefore(end1);
     }
 
+    private String resolveDayOfWeek(LocalDate scheduleDate, String dayOfWeek) {
+        if (scheduleDate != null) {
+            return scheduleDate.getDayOfWeek().name();
+        }
+
+        if (dayOfWeek == null || dayOfWeek.isBlank()) {
+            throw new IllegalArgumentException("Schedule date is required");
+        }
+
+        return dayOfWeek.trim().toUpperCase();
+    }
+
+    private boolean isSameScheduleDay(ClassSchedule existing, ConflictCheckRequest request) {
+        if (existing.getScheduleDate() != null && request.getScheduleDate() != null) {
+            return existing.getScheduleDate().equals(request.getScheduleDate());
+        }
+
+        if (existing.getScheduleDate() != null || request.getScheduleDate() != null) {
+            return false;
+        }
+
+        return existing.getDayOfWeek() != null
+                && request.getDayOfWeek() != null
+                && existing.getDayOfWeek().equalsIgnoreCase(request.getDayOfWeek());
+    }
+
     private ClassResponse mapToResponse(Clazz clazz) {
-        List<ScheduleResponse> schedules = classScheduleRepository.findByClazzId(clazz.getId()).stream()
+        return mapToResponse(clazz, null);
+    }
+
+    private ClassResponse mapToResponse(Clazz clazz, ClassResponseContext context) {
+        List<ScheduleResponse> schedules = resolveSchedules(clazz.getId(), context).stream()
                 .map(this::mapToScheduleResponse)
                 .collect(Collectors.toList());
+        int currentStudents = resolveCurrentStudents(clazz.getId(), context);
 
         Level level = null;
         Course course = null;
@@ -480,6 +542,7 @@ public class ClazzService {
                 .levelName(level != null ? safeString(level::getName) : null)
                 .courseId(course != null ? safeId(course::getId) : null)
                 .courseName(course != null ? safeString(course::getName) : null)
+                .basePrice(level != null ? level.getBasePrice() : null)
                 .roomId(room != null ? safeId(room::getId) : null)
                 .roomName(room != null ? safeString(room::getName) : null)
                 .teacherId(teacher != null ? safeId(teacher::getId) : null)
@@ -490,9 +553,51 @@ public class ClazzService {
                 .startDate(clazz.getStartDate())
                 .endDate(clazz.getEndDate())
                 .maxStudents(clazz.getMaxStudents())
-                .currentStudents(clazz.getCurrentStudents())
+                .currentStudents(currentStudents)
                 .schedules(schedules)
                 .build();
+    }
+
+    private ClassResponseContext buildResponseContext(List<Clazz> classes) {
+        if (classes == null || classes.isEmpty()) {
+            return ClassResponseContext.empty();
+        }
+
+        List<UUID> classIds = classes.stream()
+                .map(Clazz::getId)
+                .toList();
+
+        Map<UUID, List<ClassSchedule>> schedulesByClassId = classScheduleRepository.findByClazzIdIn(classIds).stream()
+                .sorted(Comparator
+                        .comparing(ClassSchedule::getScheduleDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(ClassSchedule::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.groupingBy(schedule -> schedule.getClazz().getId()));
+
+        Map<UUID, Integer> currentStudentsByClassId = new HashMap<>();
+        enrollmentRepository.countByClazzIdInAndStatusIn(
+                        classIds,
+                        List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE)
+                )
+                .forEach(row -> currentStudentsByClassId.put((UUID) row[0], ((Long) row[1]).intValue()));
+
+        return new ClassResponseContext(schedulesByClassId, currentStudentsByClassId);
+    }
+
+    private List<ClassSchedule> resolveSchedules(UUID classId, ClassResponseContext context) {
+        if (context == null) {
+            return classScheduleRepository.findByClazzId(classId);
+        }
+        return context.schedulesByClassId.getOrDefault(classId, List.of());
+    }
+
+    private int resolveCurrentStudents(UUID classId, ClassResponseContext context) {
+        if (context == null) {
+            return (int) enrollmentRepository.countByClazzIdAndStatusIn(
+                    classId,
+                    List.of(EnrollmentStatus.PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.ACTIVE)
+            );
+        }
+        return context.currentStudentsByClassId.getOrDefault(classId, 0);
     }
 
     private ScheduleResponse mapToScheduleResponse(ClassSchedule schedule) {
@@ -500,6 +605,7 @@ public class ClazzService {
                 .id(schedule.getId())
                 .classId(safeId(() -> schedule.getClazz() != null ? schedule.getClazz().getId() : null))
                 .dayOfWeek(schedule.getDayOfWeek())
+                .scheduleDate(schedule.getScheduleDate())
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
                 .build();
@@ -524,5 +630,14 @@ public class ClazzService {
     @FunctionalInterface
     private interface SupplierWithRuntimeException<T> {
         T get();
+    }
+
+    private record ClassResponseContext(
+            Map<UUID, List<ClassSchedule>> schedulesByClassId,
+            Map<UUID, Integer> currentStudentsByClassId
+    ) {
+        private static ClassResponseContext empty() {
+            return new ClassResponseContext(Map.of(), Map.of());
+        }
     }
 }

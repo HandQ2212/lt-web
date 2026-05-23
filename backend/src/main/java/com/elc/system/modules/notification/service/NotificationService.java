@@ -1,5 +1,6 @@
 package com.elc.system.modules.notification.service;
 
+import com.elc.system.modules.announcement.entity.Announcement;
 import com.elc.system.modules.auth.entity.User;
 import com.elc.system.modules.auth.service.UserService;
 import com.elc.system.modules.notification.dto.NotificationDto.NotificationResponse;
@@ -25,12 +26,14 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserService userService;
 
+    @Transactional(readOnly = true)
     public Page<NotificationResponse> getMyNotifications(Pageable pageable) {
         User user = userService.getCurrentUser();
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
                 .map(this::mapToResponse);
     }
 
+    @Transactional(readOnly = true)
     public UnreadCountResponse getUnreadCount() {
         User user = userService.getCurrentUser();
         long count = notificationRepository.countByUserIdAndReadFalse(user.getId());
@@ -62,8 +65,20 @@ public class NotificationService {
 
     @Transactional
     public void createNotification(User user, String title, String message, NotificationType type) {
+        createNotification(user, title, message, type, null);
+    }
+
+    @Transactional
+    public void createNotification(User user, String title, String message, NotificationType type, User createdBy) {
+        createNotification(user, title, message, type, createdBy, null);
+    }
+
+    @Transactional
+    public void createNotification(User user, String title, String message, NotificationType type, User createdBy, Announcement announcement) {
         Notification notification = Notification.builder()
                 .user(user)
+                .createdBy(createdBy)
+                .announcement(announcement)
                 .title(title)
                 .message(message)
                 .read(false)
@@ -76,10 +91,13 @@ public class NotificationService {
     private NotificationResponse mapToResponse(Notification notification) {
         return NotificationResponse.builder()
                 .id(notification.getId())
+                .announcementId(notification.getAnnouncement() != null ? notification.getAnnouncement().getId() : null)
                 .title(notification.getTitle())
                 .message(notification.getMessage())
                 .isRead(notification.isRead())
                 .type(notification.getType() != null ? notification.getType().name() : null)
+                .createdByEmail(notification.getCreatedBy() != null ? notification.getCreatedBy().getEmail() : null)
+                .createdByFullName(notification.getCreatedBy() != null ? notification.getCreatedBy().getFullName() : null)
                 .createdAt(notification.getCreatedAt())
                 .build();
     }

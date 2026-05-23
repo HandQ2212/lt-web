@@ -8,12 +8,14 @@ import com.elc.system.modules.sms.entity.Level;
 import com.elc.system.modules.sms.repository.CourseRepository;
 import com.elc.system.modules.sms.repository.LevelRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -25,26 +27,26 @@ public class LevelService {
 
     @Transactional(readOnly = true)
     public List<LevelResponse> getAllLevels() {
-        return levelRepository.findAll().stream()
+        return levelRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public LevelResponse getLevelById(UUID id) {
-        return levelRepository.findById(id)
+        return levelRepository.findWithCourseById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("Level not found"));
     }
 
     @Transactional
     public LevelResponse createLevel(LevelRequest request) {
-        String normalizedCode = normalizeCode(request.getCode());
         if (request.getCourseId() == null) {
             throw new IllegalArgumentException("Course id is required");
         }
         Course course = courseRepository.findById(request.getCourseId())
                 .orElseThrow(() -> new RuntimeException("Course not found"));
+        String normalizedCode = resolveCode(course, request.getCode(), request.getName(), null);
         if (levelRepository.existsByCourseIdAndCodeIgnoreCase(course.getId(), normalizedCode)) {
             throw new IllegalArgumentException("Level code already exists for this course");
         }
@@ -68,11 +70,11 @@ public class LevelService {
         Level level = levelRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Level not found"));
 
-        String normalizedCode = normalizeCode(request.getCode());
         Course course = request.getCourseId() == null
                 ? level.getCourse()
                 : courseRepository.findById(request.getCourseId())
                         .orElseThrow(() -> new RuntimeException("Course not found"));
+        String normalizedCode = resolveCode(course, request.getCode(), request.getName(), level.getCode());
         if (levelRepository.existsByCourseIdAndCodeIgnoreCaseAndIdNot(course.getId(), normalizedCode, id)) {
             throw new IllegalArgumentException("Level code already exists for this course");
         }
@@ -105,6 +107,36 @@ public class LevelService {
         return code == null ? null : code.trim().toUpperCase();
     }
 
+    private String resolveCode(Course course, String code, String name, String fallbackCode) {
+        // If code provided (not null), use it after normalization
+        if (code != null && !code.isBlank()) {
+            return normalizeCode(code);
+        }
+        // Otherwise try slugify name
+        String slugifiedName = slugify(name);
+        if (slugifiedName != null && !slugifiedName.isBlank()) {
+            return slugifiedName;
+        }
+        // Use fallback if provided
+        if (fallbackCode != null && !fallbackCode.isBlank()) {
+            return normalizeCode(fallbackCode);
+        }
+        // Last resort: use course name
+        return course.getName() == null ? "LEVEL" : slugify(course.getName()) + "_LEVEL";
+    }
+
+    private String slugify(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replaceAll("[^\\p{Alnum}]+", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_+|_+$", "");
+        return normalized.toUpperCase(Locale.ROOT);
+    }
+
     private LevelResponse mapToResponse(Level level) {
         return LevelResponse.builder()
                 .id(level.getId())
@@ -117,6 +149,7 @@ public class LevelService {
                 .basePrice(level.getBasePrice())
                 .durationWeeks(level.getDurationWeeks())
                 .isActive(level.getIsActive())
+                .createdAt(level.getCreatedAt())
                 .build();
     }
 }

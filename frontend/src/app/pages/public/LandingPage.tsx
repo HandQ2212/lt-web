@@ -1,8 +1,10 @@
-import { Box, Container, Typography, Button, Grid, Card, CardContent, CardMedia, Avatar, Rating, Paper } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Container, Typography, Button, Card, CardContent, CardMedia, Avatar, Rating, Paper, Chip, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SchoolIcon from '@mui/icons-material/School';
 import PeopleIcon from '@mui/icons-material/People';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { PublicTeacher, publicTeacherApi } from '../../../services/api';
 
 const courses = [
   {
@@ -28,27 +30,6 @@ const courses = [
   },
 ];
 
-const teachers = [
-  {
-    name: 'Ms. Sarah Johnson',
-    specialty: 'IELTS Expert',
-    rating: 4.9,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-  },
-  {
-    name: 'Mr. David Brown',
-    specialty: 'Business English',
-    rating: 4.8,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-  },
-  {
-    name: 'Ms. Emma Wilson',
-    specialty: 'Communication Skills',
-    rating: 5.0,
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200',
-  },
-];
-
 const testimonials = [
   {
     name: 'Nguyễn Văn A',
@@ -66,14 +47,38 @@ const testimonials = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [teachers, setTeachers] = useState<PublicTeacher[]>([]);
+  const [teachersLoading, setTeachersLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchTeachers = async () => {
+      try {
+        const data = await publicTeacherApi.getAll();
+        if (mounted) setTeachers(data.slice(0, 3));
+      } catch {
+        if (mounted) setTeachers([]);
+      } finally {
+        if (mounted) setTeachersLoading(false);
+      }
+    };
+
+    void fetchTeachers();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
-    <Box sx={{ bgcolor: 'white', overflowX: 'hidden' }}>
+    <Box sx={{ bgcolor: '#FFFDF5', overflowX: 'hidden', color: '#1E293B' }}>
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-          color: 'white',
+          background:
+            'radial-gradient(circle at 18% 22%, rgba(251,191,36,0.46), transparent 18rem), radial-gradient(circle at 80% 18%, rgba(244,114,182,0.22), transparent 20rem), linear-gradient(180deg, #FFFDF5 0%, #FFF7DF 100%)',
+          color: '#1E293B',
           py: { xs: 10, md: 20 },
           position: 'relative',
           overflow: 'hidden'
@@ -86,33 +91,41 @@ export default function LandingPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            opacity: 0.1,
-            backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")',
+            opacity: 0.32,
+            backgroundImage: 'radial-gradient(circle, rgba(30,41,59,0.18) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
           }}
         />
         
-        <Container maxWidth="xl">
-          <Grid container spacing={8} alignItems="center">
-            <Grid item xs={12} md={7}>
-              <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.05fr) minmax(320px, 0.95fr)' },
+              gap: { xs: 6, md: 8 },
+              alignItems: 'center',
+            }}
+          >
+            <Box>
+              <Box sx={{ position: 'relative', textAlign: { xs: 'center', md: 'left' }, maxWidth: { xs: 760, md: 'none' }, mx: { xs: 'auto', md: 0 } }}>
                 <Typography 
                   variant="h1" 
-                  fontWeight={900} 
+                  fontWeight={800} 
                   sx={{ 
-                    fontSize: { xs: '2.8rem', md: '4rem', lg: '5rem' },
+                    fontSize: { xs: '2.5rem', sm: '3.2rem', md: '4rem', lg: '4.5rem' },
                     lineHeight: 1.1,
                     mb: 3,
-                    color: '#f8fafc'
+                    color: '#1E293B'
                   }}
                 >
                   Học Tiếng Anh <br />
-                  <span style={{ color: '#38bdf8' }}>Hiệu Quả</span> Cùng ELC
+                  <span style={{ color: '#8B5CF6' }}>Hiệu Quả</span> Cùng ELC
                 </Typography>
-                <Typography variant="h5" sx={{ mb: 6, opacity: 0.8, maxWidth: 650, fontWeight: 300, lineHeight: 1.6 }}>
+                <Typography variant="h5" sx={{ mb: 6, color: '#475569', maxWidth: 650, mx: { xs: 'auto', md: 0 }, fontWeight: 600, lineHeight: 1.6 }}>
                   Hệ thống đào tạo Anh ngữ chuẩn quốc tế với phương pháp cá nhân hóa, 
                   giúp bạn chinh phục mọi mục tiêu ngôn ngữ trong tầm tay.
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
                   <Button
                     variant="contained"
                     size="large"
@@ -120,11 +133,9 @@ export default function LandingPage() {
                     sx={{ 
                       px: 6, 
                       py: 2, 
-                      borderRadius: 4,
+                      borderRadius: 1,
                       fontSize: '1.1rem',
-                      fontWeight: 700,
-                      bgcolor: '#38bdf8',
-                      '&:hover': { bgcolor: '#0ea5e9' }
+                      fontWeight: 800,
                     }}
                   >
                     Bắt đầu ngay
@@ -136,85 +147,99 @@ export default function LandingPage() {
                     sx={{ 
                       px: 6, 
                       py: 2, 
-                      borderRadius: 4,
+                      borderRadius: 1,
                       fontSize: '1.1rem',
-                      fontWeight: 700,
-                      borderColor: 'rgba(255,255,255,0.3)',
-                      color: 'white',
-                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
+                      fontWeight: 800,
+                      bgcolor: '#FFFFFF',
                     }}
                   >
                     Xem khóa học
                   </Button>
                 </Box>
               </Box>
-            </Grid>
-            <Grid item xs={12} md={5}>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <Box 
                 component="img"
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80"
                 sx={{ 
                   width: '100%', 
-                  borderRadius: 10,
-                  boxShadow: '0 40px 80px rgba(0,0,0,0.5)',
-                  display: { xs: 'none', md: 'block' },
-                  transform: 'perspective(1000px) rotateY(-5deg)',
+                  maxWidth: 560,
+                  borderRadius: '48px 48px 48px 8px',
+                  border: '2px solid #1E293B',
+                  boxShadow: '8px 8px 0 #1E293B',
+                  display: 'block',
+                  transform: 'rotate(2deg)',
                 }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Container>
       </Box>
 
       {/* Stats Section */}
-      <Box sx={{ py: 10, bgcolor: '#f8fafc' }}>
-        <Container maxWidth="xl">
-          <Grid container spacing={4}>
+      <Box sx={{ py: 10, bgcolor: '#FFF7DF' }}>
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {[
               { icon: <SchoolIcon />, value: '50+', label: 'Khóa học chất lượng', color: '#38bdf8' },
               { icon: <PeopleIcon />, value: '10,000+', label: 'Học viên tin tưởng', color: '#10b981' },
               { icon: <EmojiEventsIcon />, value: '95%', label: 'Đạt mục tiêu đầu ra', color: '#f59e0b' }
             ].map((stat, idx) => (
-              <Grid item xs={12} md={4} key={idx}>
+              <Box key={idx}>
                 <Paper sx={{ 
                   p: 6, 
                   textAlign: 'center', 
-                  borderRadius: 8,
-                  border: '1px solid rgba(0,0,0,0.05)',
+                  borderRadius: 5,
+                  border: '2px solid #1E293B',
+                  boxShadow: '5px 5px 0 #1E293B',
                   transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }
+                  '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' }
                 }}>
                   <Box sx={{ color: stat.color, mb: 2, '& svg': { fontSize: 48 } }}>{stat.icon}</Box>
-                  <Typography variant="h3" fontWeight={900}>{stat.value}</Typography>
+                  <Typography variant="h3" fontWeight={800}>{stat.value}</Typography>
                   <Typography color="text.secondary" fontWeight={500}>{stat.label}</Typography>
                 </Paper>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
       {/* Course List Section */}
       <Box sx={{ py: 15 }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHƯƠNG TRÌNH ĐÀO TẠO</Typography>
-            <Typography variant="h2" fontWeight={900} sx={{ mt: 1 }}>Khóa học nổi bật</Typography>
+            <Typography variant="h2" fontWeight={800} sx={{ mt: 1 }}>Khóa học nổi bật</Typography>
           </Box>
-          <Grid container spacing={4}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {courses.map((course) => (
-              <Grid item xs={12} sm={6} md={4} key={course.id}>
+              <Box key={course.id}>
                 <Card sx={{ 
-                  borderRadius: 6, 
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                  borderRadius: 5, 
+                  border: '2px solid #1E293B',
+                  boxShadow: '5px 5px 0 #1E293B',
                   overflow: 'hidden',
                   transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-10px)' }
+                  '&:hover': { transform: 'translate(-2px, -2px)', boxShadow: '7px 7px 0 #1E293B' }
                 }}>
                   <CardMedia component="img" height="250" image={course.image} />
                   <CardContent sx={{ p: 4 }}>
                     <Typography variant="h5" fontWeight={800} gutterBottom>{course.name}</Typography>
-                    <Typography variant="h4" color="primary" fontWeight={900} sx={{ mb: 3 }}>{course.price}</Typography>
+                    <Typography variant="h4" color="primary" fontWeight={800} sx={{ mb: 3 }}>{course.price}</Typography>
                     <Button 
                       variant="contained" 
                       fullWidth 
@@ -226,66 +251,116 @@ export default function LandingPage() {
                     </Button>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
       {/* Teachers Section */}
-      <Box sx={{ py: 15, bgcolor: '#f8fafc' }}>
-        <Container maxWidth="xl">
+      <Box sx={{ py: 15, bgcolor: '#FFF7DF' }}>
+        <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 10 }}>
             <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 2 }}>CHUYÊN GIA GIẢNG DẠY</Typography>
-            <Typography variant="h2" fontWeight={900} sx={{ mt: 1 }}>Đội ngũ giảng viên</Typography>
+            <Typography variant="h2" fontWeight={800} sx={{ mt: 1 }}>Đội ngũ giảng viên</Typography>
           </Box>
-          <Grid container spacing={4}>
-            {teachers.map((teacher, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={idx}>
-                <Paper sx={{ 
-                  p: 5, 
-                  textAlign: 'center', 
-                  borderRadius: 6,
-                  bgcolor: '#ffffff',
-                  border: '1px solid rgba(0,0,0,0.05)'
-                }}>
-                  <Avatar 
-                    src={teacher.avatar} 
-                    sx={{ 
-                      width: 140, 
-                      height: 140, 
-                      mx: 'auto', 
-                      mb: 3, 
-                      border: '4px solid white',
-                      boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-                    }} 
-                  />
-                  <Typography variant="h5" fontWeight={800}>{teacher.name}</Typography>
-                  <Typography color="primary" fontWeight={600} sx={{ mb: 2 }}>{teacher.specialty}</Typography>
-                  <Rating value={teacher.rating} precision={0.1} readOnly sx={{ color: '#f59e0b' }} />
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+          {teachersLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : teachers.length === 0 ? (
+            <Typography align="center" color="text.secondary" fontWeight={700}>
+              Chưa có giảng viên đang hoạt động.
+            </Typography>
+          ) : (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+                gap: 4,
+              }}
+            >
+              {teachers.map((teacher) => {
+                const primarySpecialty = teacher.specialties[0] || 'Giảng viên ELC';
+                const classLabel = teacher.activeClassCount > 0
+                  ? `${teacher.activeClassCount} lớp đang phụ trách`
+                  : 'Chưa có lớp đang phụ trách';
+
+                return (
+                  <Box key={teacher.id}>
+                    <Paper sx={{
+                      p: 5,
+                      textAlign: 'center',
+                      borderRadius: 5,
+                      bgcolor: '#ffffff',
+                      border: '2px solid #1E293B',
+                      boxShadow: '5px 5px 0 #1E293B',
+                      height: '100%',
+                    }}>
+                      <Avatar
+                        src={teacher.avatarUrl || undefined}
+                        sx={{
+                          width: 140,
+                          height: 140,
+                          mx: 'auto',
+                          mb: 3,
+                          border: '4px solid white',
+                          boxShadow: '4px 4px 0 #1E293B',
+                          bgcolor: 'primary.main',
+                          fontSize: 42,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {teacher.fullName.trim().charAt(0).toUpperCase() || 'G'}
+                      </Avatar>
+                      <Typography variant="h5" fontWeight={800}>{teacher.fullName}</Typography>
+                      <Typography color="primary" fontWeight={600} sx={{ mb: 2 }}>{primarySpecialty}</Typography>
+                      <Chip label={classLabel} size="small" color={teacher.activeClassCount > 0 ? 'primary' : 'default'} />
+                    </Paper>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
         </Container>
       </Box>
 
       {/* Testimonials */}
-      <Box sx={{ py: 15, bgcolor: '#0f172a', color: 'white' }}>
-        <Container maxWidth="xl">
-          <Typography variant="h2" fontWeight={900} align="center" sx={{ mb: 10 }}>Cảm nhận học viên</Typography>
-          <Grid container spacing={4}>
+      <Box sx={{ py: 15, bgcolor: '#1E293B', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <Container maxWidth="lg">
+          <Typography variant="h2" fontWeight={800} align="center" sx={{ mb: 10 }}>Cảm nhận học viên</Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+              gap: 4,
+            }}
+          >
             {testimonials.map((item, idx) => (
-              <Grid item xs={12} md={6} key={idx}>
+              <Box key={idx}>
                 <Paper sx={{ 
                   p: 6, 
-                  borderRadius: 6, 
-                  bgcolor: 'rgba(255,255,255,0.05)', 
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.1)'
+                  borderRadius: 5, 
+                  bgcolor: '#FFFFFF', 
+                  color: '#1E293B',
+                  border: '2px solid #1E293B',
+                  boxShadow: '6px 6px 0 #FBBF24',
+                  '& .MuiTypography-root': {
+                    fontFamily: 'var(--font-vietnamese)',
+                  },
                 }}>
                   <Rating value={item.rating} readOnly sx={{ mb: 3, color: '#f59e0b' }} />
-                  <Typography variant="h5" sx={{ fontStyle: 'italic', mb: 4, fontWeight: 300, lineHeight: 1.6 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontFamily: 'var(--font-vietnamese)',
+                      fontStyle: 'italic',
+                      mb: 4,
+                      fontWeight: 700,
+                      lineHeight: 1.65,
+                      letterSpacing: 0,
+                    }}
+                  >
                     "{item.comment}"
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -296,9 +371,9 @@ export default function LandingPage() {
                     </Box>
                   </Box>
                 </Paper>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
     </Box>

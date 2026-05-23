@@ -11,6 +11,7 @@ import java.util.UUID;
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     List<Invoice> findByEnrollmentId(UUID enrollmentId);
+    List<Invoice> findByEnrollmentIdIn(List<UUID> enrollmentIds);
     List<Invoice> findByStatus(InvoiceStatus status);
 
     @org.springframework.data.jpa.repository.Query("SELECT i FROM Invoice i WHERE i.status IN (com.elc.system.modules.finance.entity.InvoiceStatus.UNPAID, com.elc.system.modules.finance.entity.InvoiceStatus.PARTIAL, com.elc.system.modules.finance.entity.InvoiceStatus.PENDING)")

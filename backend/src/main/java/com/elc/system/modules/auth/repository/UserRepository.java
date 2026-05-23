@@ -20,8 +20,10 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailIgnoreCase(String email);
+    List<User> findByEmailIgnoreCaseIn(List<String> emails);
     Optional<User> findByRefreshToken(String refreshToken);
     List<User> findByPhone(String phone);
+    List<User> findByPhoneIn(List<String> phones);
     boolean existsByEmail(String email);
 
     // For Announcement system

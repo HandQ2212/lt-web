@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     List<Payment> findByInvoiceId(UUID invoiceId);
 
+    boolean existsByInvoiceId(UUID invoiceId);
+
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p")
     java.math.BigDecimal getTotalRevenue();
 

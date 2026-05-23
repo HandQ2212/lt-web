@@ -19,6 +19,12 @@ import {
   Paper,
   Snackbar,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -67,6 +73,9 @@ type StudentForm = {
 };
 
 const defaultForm: StudentForm = { fullName: '', email: '', phone: '', password: '' };
+
+const getStudentDisplayName = (student: AppUser) =>
+  student.fullName || (student as any).name || student.email || 'Chưa cập nhật';
 
 const getStatusColor = (status?: string): 'default' | 'info' | 'success' | 'warning' | 'error' => {
   switch (status) {
@@ -175,7 +184,7 @@ export default function StudentManagementPage() {
     } else {
       const q = query.toLowerCase();
       setFilteredStudents(students.filter((s) =>
-        s.name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.phone?.includes(q)
+        getStudentDisplayName(s).toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.phone?.includes(q)
       ));
     }
   };
@@ -183,7 +192,7 @@ export default function StudentManagementPage() {
   const handleOpenCreate = () => { setEditingStudent(null); setForm(defaultForm); setOpenDialog(true); };
   const handleOpenEdit = (student: AppUser) => {
     setEditingStudent(student);
-    setForm({ fullName: student.name, email: student.email, phone: student.phone || '', password: '' });
+    setForm({ fullName: getStudentDisplayName(student), email: student.email, phone: student.phone || '', password: '' });
     setOpenDialog(true);
   };
 
@@ -241,58 +250,72 @@ export default function StudentManagementPage() {
 
         <Grid container spacing={3}>
           {/* Student Profile Card */}
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Stack alignItems="center" spacing={2} sx={{ py: 2 }}>
-                  <Avatar sx={{ width: 80, height: 80, fontSize: 32, bgcolor: 'success.main' }}>
+          <Grid item xs={12}>
+            <Card sx={{ height: '100%', borderRadius: 4, border: '1px solid rgba(15,23,42,0.06)', boxShadow: '0 10px 30px rgba(15,23,42,0.04)' }}>
+              <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3.5} alignItems="flex-start">
+                  <Avatar sx={{ width: { xs: 100, sm: 120 }, height: { xs: 100, sm: 120 }, fontSize: { xs: 40, sm: 48 }, fontWeight: 800, bgcolor: 'success.main', borderRadius: 3, flexShrink: 0 }} variant="rounded">
                     {selectedStudent.name?.charAt(0)?.toUpperCase()}
                   </Avatar>
-                  <Typography variant="h5" fontWeight={700}>{selectedStudent.name}</Typography>
-                  <Chip label={selectedStudent.status === 'ACTIVE' ? 'Đang học' : 'Ngừng'} color={selectedStudent.status === 'ACTIVE' ? 'success' : 'default'} />
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack spacing={2}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <EmailIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Email</Typography>
-                      <Typography variant="body2">{selectedStudent.email}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <PhoneIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Số điện thoại</Typography>
-                      <Typography variant="body2">{selectedStudent.phone || 'Chưa cập nhật'}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <SchoolIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Vai trò</Typography>
-                      <Typography variant="body2">Học viên</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <ClassIcon color="action" fontSize="small" />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Số lớp đang theo học</Typography>
-                      <Typography variant="body2" fontWeight={700}>{enrollments.filter((e) => e.status === 'ACTIVE').length}</Typography>
-                    </Box>
-                  </Stack>
-                </Stack>
-                <Divider sx={{ my: 2 }} />
-                <Stack direction="row" spacing={1}>
-                  <Button fullWidth variant="outlined" startIcon={<EditIcon />} onClick={() => handleOpenEdit(selectedStudent)}>Sửa</Button>
-                  <Button fullWidth variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => void handleDelete(selectedStudent.id)}>Xóa</Button>
+                  
+                  <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+                    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ mb: 2 }}>
+                      <Typography variant="h5" fontWeight={900}>{selectedStudent.name}</Typography>
+                      <Chip label={selectedStudent.status === 'ACTIVE' ? 'Đang học' : 'Ngừng'} color={selectedStudent.status === 'ACTIVE' ? 'success' : 'default'} size="small" sx={{ fontWeight: 800 }} />
+                    </Stack>
+
+                    <Grid container spacing={2.5} sx={{ mb: 1.5 }}>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <EmailIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Email</Typography>
+                            <Typography variant="body2" fontWeight={600} noWrap>{selectedStudent.email}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <PhoneIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Số điện thoại</Typography>
+                            <Typography variant="body2" fontWeight={600}>{selectedStudent.phone || 'Chưa cập nhật'}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <SchoolIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Vai trò</Typography>
+                            <Typography variant="body2" fontWeight={600}>Học viên</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <ClassIcon color="action" fontSize="small" />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={700}>Số lớp đang theo học</Typography>
+                            <Typography variant="body2" fontWeight={800} color="primary.main">{enrollments.filter((e) => e.status === 'ACTIVE').length}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                    </Grid>
+
+                    <Divider sx={{ my: 2 }} />
+                    <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                      <Button variant="outlined" startIcon={<EditIcon />} onClick={() => handleOpenEdit(selectedStudent)} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>Sửa thông tin</Button>
+                      <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => void handleDelete(selectedStudent.id)} sx={{ fontWeight: 700, px: 3, borderRadius: 2 }}>Xóa</Button>
+                    </Stack>
+                  </Box>
                 </Stack>
               </CardContent>
             </Card>
           </Grid>
 
           {/* Enrollments & Classes */}
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Lớp học & Kết quả</Typography>
               {detailLoading ? (
@@ -421,28 +444,45 @@ export default function StudentManagementPage() {
           <Typography color="text.secondary">{searchQuery ? 'Không tìm thấy học viên' : 'Chưa có học viên nào'}</Typography>
         </Paper>
       ) : (
-        <Grid container spacing={2}>
-          {filteredStudents.map((student) => (
-            <Grid item xs={12} sm={6} md={4} key={student.id}>
-              <Card sx={{ cursor: 'pointer', transition: 'all 0.2s', '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 } }} onClick={() => setSelectedStudent(student)}>
-                <CardContent>
-                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                    <Avatar sx={{ bgcolor: 'success.main', width: 48, height: 48 }}>{student.name?.charAt(0)?.toUpperCase()}</Avatar>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="subtitle1" fontWeight={700} noWrap>{student.name}</Typography>
-                      <Typography variant="body2" color="text.secondary" noWrap>{student.email}</Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                    <Chip size="small" label="Học viên" color="success" />
-                    <Chip size="small" label={student.status === 'ACTIVE' ? 'Đang học' : 'Ngừng'} color={student.status === 'ACTIVE' ? 'info' : 'default'} />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">SĐT: {student.phone || 'Chưa cập nhật'}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <TableContainer component={Paper} sx={{ borderRadius: 4, overflow: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
+          <Table sx={{ minWidth: 1050 }}>
+            <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 800 }}>Học viên</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Tên học viên</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Số điện thoại</TableCell>
+                <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800 }}>Thao tác</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredStudents.map((student) => (
+                <TableRow key={student.id} hover onClick={() => setSelectedStudent(student)} sx={{ cursor: 'pointer' }}>
+                  <TableCell>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>{getStudentDisplayName(student).charAt(0).toUpperCase()}</Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="caption" color="text.secondary">Mã: {student.id.slice(0, 8).toUpperCase()}</Typography>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2" fontWeight={800}>{getStudentDisplayName(student)}</Typography>
+                  </TableCell>
+                  <TableCell>{student.email}</TableCell>
+                  <TableCell>{student.phone || 'Chưa cập nhật'}</TableCell>
+                  <TableCell>
+                    <Chip size="small" label={student.status === 'ACTIVE' ? 'Đang học' : 'Ngừng'} color={student.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 800 }} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button size="small" variant="text" sx={{ fontWeight: 800 }}>Xem chi tiết</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>

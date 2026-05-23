@@ -1,6 +1,7 @@
 package com.elc.system.modules.lms.repository;
 
 import com.elc.system.modules.lms.entity.Assignment;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,5 +10,9 @@ import java.util.UUID;
 
 @Repository
 public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
+    @EntityGraph(attributePaths = {"clazz", "createdBy"})
     List<Assignment> findByClazzId(UUID classId);
+
+    @EntityGraph(attributePaths = {"clazz", "createdBy"})
+    List<Assignment> findByClazzTeacherIdOrderByDueDateDesc(UUID teacherId);
 }

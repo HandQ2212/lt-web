@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 public class LevelDto {
@@ -18,7 +19,6 @@ public class LevelDto {
     public static class LevelRequest {
         private UUID courseId;
 
-        @NotBlank(message = "Code is required")
         private String code;
 
         @NotBlank(message = "Name is required")
@@ -46,5 +46,6 @@ public class LevelDto {
         private BigDecimal basePrice;
         private Integer durationWeeks;
         private Boolean isActive;
+        private ZonedDateTime createdAt;
     }
 }

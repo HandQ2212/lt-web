@@ -13,13 +13,37 @@ export interface ChatbotReply {
   timestamp: string;
 }
 
+export type ChatbotTaskStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
+
+export interface ChatbotTaskAcceptedResponse {
+  taskId: string;
+  status: ChatbotTaskStatus;
+  pollAfterMs: number;
+  submittedAt: string;
+}
+
+export interface ChatbotTaskStatusResponse {
+  taskId: string;
+  status: ChatbotTaskStatus;
+  message?: string;
+  source?: 'OPENAI' | 'LOCAL_FALLBACK';
+  error?: string;
+  submittedAt: string;
+  completedAt?: string;
+  timestamp?: string;
+}
+
 export const chatbotApi = {
-  sendMessage: async (payload: {
+  submitMessage: async (payload: {
     message: string;
     history: ChatbotHistoryMessage[];
     currentPath?: string;
   }) => {
-    const response = await api.post<ChatbotReply>('public/chatbot/messages', payload);
+    const response = await api.post<ChatbotTaskAcceptedResponse>('public/chatbot/messages', payload);
+    return response.data;
+  },
+  getTaskStatus: async (taskId: string) => {
+    const response = await api.get<ChatbotTaskStatusResponse>(`public/chatbot/tasks/${taskId}`);
     return response.data;
   },
 };

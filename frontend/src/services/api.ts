@@ -18,6 +18,14 @@ export interface AppUser {
   branchId?: string;
 }
 
+export interface PublicTeacher {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+  specialties: string[];
+  activeClassCount: number;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
@@ -135,11 +143,20 @@ export const courseApi = {
     return list.map((course: any) => ({
       id: course.id,
       name: course.name,
-      level: course.level,
-      price: Number(course.basePrice || course.price || 0),
-      status: 'ACTIVE',
       description: course.description,
       imageUrl: course.imageUrl,
+      level: course.level,
+      price: Number(course.price || 0),
+      status: course.status,
+      levels: Array.isArray(course.levels)
+        ? course.levels.map((level: any) => ({
+            id: level.id,
+            code: level.code,
+            name: level.name,
+            basePrice: Number(level.basePrice || 0),
+            durationWeeks: level.durationWeeks ?? null,
+          }))
+        : [],
     }));
   },
   getById: async (id: string) => {
@@ -148,16 +165,65 @@ export const courseApi = {
     return {
       id: course.id,
       name: course.name,
-      level: course.level,
-      price: Number(course.basePrice || 0),
-      status: 'ACTIVE',
       description: course.description,
       imageUrl: course.imageUrl,
+      level: course.level,
+      price: Number(course.price || 0),
+      status: course.status,
+      levels: Array.isArray(course.levels)
+        ? course.levels.map((level: any) => ({
+            id: level.id,
+            code: level.code,
+            name: level.name,
+            basePrice: Number(level.basePrice || 0),
+            durationWeeks: level.durationWeeks ?? null,
+          }))
+        : [],
     };
   },
   create: (data: any) => api.post('courses', data),
   update: (id: string, data: any) => api.put(`courses/${id}`, data),
   delete: (id: string) => api.delete(`courses/${id}`),
+};
+
+export const levelApi = {
+  getAll: async () => {
+    const response = await api.get('levels');
+    const list = Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
+    return list.map((level: any) => ({
+      id: level.id,
+      courseId: level.courseId,
+      courseName: level.courseName,
+      code: level.code,
+      name: level.name,
+      description: level.description,
+      displayOrder: level.displayOrder,
+      basePrice: Number(level.basePrice || 0),
+      durationWeeks: level.durationWeeks ?? null,
+      isActive: Boolean(level.isActive),
+      createdAt: level.createdAt,
+    }));
+  },
+  getById: async (id: string) => {
+    const response = await api.get(`levels/${id}`);
+    const level = response.data;
+    return {
+      id: level.id,
+      courseId: level.courseId,
+      courseName: level.courseName,
+      code: level.code,
+      name: level.name,
+      description: level.description,
+      displayOrder: level.displayOrder,
+      basePrice: Number(level.basePrice || 0),
+      durationWeeks: level.durationWeeks ?? null,
+      isActive: Boolean(level.isActive),
+      createdAt: level.createdAt,
+    };
+  },
+  create: (data: any) => api.post('levels', data),
+  update: (id: string, data: any) => api.put(`levels/${id}`, data),
+  delete: (id: string) => api.delete(`levels/${id}`),
 };
 
 export const branchApi = {
@@ -262,7 +328,7 @@ export const userApi = {
   },
   update: async (
     id: string,
-    payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED' }
+    payload: { fullName?: string; phone?: string; role?: UserRole; status?: 'ACTIVE' | 'INACTIVE' | 'DEACTIVATED'; avatarUrl?: string; address?: string; dateOfBirth?: string; gender?: string }
   ) => {
     const response = await api.put(`users/${id}`, payload);
     return normalizeUser(response.data);
@@ -274,9 +340,30 @@ export const userApi = {
   },
 };
 
+export const publicTeacherApi = {
+  getAll: async (): Promise<PublicTeacher[]> => {
+    const response = await api.get('public/teachers');
+    const raw = Array.isArray(response.data) ? response.data : response.data?.content || response.data?.data || [];
+    return raw.map((teacher: any) => ({
+      id: teacher.id || '',
+      fullName: teacher.fullName || 'Giảng viên',
+      avatarUrl: teacher.avatarUrl,
+      specialties: Array.isArray(teacher.specialties) ? teacher.specialties : [],
+      activeClassCount: Number(teacher.activeClassCount || 0),
+    }));
+  },
+};
+
 export const profileApi = {
   update: async (payload: {
     fullName: string;
+    phone?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    address?: string;
+    avatarUrl?: string;
+  } | {
+    fullName?: string;
     phone?: string;
     dateOfBirth?: string;
     gender?: string;
@@ -299,6 +386,7 @@ export const attendanceApi = {
 
 export const assignmentApi = {
   getByClass: (classId: string) => api.get(`assignments/class/${classId}`),
+  getMine: () => api.get('assignments/mine'),
   create: (data: any) => api.post('assignments', data),
 };
 
@@ -326,6 +414,7 @@ export const invoiceApi = {
   refund: (id: string, payload: { amount: number; reason?: string }) =>
     api.post(`invoices/${id}/refund`, payload),
   create: (data: any) => api.post('invoices', data),
+  delete: (id: string) => api.delete(`invoices/${id}`),
   updateStatus: (id: string, status: string) =>
     api.patch(`invoices/${id}/status`, null, { params: { status } }),
 };
@@ -374,6 +463,11 @@ export const announcementApi = {
     const response = await api.get('announcements', { params });
     const raw = response.data;
     // Always return a flat array regardless of paginated or direct response
+    return Array.isArray(raw) ? raw : (raw?.content ?? raw?.data ?? []);
+  },
+  getSent: async (params?: any): Promise<any[]> => {
+    const response = await api.get('announcements/sent', { params });
+    const raw = response.data;
     return Array.isArray(raw) ? raw : (raw?.content ?? raw?.data ?? []);
   },
   create: (payload: any) => api.post('announcements', payload),

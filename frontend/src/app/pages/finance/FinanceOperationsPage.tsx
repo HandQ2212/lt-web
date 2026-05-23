@@ -27,6 +27,7 @@ import {
 import {
   AccountBalanceWallet,
   AssignmentTurnedIn,
+  DeleteOutline,
   FactCheck,
   Paid,
   ReceiptLong,
@@ -44,6 +45,7 @@ import {
   getOutstandingAmount,
   getPaymentMethodLabel,
   getStatusLabel,
+  getUserDisplayName,
   InvoiceRecord,
   manualPaymentMethods,
   operatingCategories,
@@ -53,6 +55,21 @@ import {
 const today = new Date().toISOString().slice(0, 10);
 
 type SnackbarState = { open: boolean; message: string; severity: 'success' | 'error' };
+
+const operationGridSx = {
+  display: 'grid',
+  gridTemplateColumns: { xs: '1fr', lg: 'minmax(360px, 0.8fr) minmax(0, 1.2fr)' },
+  gap: { xs: 3, lg: 3.5 },
+  alignItems: 'start',
+};
+
+const formPanelSx = {
+  p: { xs: 2.5, md: 3.25 },
+  borderRadius: 4,
+  border: '2px solid #1E293B',
+  boxShadow: '6px 6px 0 #1E293B',
+  bgcolor: '#FFFFFF',
+};
 
 export default function FinanceOperationsPage() {
   const [activeTab, setActiveTab] = useState(0);
@@ -269,6 +286,31 @@ export default function FinanceOperationsPage() {
     }
   };
 
+  const handleDeleteInvoice = async (invoice: InvoiceRecord) => {
+    if (Number(invoice.paidAmount || 0) > 0) {
+      showMessage('Không thể xóa hóa đơn đã có thanh toán', 'error');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa hóa đơn của ${invoice.studentName || 'học viên'}${invoice.className ? ` - ${invoice.className}` : ''}?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await invoiceApi.delete(invoice.id);
+      await fetchData();
+      showMessage('Đã xóa hóa đơn thành công');
+    } catch (err: any) {
+      showMessage(err?.response?.data?.message || 'Không thể xóa hóa đơn', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCreatePayroll = async () => {
     if (!selectedTeacher || payrollAmount <= 0) {
       showMessage('Vui lòng chọn giáo viên và điền đầy đủ thông tin tính lương', 'error');
@@ -276,12 +318,13 @@ export default function FinanceOperationsPage() {
     }
 
     try {
+      const teacherName = getUserDisplayName(selectedTeacher, 'Giáo viên');
       setSubmitting(true);
       await expenseApi.create({
         category: 'Lương giáo viên',
         amount: payrollAmount,
         expenseDate: `${payrollForm.month}-28`,
-        vendor: selectedTeacher.name,
+        vendor: teacherName,
         notes:
           payrollForm.notes ||
           `Chốt công ${payrollForm.sessions} buổi, ${payrollForm.hoursPerSession} giờ/buổi, đơn giá ${formatCurrency(
@@ -306,9 +349,9 @@ export default function FinanceOperationsPage() {
   }
 
   return (
-    <Box sx={{ pb: 4 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 4 }}>
-        <Box>
+    <Box sx={{ pb: 6, maxWidth: 1240, mx: 'auto', px: { xs: 1, sm: 2, xl: 0 } }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2.5} sx={{ mb: 4 }}>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h4" fontWeight={800} color="primary.main">
             Nghiệp vụ Kế toán
           </Typography>
@@ -316,7 +359,21 @@ export default function FinanceOperationsPage() {
             Quản lý phiếu thu, phiếu chi, chốt lương giáo viên và theo dõi lịch sử giao dịch.
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<Search />} onClick={fetchData} sx={{ borderRadius: 2, fontWeight: 700 }}>
+        <Button
+          variant="outlined"
+          startIcon={<Search />}
+          onClick={fetchData}
+          sx={{
+            borderRadius: 1,
+            fontWeight: 800,
+            px: 2.5,
+            py: 1.2,
+            border: '2px solid #1E293B',
+            boxShadow: '4px 4px 0 #1E293B',
+            bgcolor: '#FFFFFF',
+            alignSelf: { xs: 'flex-start', md: 'center' },
+          }}
+        >
           Tải lại dữ liệu
         </Button>
       </Stack>
@@ -327,15 +384,51 @@ export default function FinanceOperationsPage() {
         </Alert>
       )}
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: 'repeat(4, minmax(0, 1fr))',
+          },
+          gap: 2.5,
+          mb: 4,
+        }}
+      >
         <SummaryCard title="Tổng thu" value={formatCurrency(totals.revenue)} icon={<Paid sx={{ color: 'success.main' }} />} />
         <SummaryCard title="Tổng chi" value={formatCurrency(totals.expense)} icon={<ReceiptLong sx={{ color: 'error.main' }} />} />
         <SummaryCard title="Công nợ học viên" value={formatCurrency(totals.debt)} icon={<AccountBalanceWallet sx={{ color: 'warning.main' }} />} />
         <SummaryCard title="Lợi nhuận tạm tính" value={formatCurrency(totals.profit)} icon={<Savings sx={{ color: 'primary.main' }} />} />
-      </Grid>
+      </Box>
 
-      <Paper sx={{ mb: 4, borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto" sx={{ px: 1 }}>
+      <Paper sx={{ mb: 4, p: 0.75, borderRadius: 4, overflow: 'hidden', border: '2px solid #1E293B', boxShadow: '6px 6px 0 #1E293B', bgcolor: '#FFFFFF' }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, value) => setActiveTab(value)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            minHeight: 52,
+            '& .MuiTabs-indicator': { display: 'none' },
+            '& .MuiTabs-flexContainer': { gap: 0.75 },
+            '& .MuiTab-root': {
+              minHeight: 48,
+              minWidth: { xs: 160, md: 188 },
+              px: 2.25,
+              borderRadius: 1,
+              color: 'text.primary',
+              textTransform: 'none',
+              fontWeight: 850,
+              whiteSpace: 'nowrap',
+            },
+            '& .Mui-selected': {
+              bgcolor: '#FBBF24',
+              color: '#0F172A !important',
+            },
+          }}
+        >
           <Tab label="Phiếu thu" sx={{ fontWeight: 700 }} />
           <Tab label="Công nợ học phí" sx={{ fontWeight: 700 }} />
           <Tab label="Hoàn phí & Học vụ" sx={{ fontWeight: 700 }} />
@@ -346,9 +439,9 @@ export default function FinanceOperationsPage() {
       </Paper>
 
       {activeTab === 0 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3, borderRadius: 4 }}>
+        <Box sx={operationGridSx}>
+          <Box>
+            <Paper sx={formPanelSx}>
               <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
                 Tạo phiếu thu mới
               </Typography>
@@ -416,8 +509,8 @@ export default function FinanceOperationsPage() {
                 </Button>
               </Stack>
             </Paper>
-          </Grid>
-          <Grid item xs={12} md={7}>
+          </Box>
+          <Box>
             <FinanceTable
               title="Phiếu thu gần đây"
               columns={['Ngày', 'Nội dung', 'Phương thức', 'Số tiền', 'Ghi chú']}
@@ -430,14 +523,14 @@ export default function FinanceOperationsPage() {
               ])}
               emptyText="Chưa có dữ liệu phiếu thu"
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
 
       {activeTab === 1 && (
         <FinanceTable
           title="Chi tiết công nợ học phí"
-          columns={['Học viên', 'Lớp học', 'Hạn thanh toán', 'Trạng thái', 'Tổng học phí', 'Đã nộp', 'Còn nợ']}
+          columns={['Học viên', 'Lớp học', 'Hạn thanh toán', 'Trạng thái', 'Tổng học phí', 'Đã nộp', 'Còn nợ', 'Thao tác']}
           rows={debtInvoices.map((invoice) => [
             <Typography fontWeight={700}>{invoice.studentName}</Typography>,
             invoice.className || '-',
@@ -446,15 +539,28 @@ export default function FinanceOperationsPage() {
             formatCurrency(getInvoiceAmount(invoice)),
             formatCurrency(invoice.paidAmount),
             <Typography fontWeight={800} color="error.main">{formatCurrency(getOutstandingAmount(invoice))}</Typography>,
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 40 }}>
+              <Button
+                color="error"
+                variant="outlined"
+                size="small"
+                startIcon={<DeleteOutline />}
+                disabled={submitting || Number(invoice.paidAmount || 0) > 0}
+                onClick={() => void handleDeleteInvoice(invoice)}
+                sx={{ fontWeight: 700, whiteSpace: 'nowrap', minWidth: 88 }}
+              >
+                Xóa
+              </Button>
+            </Box>,
           ])}
           emptyText="Hiện không có học viên nào nợ phí"
         />
       )}
 
       {activeTab === 2 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3, borderRadius: 4 }}>
+        <Box sx={operationGridSx}>
+          <Box>
+            <Paper sx={formPanelSx}>
               <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
                 Xử lý hoàn phí & Điều chỉnh
               </Typography>
@@ -498,8 +604,8 @@ export default function FinanceOperationsPage() {
                 </Button>
               </Stack>
             </Paper>
-          </Grid>
-          <Grid item xs={12} md={7}>
+          </Box>
+          <Box>
             <FinanceTable
               title="Lịch sử hoàn phí / Điều chỉnh"
               columns={['Ngày', 'Loại nghiệp vụ', 'Số tiền', 'Đối tượng', 'Lý do']}
@@ -514,14 +620,14 @@ export default function FinanceOperationsPage() {
                 ])}
               emptyText="Chưa có dữ liệu hoàn phí"
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
 
       {activeTab === 3 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3, borderRadius: 4 }}>
+        <Box sx={operationGridSx}>
+          <Box>
+            <Paper sx={formPanelSx}>
               <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
                 Chốt công & Tính lương giáo viên
               </Typography>
@@ -535,7 +641,7 @@ export default function FinanceOperationsPage() {
                 >
                   {teachers.map((teacher) => (
                     <MenuItem key={teacher.id} value={teacher.id}>
-                      {teacher.name}
+                      {getUserDisplayName(teacher, 'Giáo viên')}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -614,8 +720,8 @@ export default function FinanceOperationsPage() {
                 </Button>
               </Stack>
             </Paper>
-          </Grid>
-          <Grid item xs={12} md={7}>
+          </Box>
+          <Box>
             <FinanceTable
               title="Lịch sử lương đã chốt"
               columns={['Ngày chốt', 'Giáo viên', 'Tổng tiền', 'Người duyệt', 'Chi tiết']}
@@ -630,14 +736,14 @@ export default function FinanceOperationsPage() {
                 ])}
               emptyText="Chưa có dữ liệu lương giáo viên"
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
 
       {activeTab === 4 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3, borderRadius: 4 }}>
+        <Box sx={operationGridSx}>
+          <Box>
+            <Paper sx={formPanelSx}>
               <Typography variant="h6" fontWeight={800} gutterBottom sx={{ mb: 3 }}>
                 Ghi nhận chi phí vận hành
               </Typography>
@@ -695,10 +801,10 @@ export default function FinanceOperationsPage() {
                 </Button>
               </Stack>
             </Paper>
-          </Grid>
-          <Grid item xs={12} md={7}>
+          </Box>
+          <Box>
             {unusualExpenses.length > 0 && (
-              <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+              <Alert severity="warning" sx={{ mb: 2, borderRadius: 3, border: '1px solid rgba(245, 158, 11, 0.35)' }}>
                 Phát hiện <strong>{unusualExpenses.length} khoản chi cao bất thường</strong> so với trung bình hàng tháng.
               </Alert>
             )}
@@ -715,8 +821,8 @@ export default function FinanceOperationsPage() {
               ])}
               emptyText="Chưa có dữ liệu chi phí vận hành"
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
 
       {activeTab === 5 && (
@@ -751,23 +857,29 @@ export default function FinanceOperationsPage() {
 
 function SummaryCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
   return (
-    <Grid item xs={12} sm={6} md={3}>
-      <Card sx={{ borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-            <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                {title}
-              </Typography>
-              <Typography variant="h5" fontWeight={900} sx={{ mt: 0.5 }}>
-                {value}
-              </Typography>
-            </Box>
-            <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.02)', '& svg': { fontSize: 32 } }}>{icon}</Box>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Grid>
+    <Card
+      sx={{
+        borderRadius: 4,
+        border: '2px solid #1E293B',
+        boxShadow: '5px 5px 0 #1E293B',
+        minHeight: 132,
+        background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+      }}
+    >
+      <CardContent sx={{ p: 2.75, height: '100%' }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
+              {title}
+            </Typography>
+            <Typography variant="h5" fontWeight={900} sx={{ mt: 0.75, fontSize: { xs: '1.55rem', lg: '1.7rem' }, overflowWrap: 'anywhere' }}>
+              {value}
+            </Typography>
+          </Box>
+          <Box sx={{ p: 1.5, borderRadius: '50%', bgcolor: '#F8FAFC', flexShrink: 0, '& svg': { fontSize: 32 } }}>{icon}</Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -783,20 +895,20 @@ function FinanceTable({
   emptyText: string;
 }) {
   return (
-    <Paper sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.01)' }}>
+    <Paper sx={{ borderRadius: 4, overflow: 'hidden', border: '2px solid #1E293B', boxShadow: '6px 6px 0 #1E293B', bgcolor: '#FFFFFF' }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ p: { xs: 2.25, md: 3 }, bgcolor: '#F8FAFC' }}>
         <FactCheck color="primary" />
         <Typography variant="h6" fontWeight={800}>
           {title}
         </Typography>
       </Stack>
       <Divider />
-      <TableContainer>
+      <TableContainer sx={{ overflowX: 'auto' }}>
         <Table size="small">
-          <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.01)' }}>
+          <TableHead sx={{ bgcolor: '#FFFFFF' }}>
             <TableRow>
               {columns.map((column) => (
-                <TableCell key={column} sx={{ fontWeight: 800, py: 2 }}>{column}</TableCell>
+                <TableCell key={column} sx={{ fontWeight: 800, py: 2, whiteSpace: 'nowrap' }}>{column}</TableCell>
               ))}
             </TableRow>
           </TableHead>
@@ -811,7 +923,7 @@ function FinanceTable({
               rows.map((row, index) => (
                 <TableRow key={index} hover>
                   {row.map((cell, cellIndex) => (
-                    <TableCell key={cellIndex} sx={{ py: 2 }}>
+                    <TableCell key={cellIndex} sx={{ py: 2, verticalAlign: 'top' }}>
                       {cell}
                     </TableCell>
                   ))}

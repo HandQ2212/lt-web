@@ -36,4 +36,12 @@ public class AnnouncementController {
     ) {
         return ResponseEntity.ok(announcementService.getActiveAnnouncements(pageable));
     }
+
+    @GetMapping("/sent")
+    @PreAuthorize("hasAnyRole('MANAGER', 'TEACHER', 'ACCOUNTANT')")
+    public ResponseEntity<Page<AnnouncementResponse>> getSentAnnouncements(
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        return ResponseEntity.ok(announcementService.getMySentAnnouncements(pageable));
+    }
 }

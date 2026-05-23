@@ -1,6 +1,7 @@
 package com.elc.system.modules.notification.entity;
 
 import com.elc.system.core.BaseEntity;
+import com.elc.system.modules.announcement.entity.Announcement;
 import com.elc.system.modules.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,6 +22,14 @@ public class Notification extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "announcement_id")
+    private Announcement announcement;
 
     @Column(nullable = false)
     private String title;

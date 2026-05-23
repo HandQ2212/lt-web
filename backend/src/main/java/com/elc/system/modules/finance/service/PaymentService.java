@@ -12,6 +12,8 @@ import com.elc.system.modules.finance.repository.PaymentRepository;
 import com.elc.system.modules.lead.entity.Lead;
 import com.elc.system.modules.lead.entity.LeadStatus;
 import com.elc.system.modules.lead.repository.LeadRepository;
+import com.elc.system.modules.lms.entity.Enrollment;
+import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -119,6 +121,7 @@ public class PaymentService {
 
         if (totalPaid.compareTo(invoice.getFinalAmount()) >= 0) {
             invoice.setStatus(InvoiceStatus.PAID);
+            activateEnrollmentIfApplicable(invoice);
             
             // Cập nhật LeadStatus nếu là Lead
             updateLeadStatusIfApplicable(invoice.getEnrollment().getStudent());
@@ -129,6 +132,18 @@ public class PaymentService {
             invoice.setStatus(InvoiceStatus.UNPAID);
         }
         invoiceRepository.save(invoice);
+    }
+
+    private void activateEnrollmentIfApplicable(Invoice invoice) {
+        Enrollment enrollment = invoice.getEnrollment();
+        if (enrollment == null) {
+            return;
+        }
+
+        if (enrollment.getStatus() == EnrollmentStatus.PENDING
+                || enrollment.getStatus() == EnrollmentStatus.APPROVED) {
+            enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        }
     }
 
     private void updateLeadStatusIfApplicable(User user) {

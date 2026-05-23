@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Alert,
@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
   IconButton,
   LinearProgress,
   MenuItem,
@@ -81,9 +80,16 @@ type ScheduleSessionRow = {
   attendanceDate: string;
   dateLabel: string;
   timeLabel: string;
+  startTime: string;
+  endTime: string;
   dayOfWeek: string;
   roomLabel: string;
   formatLabel: string;
+};
+
+type AttendanceAvailability = {
+  allowed: boolean;
+  reason?: string;
 };
 
 const dayOfWeekIndexMap: Record<string, number> = {
@@ -116,6 +122,117 @@ const formatSessionDateLabel = (date: Date) => {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
+const toLocalDateKey = (date: Date) =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+
+const parseTimeToMinutes = (value?: string) => {
+  if (!value) return null;
+  const [hourRaw, minuteRaw] = value.split(':');
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+};
+
+const getTodayAttendanceAvailability = (classItem: ClassItem | null, now: Date): AttendanceAvailability => {
+  if (!classItem) {
+    return { allowed: false, reason: 'Chưa chọn lớp học để điểm danh.' };
+  }
+
+  if (!classItem.schedules?.length) {
+    return { allowed: false, reason: 'Lớp này chưa được xếp lịch học nên chưa thể điểm danh.' };
+  }
+
+  const todayKey = toLocalDateKey(now);
+  const todayStart = new Date(`${todayKey}T00:00:00`);
+  const todayEnd = new Date(`${todayKey}T23:59:59`);
+
+  if (classItem.startDate) {
+    const classStart = new Date(`${classItem.startDate}T00:00:00`);
+    if (!Number.isNaN(classStart.getTime()) && todayStart < classStart) {
+      return { allowed: false, reason: `Lớp chưa bắt đầu. Ngày khai giảng là ${formatDateToDDMMYYYY(classItem.startDate)}.` };
+    }
+  }
+
+  if (classItem.endDate) {
+    const classEnd = new Date(`${classItem.endDate}T23:59:59`);
+    if (!Number.isNaN(classEnd.getTime()) && todayEnd > classEnd) {
+      return { allowed: false, reason: `Lớp đã kết thúc từ ${formatDateToDDMMYYYY(classItem.endDate)} nên không thể điểm danh hôm nay.` };
+    }
+  }
+
+  if (classItem.status === 'CANCELLED') {
+    return { allowed: false, reason: 'Lớp đã bị hủy nên không thể điểm danh.' };
+  }
+
+  if (classItem.status === 'COMPLETED') {
+    return { allowed: false, reason: 'Lớp đã hoàn thành nên không thể điểm danh thêm.' };
+  }
+
+  const todaySchedules = classItem.schedules.filter(
+    (schedule) => dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()] === now.getDay()
+  );
+
+  if (!todaySchedules.length) {
+    return { allowed: false, reason: 'Hôm nay lớp không có buổi học theo lịch.' };
+  }
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startedSchedules = todaySchedules.filter((schedule) => {
+    const startMinutes = parseTimeToMinutes(schedule.startTime);
+    return startMinutes != null && currentMinutes >= startMinutes;
+  });
+
+  if (!startedSchedules.length) {
+    const nearestSchedule = [...todaySchedules]
+      .sort((left, right) => (parseTimeToMinutes(left.startTime) ?? 0) - (parseTimeToMinutes(right.startTime) ?? 0))[0];
+    return {
+      allowed: false,
+      reason: `Hôm nay có buổi học nhưng chưa tới giờ. Có thể điểm danh từ ${formatTimeToHHMM(nearestSchedule.startTime)}.`,
+    };
+  }
+
+  return { allowed: true };
+};
+
+const getSessionAttendanceAvailability = (session: ScheduleSessionRow | null, now: Date): AttendanceAvailability => {
+  if (!session) {
+    return { allowed: false, reason: 'Chưa chọn buổi học để điểm danh.' };
+  }
+
+  const todayKey = toLocalDateKey(now);
+  if (session.attendanceDate !== todayKey) {
+    return { allowed: false, reason: 'Chỉ có thể điểm danh cho buổi học diễn ra hôm nay.' };
+  }
+
+  const startMinutes = parseTimeToMinutes(session.startTime);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  if (startMinutes != null && currentMinutes < startMinutes) {
+    return {
+      allowed: false,
+      reason: `Buổi học này chưa tới giờ. Có thể điểm danh từ ${formatTimeToHHMM(session.startTime)}.`,
+    };
+  }
+
+  return { allowed: true };
+};
+
+const getEnrollmentStatusDisplay = (status?: string) => {
+  if (status === 'ACTIVE' || status === 'APPROVED' || status === 'PENDING') {
+    return { label: 'Đang học', color: 'success' as const };
+  }
+
+  return { label: 'Dừng học', color: 'default' as const };
+};
+
 export default function TeacherClassesPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -140,7 +257,9 @@ export default function TeacherClassesPage() {
   });
 
   const selectedClassId = selectedClass?.id;
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = toLocalDateKey(new Date());
+  const todayAttendanceAvailability = getTodayAttendanceAvailability(selectedClass, new Date());
+  const selectedSessionAttendanceAvailability = getSessionAttendanceAvailability(sessionAttendanceDialog.session, new Date());
 
   useEffect(() => {
     void fetchClasses();
@@ -158,9 +277,6 @@ export default function TeacherClassesPage() {
       const data = await classApi.getAll();
       const mine = (data || []).filter((cls: ClassItem) => !user?.id || cls.teacherId === user.id);
       setClasses(mine);
-      if (mine.length > 0 && !selectedClass) {
-        setSelectedClass(mine[0]);
-      }
     } catch (err: any) {
       setSnackbar({
         open: true,
@@ -293,6 +409,8 @@ export default function TeacherClassesPage() {
             attendanceDate: occurrenceDateKey,
             dateLabel: formatSessionDateLabel(new Date(occurrence)),
             timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
             dayOfWeek: schedule.dayOfWeek,
             roomLabel: selectedClass.roomName || '-',
             formatLabel: selectedClass.roomName ? 'Trực tiếp' : 'Online',
@@ -312,6 +430,8 @@ export default function TeacherClassesPage() {
         attendanceDate: todayIso,
         dateLabel: labelDay,
         timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
         dayOfWeek: schedule.dayOfWeek,
         roomLabel: selectedClass.roomName || '-',
         formatLabel: selectedClass.roomName ? 'Trực tiếp' : 'Online',
@@ -344,11 +464,22 @@ export default function TeacherClassesPage() {
         </Paper>
       ) : (
         <>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: classes.length === 1 ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+              },
+              gap: 3,
+              mb: 4,
+              alignItems: 'stretch',
+            }}
+          >
             {classes.map((cls) => {
               const scheduleCount = cls.schedules?.length || 0;
               return (
-                <Grid key={cls.id} item xs={12} sm={6} lg={4}>
+                <Box key={cls.id} sx={{ minWidth: 0, display: 'flex' }}>
                   <Card
                     onClick={() => {
                       setSelectedClass(cls);
@@ -356,16 +487,21 @@ export default function TeacherClassesPage() {
                     }}
                     sx={{
                       cursor: 'pointer',
+                      width: '100%',
                       height: '100%',
+                      minHeight: 286,
+                      display: 'flex',
+                      flexDirection: 'column',
                       borderRadius: 4,
-                      border: selectedClassId === cls.id ? '2px solid' : '1px solid transparent',
-                      borderColor: selectedClassId === cls.id ? 'primary.main' : 'transparent',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                      border: '2px solid #1E293B',
+                      borderColor: selectedClassId === cls.id ? 'primary.main' : '#1E293B',
+                      boxShadow: selectedClassId === cls.id ? '6px 6px 0 #1E293B' : '4px 4px 0 #1E293B',
+                      bgcolor: selectedClassId === cls.id ? 'rgba(139, 92, 246, 0.06)' : '#FFFFFF',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 32px rgba(0,0,0,0.1)' },
+                      '&:hover': { transform: 'translateY(-4px)', boxShadow: '7px 7px 0 #1E293B' },
                     }}
                   >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
                         <Box sx={{ minWidth: 0 }}>
                           <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
@@ -381,20 +517,24 @@ export default function TeacherClassesPage() {
                         </Box>
                       </Stack>
 
-                      <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={4}>
-                          <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(96px, 0.85fr) minmax(0, 1.15fr)',
+                          gap: 2,
+                          mb: 3,
+                          alignItems: 'stretch',
+                        }}
+                      >
+                          <Box sx={{ p: 1.5, minHeight: 84, textAlign: 'center', bgcolor: '#FFF7DF', border: '1px solid rgba(30,41,59,0.2)', borderRadius: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <Typography variant="h6" fontWeight={800}>{scheduleCount}</Typography>
                             <Typography variant="caption" color="text.secondary" fontWeight={600}>Buổi/Tuần</Typography>
                           </Box>
-                        </Grid>
-                        <Grid item xs={8}>
-                          <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                            <Typography variant="h6" fontWeight={800}>{cls.courseName}</Typography>
+                          <Box sx={{ p: 1.5, minHeight: 84, textAlign: 'center', bgcolor: '#F7E9FF', border: '1px solid rgba(30,41,59,0.2)', borderRadius: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
+                            <Typography variant="h6" fontWeight={800} sx={{ fontSize: '1rem', overflowWrap: 'anywhere' }}>{cls.courseName || '-'}</Typography>
                             <Typography variant="caption" color="text.secondary" fontWeight={600}>Khóa học</Typography>
                           </Box>
-                        </Grid>
-                      </Grid>
+                      </Box>
 
                       <Button
                         fullWidth
@@ -404,16 +544,16 @@ export default function TeacherClassesPage() {
                           setSelectedClass(cls);
                           setDetailTab(0);
                         }}
-                        sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
+                        sx={{ mt: 'auto', borderRadius: 2, fontWeight: 800, textTransform: 'none' }}
                       >
                         Xem chi tiết
                       </Button>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
               );
             })}
-          </Grid>
+          </Box>
 
           {/* Class Details Dialog */}
           <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
@@ -436,9 +576,17 @@ export default function TeacherClassesPage() {
             </DialogTitle>
             <DialogContent dividers sx={{ p: 0 }}>
               <Box sx={{ p: 3 }}>
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                  <Grid item xs={12} md={4}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+                    gap: 3,
+                    mb: 4,
+                    alignItems: 'stretch',
+                  }}
+                >
+                  <Box sx={{ minWidth: 0, display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
                       <Typography variant="h4" fontWeight={900}>{enrollments.length} / {selectedClass?.maxStudents || '-'}</Typography>
                       <LinearProgress
@@ -447,16 +595,16 @@ export default function TeacherClassesPage() {
                         sx={{ mt: 2, height: 8, borderRadius: 4 }}
                       />
                     </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  </Box>
+                  <Box sx={{ minWidth: 0, display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>TỔNG BUỔI HỌC</Typography>
                       <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
                       <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Buổi học</Typography>
                     </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+                  </Box>
+                  <Box sx={{ minWidth: 0, display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
                       <Typography variant="h6" fontWeight={800}>
                         {formatDateToDDMMYYYY(selectedClass?.startDate)}
@@ -466,8 +614,8 @@ export default function TeacherClassesPage() {
                         {formatDateToDDMMYYYY(selectedClass?.endDate)}
                       </Typography>
                     </Paper>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
 
                 <Tabs
                   value={detailTab}
@@ -491,6 +639,11 @@ export default function TeacherClassesPage() {
                         Tổng số: {scheduleSessionRows.length}
                       </Typography>
                     </Stack>
+                    {!todayAttendanceAvailability.allowed && (
+                      <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                        {todayAttendanceAvailability.reason}
+                      </Alert>
+                    )}
                     {scheduleSessionRows.length ? (
                       <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
                         <Table size="small" stickyHeader>
@@ -505,7 +658,9 @@ export default function TeacherClassesPage() {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {scheduleSessionRows.map((session, index) => (
+                            {scheduleSessionRows.map((session, index) => {
+                              const sessionAvailability = getSessionAttendanceAvailability(session, new Date());
+                              return (
                               <TableRow key={session.key} hover>
                                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
                                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{session.dateLabel}</TableCell>
@@ -521,17 +676,25 @@ export default function TeacherClassesPage() {
                                   />
                                 </TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>
+                                  <Stack spacing={0.75} alignItems="center">
                                   <Button
                                     size="small"
                                     variant="outlined"
                                     onClick={() => setSessionAttendanceDialog({ open: true, session })}
+                                    disabled={!sessionAvailability.allowed}
                                     sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 2 }}
                                   >
                                     Điểm danh
                                   </Button>
+                                    {!sessionAvailability.allowed && (
+                                      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 180, whiteSpace: 'normal', lineHeight: 1.35 }}>
+                                        {sessionAvailability.reason}
+                                      </Typography>
+                                    )}
+                                  </Stack>
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            )})}
                           </TableBody>
                         </Table>
                       </TableContainer>
@@ -556,16 +719,18 @@ export default function TeacherClassesPage() {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {enrollments.map((item) => (
+                            {enrollments.map((item) => {
+                              const enrollmentStatusDisplay = getEnrollmentStatusDisplay(item.status);
+                              return (
                               <TableRow key={item.id} hover>
                                 <TableCell sx={{ fontWeight: 700 }}>{item.studentName}</TableCell>
                                 <TableCell sx={{ color: 'text.secondary' }}>{item.studentId}</TableCell>
                                 <TableCell>{formatDateToDDMMYYYY(item.enrollmentDate)}</TableCell>
                                 <TableCell>
-                                  <Chip size="small" label={item.status === 'ACTIVE' ? 'Đang học' : 'Dừng học'} color={item.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                                  <Chip size="small" label={enrollmentStatusDisplay.label} color={enrollmentStatusDisplay.color} sx={{ fontWeight: 700 }} />
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            )})}
                           </TableBody>
                         </Table>
                       </TableContainer>
@@ -576,6 +741,11 @@ export default function TeacherClassesPage() {
                     <Typography variant="h6" fontWeight={800} sx={{ mb: 3 }}>
                       Điểm danh hôm nay - {formatDateToDDMMYYYY(todayIso)}
                     </Typography>
+                    {!todayAttendanceAvailability.allowed && (
+                      <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                        {todayAttendanceAvailability.reason}
+                      </Alert>
+                    )}
                     {enrollments.length === 0 ? (
                       <Alert severity="info" sx={{ borderRadius: 2 }}>Chưa có học viên trong lớp.</Alert>
                     ) : (
@@ -601,7 +771,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'PRESENT' ? 'success' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'PRESENT', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                       sx={{ fontWeight: 700 }}
                                     >
                                       <CheckIcon fontSize="small" />
@@ -612,7 +782,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'ABSENT' ? 'error' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'ABSENT', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                     >
                                       <CloseIcon fontSize="small" />
                                     </IconButton>
@@ -622,7 +792,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'LATE' ? 'warning' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'LATE', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                     >
                                       <SchoolOutlinedIcon fontSize="small" />
                                     </IconButton>
@@ -632,7 +802,7 @@ export default function TeacherClassesPage() {
                                       size="small"
                                       color={todayAttendance?.status === 'EXCUSED' ? 'info' : 'inherit'}
                                       onClick={() => handleMarkAttendance(enrollment.id, 'EXCUSED', todayIso)}
-                                      disabled={attendanceLoading}
+                                      disabled={attendanceLoading || !todayAttendanceAvailability.allowed}
                                     >
                                       <SchoolOutlinedIcon fontSize="small" />
                                     </IconButton>
@@ -661,6 +831,11 @@ export default function TeacherClassesPage() {
               </Typography>
             </DialogTitle>
             <DialogContent dividers sx={{ p: 3 }}>
+              {!selectedSessionAttendanceAvailability.allowed && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  {selectedSessionAttendanceAvailability.reason}
+                </Alert>
+              )}
               {enrollments.length === 0 ? (
                 <Alert severity="info">Chưa có học viên trong lớp.</Alert>
               ) : (
@@ -684,11 +859,14 @@ export default function TeacherClassesPage() {
                                 select
                                 size="small"
                                 value={currentStatus}
+                                disabled={!selectedSessionAttendanceAvailability.allowed || attendanceLoading}
                                 onChange={(e) => {
                                   const newStatus = e.target.value;
                                   setAttendanceForm((prev) => ({ ...prev, [attendanceKey]: newStatus }));
                                   // Auto save
-                                  handleMarkAttendance(enrollment.id, newStatus, sessionAttendanceDialog.session?.attendanceDate || todayIso);
+                                  if (selectedSessionAttendanceAvailability.allowed) {
+                                    handleMarkAttendance(enrollment.id, newStatus, sessionAttendanceDialog.session?.attendanceDate || todayIso);
+                                  }
                                 }}
                                 sx={{ width: 120 }}
                               >

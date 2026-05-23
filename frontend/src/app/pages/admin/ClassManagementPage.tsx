@@ -44,7 +44,7 @@ import {
   People as PeopleIcon,
   School as SchoolIcon,
 } from '@mui/icons-material';
-import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi, resultApi } from '../../../services/api';
+import { branchApi, classApi, courseApi, enrollmentApi, roomApi, userApi, attendanceApi, resultApi, levelApi } from '../../../services/api';
 import { formatDateToDDMMYYYY, formatTimeToHHMM } from '../../utils/dateFormatter';
 
 type ClassItem = {
@@ -58,7 +58,7 @@ type ClassItem = {
   courseName?: string;
   roomName?: string;
   teacherName?: string;
-  schedules?: Array<{ id?: string; dayOfWeek: string; startTime: string; endTime: string }>;
+  schedules?: Array<{ id?: string; scheduleDate?: string; dayOfWeek?: string; startTime: string; endTime: string }>;
 };
 
 type EnrollmentItem = {
@@ -95,6 +95,7 @@ type StudentReport = {
 type ClassForm = {
   name: string;
   courseId: string;
+  levelId: string;
   roomId: string;
   teacherId: string;
   branchId: string;
@@ -105,7 +106,7 @@ type ClassForm = {
 };
 
 type ScheduleForm = {
-  dayOfWeek: string;
+  scheduleDate: string;
   startTime: string;
   endTime: string;
 };
@@ -122,6 +123,7 @@ type ScheduleSessionRow = {
   titleLabel: string;
   materialLabel: string;
   scheduleId?: string;
+  scheduleDate?: string;
   dayOfWeek?: string;
   startTime?: string;
   endTime?: string;
@@ -130,6 +132,7 @@ type ScheduleSessionRow = {
 const defaultForm: ClassForm = {
   name: '',
   courseId: '',
+  levelId: '',
   roomId: '',
   teacherId: '',
   branchId: '',
@@ -139,8 +142,15 @@ const defaultForm: ClassForm = {
   status: 'UPCOMING',
 };
 
+const getDateInputValue = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const defaultScheduleForm: ScheduleForm = {
-  dayOfWeek: 'MONDAY',
+  scheduleDate: getDateInputValue(),
   startTime: '18:00',
   endTime: '20:00',
 };
@@ -167,15 +177,70 @@ const dayOfWeekLabelMap: Record<string, string> = {
   SATURDAY: 'Thứ Bảy',
 };
 
-const formatSessionDateLabel = (date: Date) => {
-  const raw = date.toLocaleDateString('vi-VN', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+const getDayOfWeekFromDate = (dateValue: string) => {
+  const date = new Date(`${dateValue}T00:00:00`);
+  const values = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  return values[date.getDay()] || 'MONDAY';
+};
 
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+const getScheduleSortTime = (scheduleDate: string | undefined, dayOfWeek: string | undefined, startTime: string) => {
+  const [hour = 0, minute = 0] = String(startTime).split(':').map((part) => Number(part));
+  if (scheduleDate) {
+    const date = new Date(`${scheduleDate}T00:00:00`);
+    return date.getTime() + hour * 60 * 60 * 1000 + minute * 60 * 1000;
+  }
+
+  const dayIndex = dayOfWeekIndexMap[(dayOfWeek || 'MONDAY').toUpperCase()] ?? 0;
+  return dayIndex * 24 * 60 + hour * 60 + minute;
+};
+
+const getScheduleDateLabel = (scheduleDate?: string, dayOfWeek?: string) => {
+  if (scheduleDate) {
+    const weekday = dayOfWeekLabelMap[getDayOfWeekFromDate(scheduleDate)] || '';
+    return `${formatDateToDDMMYYYY(scheduleDate)}${weekday ? ` (${weekday})` : ''}`;
+  }
+
+  return dayOfWeekLabelMap[(dayOfWeek || '').toUpperCase()] || dayOfWeek || '-';
+};
+
+const isScheduleDateWithinClassRange = (scheduleDate: string, classItem?: Pick<ClassItem, 'startDate' | 'endDate'> | null) => {
+  if (!scheduleDate || !classItem) {
+    return true;
+  }
+
+  if (classItem.startDate && scheduleDate < classItem.startDate) {
+    return false;
+  }
+
+  if (classItem.endDate && scheduleDate > classItem.endDate) {
+    return false;
+  }
+
+  return true;
+};
+
+const getValidScheduleDateForClass = (classItem?: Pick<ClassItem, 'startDate' | 'endDate'> | null, preferredDate = getDateInputValue()) => {
+  if (!classItem) {
+    return preferredDate;
+  }
+
+  if (classItem.startDate && preferredDate < classItem.startDate) {
+    return classItem.startDate;
+  }
+
+  if (classItem.endDate && preferredDate > classItem.endDate) {
+    return classItem.endDate;
+  }
+
+  return preferredDate;
+};
+
+const getEnrollmentStatusDisplay = (status?: string) => {
+  if (status === 'ACTIVE' || status === 'APPROVED' || status === 'PENDING') {
+    return { label: 'Đang học', color: 'success' as const };
+  }
+
+  return { label: 'Dừng học', color: 'default' as const };
 };
 
 export default function ClassManagementPage() {
@@ -192,6 +257,7 @@ export default function ClassManagementPage() {
   const [targetClassForStatus, setTargetClassForStatus] = useState<ClassItem | null>(null);
   const [selectedNewStatus, setSelectedNewStatus] = useState<string>('');
   const [courses, setCourses] = useState<any[]>([]);
+  const [levels, setLevels] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -262,14 +328,16 @@ export default function ClassManagementPage() {
 
   const fetchOptions = async () => {
     try {
-      const [courseList, roomList, branchList, userPage] = await Promise.all([
+      const [courseList, levelList, roomList, branchList, userPage] = await Promise.all([
         courseApi.getAll(),
+        levelApi.getAll(),
         roomApi.getAll(),
         branchApi.getAll(),
         userApi.getAll({ size: 200, sort: 'fullName,asc' }),
       ]);
 
       setCourses(Array.isArray(courseList) ? courseList : []);
+      setLevels(Array.isArray(levelList) ? levelList : []);
       setRooms(Array.isArray(roomList) ? roomList : []);
       setBranches(Array.isArray(branchList) ? branchList : []);
       setTeachers((userPage?.content || []).filter((user: any) => user.role === 'TEACHER'));
@@ -285,13 +353,26 @@ export default function ClassManagementPage() {
   const fetchClassDetails = async (classId: string) => {
     try {
       setDetailLoading(true);
-      const [enrollmentResponse, attendanceResponse] = await Promise.all([
-        enrollmentApi.getByClass(classId),
-        attendanceApi.getByClass(classId, todayIso),
+      const [classRes, schedRes, enrollmentResponse, attendanceResponse] = await Promise.all([
+        classApi.getById(classId).catch(() => null),
+        classApi.getSchedule(classId).catch(() => null),
+        enrollmentApi.getByClass(classId).catch(() => ({ data: [] })),
+        attendanceApi.getByClass(classId, todayIso).catch(() => ({ data: [] })),
       ]);
 
-      setEnrollments(Array.isArray(enrollmentResponse.data) ? enrollmentResponse.data : []);
-      setAttendance(Array.isArray(attendanceResponse.data) ? attendanceResponse.data : []);
+      const classData = classRes?.data || {};
+      const scheduleData = Array.isArray(schedRes?.data) ? schedRes.data : Array.isArray(classData?.schedules) ? classData.schedules : [];
+      const enrollmentData = Array.isArray(enrollmentResponse?.data) ? enrollmentResponse.data : [];
+      setSelectedClass((prev) => (prev ? { ...prev, ...classData, schedules: scheduleData } : prev));
+      setEnrollments(enrollmentData);
+      setClasses((prev) =>
+        prev.map((item) =>
+          item.id === classId
+            ? { ...item, ...classData, schedules: scheduleData, currentStudents: enrollmentData.length }
+            : item
+        )
+      );
+      setAttendance(Array.isArray(attendanceResponse?.data) ? attendanceResponse.data : []);
     } catch (error: any) {
       setSnackbar({
         open: true,
@@ -346,12 +427,19 @@ export default function ClassManagementPage() {
     return result;
   }, [classes, searchQuery, statusFilter, courseFilter, sortBy]);
 
+  const selectedCourseLevels = useMemo(() => {
+    const selectedCourse = courses.find((course) => course.id === form.courseId);
+    const embeddedLevels = Array.isArray(selectedCourse?.levels) ? selectedCourse.levels : [];
+    const flatLevels = levels.filter((level) => level.courseId === form.courseId);
+    return embeddedLevels.length > 0 ? embeddedLevels : flatLevels;
+  }, [courses, levels, form.courseId]);
+
   const handleCreate = async () => {
     try {
       setSubmitting(true);
       await classApi.create({
         name: form.name,
-        courseId: form.courseId,
+        levelId: form.levelId,
         roomId: form.roomId,
         teacherId: form.teacherId,
         branchId: form.branchId,
@@ -412,17 +500,18 @@ export default function ClassManagementPage() {
     }
   };
 
-  const openScheduleDialog = (classId: string, schedule?: { id?: string; dayOfWeek: string; startTime: string; endTime: string }) => {
+  const openScheduleDialog = (classId: string, schedule?: { id?: string; scheduleDate?: string; dayOfWeek?: string; startTime: string; endTime: string }) => {
+    const targetClass = classes.find((item) => item.id === classId) || activeClass;
     setScheduleMode(schedule ? 'edit' : 'create');
     setScheduleDialog({ open: true, classId, scheduleId: schedule?.id });
     setScheduleForm(
       schedule
         ? {
-          dayOfWeek: schedule.dayOfWeek,
+          scheduleDate: schedule.scheduleDate || getValidScheduleDateForClass(targetClass),
           startTime: formatTimeToHHMM(schedule.startTime),
           endTime: formatTimeToHHMM(schedule.endTime),
         }
-        : defaultScheduleForm
+        : { ...defaultScheduleForm, scheduleDate: getValidScheduleDateForClass(targetClass) }
     );
   };
 
@@ -434,16 +523,28 @@ export default function ClassManagementPage() {
       if (!targetClassId) {
         throw new Error('Không tìm thấy lớp học để lưu lịch');
       }
+      if (!scheduleForm.scheduleDate) {
+        throw new Error('Vui lòng chọn ngày học');
+      }
+
+      if (!isScheduleDateWithinClassRange(scheduleForm.scheduleDate, scheduleTargetClass)) {
+        throw new Error(`NgÃ y há»c pháº£i náº±m trong khoáº£ng tá»« ${formatDateToDDMMYYYY(scheduleTargetClass?.startDate)} Ä‘áº¿n ${formatDateToDDMMYYYY(scheduleTargetClass?.endDate)}`);
+      }
+
+      const payload = {
+        ...scheduleForm,
+        dayOfWeek: getDayOfWeekFromDate(scheduleForm.scheduleDate),
+      };
 
       if (scheduleMode === 'edit' && scheduleDialog.scheduleId) {
-        await classApi.updateSchedule(targetClassId, scheduleDialog.scheduleId, scheduleForm);
+        await classApi.updateSchedule(targetClassId, scheduleDialog.scheduleId, payload);
         setSnackbar({ open: true, message: 'Cập nhật lịch học thành công', severity: 'success' });
       } else {
-        await classApi.addSchedule(targetClassId, scheduleForm);
+        await classApi.addSchedule(targetClassId, payload);
         setSnackbar({ open: true, message: 'Thêm lịch học thành công', severity: 'success' });
       }
       setScheduleDialog({ open: false, classId: '' });
-      setScheduleForm(defaultScheduleForm);
+      setScheduleForm({ ...defaultScheduleForm, scheduleDate: getDateInputValue() });
       await fetchClasses();
       if (selectedClassId) {
         await fetchClassDetails(selectedClassId);
@@ -462,7 +563,7 @@ export default function ClassManagementPage() {
   const handleDeleteSchedule = async (classId: string, scheduleId: string) => {
     try {
       await classApi.deleteSchedule(classId, scheduleId);
-      setSnackbar({ open: true, message: 'Xóa buổi học thành công', severity: 'success' });
+      setSnackbar({ open: true, message: 'Xóa lịch học thành công', severity: 'success' });
       await fetchClasses();
       if (selectedClassId) {
         await fetchClassDetails(selectedClassId);
@@ -470,7 +571,7 @@ export default function ClassManagementPage() {
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error?.response?.data?.message || 'Không thể xóa buổi học',
+        message: error?.response?.data?.message || 'Không thể xóa lịch học',
         severity: 'error',
       });
     }
@@ -541,67 +642,22 @@ export default function ClassManagementPage() {
   }, [attendance]);
 
   const activeClass = classes.find((item) => item.id === selectedClassId) || selectedClass;
+  const scheduleTargetClass = classes.find((item) => item.id === (scheduleDialog.classId || selectedClassId)) || activeClass;
+  const scheduleDateRangeError =
+    scheduleForm.scheduleDate && !isScheduleDateWithinClassRange(scheduleForm.scheduleDate, scheduleTargetClass)
+      ? `Ngày học phải nằm trong khoảng từ ${formatDateToDDMMYYYY(scheduleTargetClass?.startDate)} đến ${formatDateToDDMMYYYY(scheduleTargetClass?.endDate)}`
+      : '';
 
   const scheduleSessionRows = useMemo<ScheduleSessionRow[]>(() => {
     if (!activeClass?.schedules?.length) {
       return [];
     }
 
-    const rows: ScheduleSessionRow[] = [];
-
-    const startDate = activeClass.startDate ? new Date(`${activeClass.startDate}T00:00:00`) : null;
-    const endDate = activeClass.endDate ? new Date(`${activeClass.endDate}T23:59:59`) : null;
-
-    const validRange = startDate && endDate && !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && startDate <= endDate;
-
-    // If we have a valid start/end range, expand schedules into actual occurrences
-    if (validRange) {
-      activeClass.schedules.forEach((schedule) => {
-        const targetDay = dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()];
-        if (targetDay === undefined) {
-          return;
-        }
-
-        const firstOccurrence = new Date(startDate as Date);
-        const daysUntilFirstOccurrence = (targetDay - firstOccurrence.getDay() + 7) % 7;
-        firstOccurrence.setDate(firstOccurrence.getDate() + daysUntilFirstOccurrence);
-
-        for (let occurrence = new Date(firstOccurrence); occurrence <= (endDate as Date); occurrence.setDate(occurrence.getDate() + 7)) {
-          const occurrenceDateKey = [
-            occurrence.getFullYear(),
-            String(occurrence.getMonth() + 1).padStart(2, '0'),
-            String(occurrence.getDate()).padStart(2, '0'),
-          ].join('-');
-
-          rows.push({
-            key: `${schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`}-${occurrenceDateKey}`,
-            sortTime: occurrence.getTime(),
-            dateLabel: formatSessionDateLabel(new Date(occurrence)),
-            timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
-            roomLabel: activeClass.roomName || '-',
-            formatLabel: activeClass.roomName ? 'Trực tiếp' : 'Online',
-            attendanceLabel: 'Chưa điểm danh',
-            teacherLabel: activeClass.teacherName || '-',
-            titleLabel: activeClass.name || activeClass.courseName || '-',
-            materialLabel: '-',
-            scheduleId: schedule.id,
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-          });
-        }
-      });
-
-      return rows.sort((left, right) => left.sortTime - right.sortTime);
-    }
-
-    // Fallback: no valid start/end range — show weekly schedule definitions instead
-    activeClass.schedules.forEach((schedule) => {
-      const labelDay = dayOfWeekLabelMap[schedule.dayOfWeek.toUpperCase()] || schedule.dayOfWeek;
-      rows.push({
-        key: schedule.id || `${schedule.dayOfWeek}-${schedule.startTime}`,
-        sortTime: dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()] || 0,
-        dateLabel: labelDay,
+    return activeClass.schedules.map((schedule) => {
+      return {
+        key: schedule.id || `${schedule.scheduleDate || schedule.dayOfWeek}-${schedule.startTime}`,
+        sortTime: getScheduleSortTime(schedule.scheduleDate, schedule.dayOfWeek, schedule.startTime),
+        dateLabel: getScheduleDateLabel(schedule.scheduleDate, schedule.dayOfWeek),
         timeLabel: `${formatTimeToHHMM(schedule.startTime)} - ${formatTimeToHHMM(schedule.endTime)}`,
         roomLabel: activeClass.roomName || '-',
         formatLabel: activeClass.roomName ? 'Trực tiếp' : 'Online',
@@ -610,13 +666,12 @@ export default function ClassManagementPage() {
         titleLabel: activeClass.name || activeClass.courseName || '-',
         materialLabel: '-',
         scheduleId: schedule.id,
+        scheduleDate: schedule.scheduleDate,
         dayOfWeek: schedule.dayOfWeek,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-      });
-    });
-
-    return rows.sort((l, r) => l.sortTime - r.sortTime);
+      };
+    }).sort((left, right) => left.sortTime - right.sortTime);
   }, [activeClass]);
 
   return (
@@ -627,7 +682,7 @@ export default function ClassManagementPage() {
             Quản lý Lớp học
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Xem chi tiết buổi học, danh sách học viên và điều chỉnh lịch học cho các lớp.
+            Xem lịch học, danh sách học viên và điều chỉnh thông tin lớp học.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenDialog(true)} sx={{ borderRadius: 2, px: 3, py: 1, fontWeight: 700 }}>
@@ -716,8 +771,8 @@ export default function ClassManagementPage() {
         <Grid container spacing={3}>
           {filteredClasses.map((cls) => {
             const scheduleCount = cls.schedules?.length || 0;
-            const enrolCount = cls.id === selectedClassId ? enrollments.length : undefined;
-            const fillRate = cls.maxStudents ? Math.min(100, Math.round(((enrolCount || 0) / cls.maxStudents) * 100)) : 0;
+            const enrolCount = cls.id === selectedClassId ? enrollments.length : (cls.currentStudents ?? 0);
+            const fillRate = cls.maxStudents ? Math.min(100, Math.round((enrolCount / cls.maxStudents) * 100)) : 0;
             const lifecycleIndex = getLifecycleIndex(cls.status);
             const lifecyclePct = Math.min(100, Math.round((lifecycleIndex / 3) * 100));
 
@@ -761,7 +816,7 @@ export default function ClassManagementPage() {
                       </Grid>
                       <Grid item xs={4}>
                         <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                          <Typography variant="h6" fontWeight={800}>{enrolCount ?? '-'}</Typography>
+                          <Typography variant="h6" fontWeight={800}>{enrolCount}</Typography>
                           <Typography variant="caption" color="text.secondary" fontWeight={600}>Học viên</Typography>
                         </Box>
                       </Grid>
@@ -843,7 +898,13 @@ export default function ClassManagementPage() {
       )}
 
       {/* Class Details Dialog */}
-      <Dialog open={!!selectedClass} onClose={() => setSelectedClass(null)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+      <Dialog
+        open={!!selectedClass}
+        onClose={() => setSelectedClass(null)}
+        maxWidth={false}
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4, width: 'min(1200px, calc(100vw - 64px))', maxWidth: 'none' } }}
+      >
         <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2} alignItems={isMobile ? 'flex-start' : 'center'}>
             <Box>
@@ -863,10 +924,21 @@ export default function ClassManagementPage() {
           </Stack>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={4}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+          <Box sx={{ p: 3, maxWidth: 1120, mx: 'auto' }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+                gap: 3,
+                mb: 4,
+                alignItems: 'stretch',
+              }}
+            >
+              <Box sx={{ display: 'flex' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                >
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>HỌC VIÊN HIỆN TẠI</Typography>
                   <Typography variant="h4" fontWeight={900}>{enrollments.length} / {activeClass?.maxStudents || '-'}</Typography>
                   <LinearProgress
@@ -875,16 +947,22 @@ export default function ClassManagementPage() {
                     sx={{ mt: 2, height: 8, borderRadius: 4 }}
                   />
                 </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>TỔNG BUỔI HỌC</Typography>
+              </Box>
+              <Box sx={{ display: 'flex' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                >
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>KHUNG LỊCH HỌC</Typography>
                   <Typography variant="h4" fontWeight={900}>{scheduleSessionRows.length}</Typography>
-                  <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Buổi học</Typography>
+                  <Typography variant="body2" color="primary" fontWeight={700} sx={{ mt: 1 }}>Lịch/tuần</Typography>
                 </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, textAlign: 'center' }}>
+              </Box>
+              <Box sx={{ display: 'flex' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 3, textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                >
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" gutterBottom>THỜI GIAN KHÓA HỌC</Typography>
                   <Typography variant="h6" fontWeight={800}>
                     {formatDateToDDMMYYYY(activeClass?.startDate)}
@@ -894,13 +972,22 @@ export default function ClassManagementPage() {
                     {formatDateToDDMMYYYY(activeClass?.endDate)}
                   </Typography>
                 </Paper>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
 
             <Tabs
               value={detailTab}
               onChange={(_, value) => setDetailTab(value)}
-              sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                mb: 3,
+                '& .MuiTabs-flexContainer': {
+                  justifyContent: { xs: 'flex-start', md: 'center' },
+                },
+              }}
             >
               <Tab label="Lịch học chi tiết" sx={{ fontWeight: 700 }} />
               <Tab label="Danh sách học viên" sx={{ fontWeight: 700 }} />
@@ -912,40 +999,42 @@ export default function ClassManagementPage() {
                 <CircularProgress />
               </Box>
             ) : detailTab === 0 ? (
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={3}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', lg: 'minmax(320px, 0.95fr) minmax(0, 1.35fr)' },
+                  gap: 3,
+                  alignItems: 'start',
+                }}
+              >
+                <Box>
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.01)' }}>
                     <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2.5 }}>
                       {scheduleMode === 'edit' ? 'Cập nhật lịch học' : 'Thêm lịch học mới'}
                     </Typography>
                     <Box
                       sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
+                        display: 'grid',
+                        gridTemplateColumns: '1fr',
                         gap: 1.5,
-                        alignItems: { xs: 'stretch', md: 'flex-end' },
+                        alignItems: 'stretch',
                         p: 1.5,
                         borderRadius: 3,
                         bgcolor: 'rgba(25, 118, 210, 0.03)',
                         border: '1px solid rgba(25, 118, 210, 0.10)',
                       }}
                     >
-                      <TextField
-                        select
-                        fullWidth
-                        label="Ngày trong tuần"
-                        value={scheduleForm.dayOfWeek}
-                        onChange={(e) => setScheduleForm((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
-                        sx={{ flex: { md: '1.2 1 0%' }, minWidth: { md: 220 } }}
-                      >
-                        <MenuItem value="MONDAY">Thứ Hai</MenuItem>
-                        <MenuItem value="TUESDAY">Thứ Ba</MenuItem>
-                        <MenuItem value="WEDNESDAY">Thứ Tư</MenuItem>
-                        <MenuItem value="THURSDAY">Thứ Năm</MenuItem>
-                        <MenuItem value="FRIDAY">Thứ Sáu</MenuItem>
-                        <MenuItem value="SATURDAY">Thứ Bảy</MenuItem>
-                        <MenuItem value="SUNDAY">Chủ Nhật</MenuItem>
-                      </TextField>
+            <TextField
+              type="date"
+              fullWidth
+              label="Ngày học"
+              value={scheduleForm.scheduleDate}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, scheduleDate: e.target.value }))}
+              inputProps={{ min: scheduleTargetClass?.startDate, max: scheduleTargetClass?.endDate }}
+              error={Boolean(scheduleDateRangeError)}
+              helperText={scheduleDateRangeError || ' '}
+              InputLabelProps={{ shrink: true }}
+            />
                       <TextField
                         type="time"
                         fullWidth
@@ -953,7 +1042,6 @@ export default function ClassManagementPage() {
                         value={scheduleForm.startTime}
                         onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
                         InputLabelProps={{ shrink: true }}
-                        sx={{ flex: { md: '0.9 1 0%' }, minWidth: { md: 170 } }}
                       />
                       <TextField
                         type="time"
@@ -962,11 +1050,11 @@ export default function ClassManagementPage() {
                         value={scheduleForm.endTime}
                         onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
                         InputLabelProps={{ shrink: true }}
-                        sx={{ flex: { md: '0.9 1 0%' }, minWidth: { md: 170 } }}
                       />
                       <Button
                         variant="contained"
                         fullWidth
+                        disabled={scheduleSubmitting || Boolean(scheduleDateRangeError)}
                         onClick={() => void handleSaveSchedule()}
                         sx={{
                           borderRadius: 2,
@@ -975,20 +1063,19 @@ export default function ClassManagementPage() {
                           minHeight: 56,
                           whiteSpace: 'nowrap',
                           px: 3,
-                          flex: { md: '0 0 180px' },
                         }}
                       >
-                        {scheduleMode === 'edit' ? 'Lưu thay đổi' : 'Thêm vào lịch'}
+                        {scheduleSubmitting ? 'Đang lưu...' : scheduleMode === 'edit' ? 'Lưu thay đổi' : 'Thêm vào lịch'}
                       </Button>
                     </Box>
                   </Paper>
-                </Grid>
-                <Grid item xs={12} md={9}>
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                    <Typography variant="subtitle1" fontWeight={800}>Lịch học chi tiết theo từng buổi</Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                      Tổng số: {scheduleSessionRows.length}
-                    </Typography>
+                    <Typography variant="subtitle1" fontWeight={800}>Khung lịch học trong tuần</Typography>
+                    <Stack direction="row" spacing={2} alignItems="center"><Typography variant="body2" color="text.secondary" fontWeight={600}>Tổng số: {scheduleSessionRows.length}</Typography><Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => openScheduleDialog(selectedClassId || activeClass?.id || '')} sx={{ borderRadius: 2, fontWeight: 700 }}>Thêm lịch</Button></Stack>
+
+
                   </Stack>
                   {scheduleSessionRows.length ? (
                     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, maxHeight: 560 }}>
@@ -997,13 +1084,14 @@ export default function ClassManagementPage() {
                           <TableRow>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>TT</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Ngày học</TableCell>
-                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Tiết học</TableCell>
+                            <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Giờ học</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Phòng học</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Hình thức</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Điểm danh</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Giảng viên</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Tiêu đề</TableCell>
                             <TableCell sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Học liệu</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 800, whiteSpace: 'nowrap' }}>Hành động</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -1043,6 +1131,7 @@ export default function ClassManagementPage() {
                                                 e.stopPropagation();
                                                 openScheduleDialog(selectedClassId || activeClass?.id || '', {
                                                   id: session.scheduleId,
+                                                  scheduleDate: session.scheduleDate,
                                                   dayOfWeek: session.dayOfWeek || 'MONDAY',
                                                   startTime: session.startTime || '18:00',
                                                   endTime: session.endTime || '20:00',
@@ -1058,8 +1147,8 @@ export default function ClassManagementPage() {
                                                 e.stopPropagation();
                                                 const idToDelete = session.scheduleId || String(session.key).split('-')[0];
                                                 if (!idToDelete) return;
-                                                if (window.confirm('Bạn có chắc chắn muốn xóa buổi học này?')) {
-                                                  void handleDeleteSchedule(idToDelete);
+                                                if (window.confirm('Bạn có chắc chắn muốn xóa lịch học này?')) {
+                                                  void handleDeleteSchedule(selectedClassId || activeClass?.id || '', idToDelete);
                                                 }
                                               }}
                                             >
@@ -1075,8 +1164,8 @@ export default function ClassManagementPage() {
                   ) : (
                     <Alert severity="info" sx={{ borderRadius: 2 }}>Lớp học này chưa được xếp lịch.</Alert>
                   )}
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             ) : detailTab === 1 ? (
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -1098,13 +1187,15 @@ export default function ClassManagementPage() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {enrollments.map((item) => (
+                        {enrollments.map((item) => {
+                          const enrollmentStatusDisplay = getEnrollmentStatusDisplay(item.status);
+                          return (
                           <TableRow key={item.id} hover>
                             <TableCell sx={{ fontWeight: 700 }}>{item.studentName}</TableCell>
                             <TableCell sx={{ color: 'text.secondary' }}>{item.studentId}</TableCell>
                             <TableCell>{formatDateToDDMMYYYY(item.enrollmentDate)}</TableCell>
                             <TableCell>
-                              <Chip size="small" label={item.status === 'ACTIVE' ? 'Đang học' : 'Dừng học'} color={item.status === 'ACTIVE' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                              <Chip size="small" label={enrollmentStatusDisplay.label} color={enrollmentStatusDisplay.color} sx={{ fontWeight: 700 }} />
                             </TableCell>
                             <TableCell align="right">
                               <Button size="small" variant="text" onClick={() => void handleOpenStudent(item)} sx={{ fontWeight: 700 }}>
@@ -1112,7 +1203,7 @@ export default function ClassManagementPage() {
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )})}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -1159,7 +1250,7 @@ export default function ClassManagementPage() {
       </Dialog>
 
       {/* Create Class Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 4, width: 'min(960px, calc(100vw - 32px))' } }}>
         <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>Tạo lớp học mới</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -1170,36 +1261,51 @@ export default function ClassManagementPage() {
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
             />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Khóa học"
-                  value={form.courseId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value }))}
-                >
-                  {courses.map((course) => (
-                    <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Giảng viên"
-                  value={form.teacherId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
-                >
-                  {teachers.map((teacher) => (
-                    <MenuItem value={teacher.id} key={teacher.id}>{teacher.fullName || teacher.email}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              select
+              label="Chương trình học"
+              value={form.courseId}
+              onChange={(e) => setForm((prev) => ({ ...prev, courseId: e.target.value, levelId: '' }))}
+            >
+              {courses.map((course) => (
+                <MenuItem value={course.id} key={course.id}>{course.name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              select
+              label="Mức độ"
+              value={form.levelId}
+              onChange={(e) => setForm((prev) => ({ ...prev, levelId: e.target.value }))}
+              disabled={!form.courseId}
+              helperText={!form.courseId ? 'Vui lòng chọn chương trình trước khi chọn mức độ' : ' '}
+            >
+              {selectedCourseLevels.map((level: any) => (
+                <MenuItem value={level.id} key={level.id}>
+                  {level.name || level.code} {level.basePrice ? `- ${Number(level.basePrice).toLocaleString('vi-VN')}đ` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              select
+              label="Giảng viên"
+              value={form.teacherId}
+              onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
+            >
+              {teachers.map((teacher) => (
+                <MenuItem value={teacher.id} key={teacher.id}>{teacher.fullName || teacher.email}</MenuItem>
+              ))}
+            </TextField>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2,
+                '& .MuiTextField-root': { minWidth: 0 },
+              }}
+            >
                 <TextField
                   fullWidth
                   select
@@ -1211,9 +1317,7 @@ export default function ClassManagementPage() {
                     <MenuItem value={room.id} key={room.id}>{room.name} ({room.capacity} chỗ)</MenuItem>
                   ))}
                 </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              <TextField
                   fullWidth
                   select
                   label="Chi nhánh"
@@ -1223,11 +1327,16 @@ export default function ClassManagementPage() {
                   {branches.map((branch) => (
                     <MenuItem value={branch.id} key={branch.id}>{branch.name}</MenuItem>
                   ))}
-                </TextField>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              </TextField>
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2,
+                '& .MuiTextField-root': { minWidth: 0 },
+              }}
+            >
                 <TextField
                   fullWidth
                   type="date"
@@ -1236,20 +1345,23 @@ export default function ClassManagementPage() {
                   value={form.startDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              <TextField
                   fullWidth
                   type="date"
                   label="Ngày kết thúc (dự kiến)"
                   InputLabelProps={{ shrink: true }}
                   value={form.endDate}
                   onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
-                />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              />
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2,
+                '& .MuiTextField-root': { minWidth: 0 },
+              }}
+            >
                 <TextField
                   fullWidth
                   type="number"
@@ -1257,9 +1369,7 @@ export default function ClassManagementPage() {
                   value={form.maxStudents}
                   onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              <TextField
                   fullWidth
                   select
                   label="Trạng thái khởi tạo"
@@ -1268,14 +1378,13 @@ export default function ClassManagementPage() {
                 >
                   <MenuItem value="UPCOMING">Chờ khai giảng</MenuItem>
                   <MenuItem value="ACCEPTING">Đang tuyển sinh</MenuItem>
-                </TextField>
-              </Grid>
-            </Grid>
+              </TextField>
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={() => setOpenDialog(false)} color="inherit" sx={{ fontWeight: 700 }}>Hủy</Button>
-          <Button variant="contained" disabled={submitting} onClick={() => void handleCreate()} sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}>
+          <Button variant="contained" disabled={submitting || !form.courseId || !form.levelId} onClick={() => void handleCreate()} sx={{ px: 4, borderRadius: 2, fontWeight: 700 }}>
             {submitting ? 'Đang xử lý...' : 'Xác nhận tạo lớp'}
           </Button>
         </DialogActions>
@@ -1322,6 +1431,60 @@ export default function ClassManagementPage() {
             sx={{ borderRadius: 2, fontWeight: 700 }}
           >
             Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Edit/Create Dialog */}
+      <Dialog open={scheduleDialog.open} onClose={() => setScheduleDialog({ open: false, classId: '' })} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <DialogTitle sx={{ p: 3, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Typography variant="h6" fontWeight={800} color="primary.main">
+            {scheduleMode === 'edit' ? 'Cập nhật lịch học' : 'Thêm lịch học mới'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              type="date"
+              fullWidth
+              label="Ngày học"
+              value={scheduleForm.scheduleDate}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, scheduleDate: e.target.value }))}
+              inputProps={{ min: scheduleTargetClass?.startDate, max: scheduleTargetClass?.endDate }}
+              error={Boolean(scheduleDateRangeError)}
+              helperText={scheduleDateRangeError || ' '}
+              InputLabelProps={{ shrink: true }}
+              sx={{ borderRadius: 2 }}
+            />
+            <TextField
+              type="time"
+              fullWidth
+              label="Giờ bắt đầu"
+              value={scheduleForm.startTime}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              type="time"
+              fullWidth
+              label="Giờ kết thúc"
+              value={scheduleForm.endTime}
+              onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setScheduleDialog({ open: false, classId: '' })} sx={{ borderRadius: 2, fontWeight: 700 }}>
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            disabled={scheduleSubmitting || Boolean(scheduleDateRangeError)}
+            onClick={() => void handleSaveSchedule()}
+            sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
+          >
+            {scheduleSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
           </Button>
         </DialogActions>
       </Dialog>

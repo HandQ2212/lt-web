@@ -13,6 +13,13 @@ import java.util.List;
 
 public class ChatbotDto {
 
+    public enum ChatTaskStatus {
+        PENDING,
+        RUNNING,
+        SUCCESS,
+        FAILED
+    }
+
     @Data
     @Builder
     @AllArgsConstructor
@@ -50,6 +57,32 @@ public class ChatbotDto {
     public static class ChatMessageResponse {
         private String message;
         private String source;
+        private ZonedDateTime timestamp;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChatTaskAcceptedResponse {
+        private String taskId;
+        private ChatTaskStatus status;
+        private long pollAfterMs;
+        private ZonedDateTime submittedAt;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChatTaskStatusResponse {
+        private String taskId;
+        private ChatTaskStatus status;
+        private String message;
+        private String source;
+        private String error;
+        private ZonedDateTime submittedAt;
+        private ZonedDateTime completedAt;
         private ZonedDateTime timestamp;
     }
 }

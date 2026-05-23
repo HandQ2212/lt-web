@@ -44,7 +44,7 @@ import {
 } from '@mui/icons-material';
 import { classApi, leadApi } from '../../../services/api';
 
-type LeadStatus = 'NEW' | 'INTERESTED' | 'CONSULTING' | 'AGREED' | 'PAID' | 'CONVERTED' | 'REJECTED';
+type LeadStatus = 'NEW' | 'INTERESTED' | 'CONSULTING' | 'CONTACTED' | 'AGREED' | 'PAID' | 'CONVERTED' | 'REJECTED';
 
 type LeadInterest = {
   id: string;
@@ -76,6 +76,7 @@ const stages: Array<{ id: LeadStatus; title: string; color: string }> = [
   { id: 'AGREED', title: 'Chờ thanh toán', color: '#fff9c4' },
   { id: 'PAID', title: 'Đã thanh toán', color: '#e8f5e9' },
   { id: 'CONVERTED', title: 'Đã nhập học', color: '#f3e5f5' },
+  { id: 'REJECTED', title: 'Đã từ chối', color: '#ffebee' },
 ];
 
 export default function LeadManagementPage() {
@@ -125,7 +126,7 @@ export default function LeadManagementPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await leadApi.getAll({ size: 100 });
+      const response = await leadApi.getAll({ size: 30 });
 
       let leadsData: LeadItem[] = [];
       if (Array.isArray(response)) {
@@ -149,12 +150,27 @@ export default function LeadManagementPage() {
     }
   };
 
+  const normalizeLeadStatus = (status?: LeadStatus | string): LeadStatus => {
+    if (status === 'CONTACTED') return 'CONSULTING';
+    return (status || 'NEW') as LeadStatus;
+  };
+
+  const getLeadStatusLabel = (status?: LeadStatus | string) => {
+    switch (normalizeLeadStatus(status)) {
+      case 'NEW': return 'Khách hàng mới';
+      case 'INTERESTED': return 'Chờ tư vấn';
+      case 'CONSULTING': return 'Đang tư vấn';
+      case 'AGREED': return 'Chờ thanh toán';
+      case 'PAID': return 'Đã thanh toán';
+      case 'CONVERTED': return 'Đã nhập học';
+      case 'REJECTED': return 'Đã từ chối';
+      default: return status || 'Không xác định';
+    }
+  };
+
   const getLeadsByStatus = (status: LeadStatus) => {
     return leads.filter((lead) => {
-      if (status === 'CONSULTING') {
-        return lead.status === 'CONSULTING' || (lead.status as any) === 'CONTACTED';
-      }
-      return lead.status === status;
+      return normalizeLeadStatus(lead.status) === status;
     });
   };
 
@@ -356,7 +372,7 @@ export default function LeadManagementPage() {
                               </TableCell>
                               <TableCell align="right">
                                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                  {lead.status === 'INTERESTED' && (
+                                  {normalizeLeadStatus(lead.status) === 'INTERESTED' && (
                                     <Tooltip title="Bắt đầu tư vấn">
                                       <IconButton
                                         color="primary"
@@ -370,7 +386,7 @@ export default function LeadManagementPage() {
                                     </Tooltip>
                                   )}
 
-                                  {lead.status === 'CONSULTING' && (
+                                  {normalizeLeadStatus(lead.status) === 'CONSULTING' && (
                                     <>
                                       <Button
                                         size="small"
@@ -396,7 +412,7 @@ export default function LeadManagementPage() {
                                     </>
                                   )}
 
-                                  {lead.status === 'AGREED' && (
+                                  {normalizeLeadStatus(lead.status) === 'AGREED' && (
                                     <>
                                       <Button
                                         size="small"
@@ -419,7 +435,7 @@ export default function LeadManagementPage() {
                                     </>
                                   )}
 
-                                  {lead.status === 'PAID' && (
+                                  {normalizeLeadStatus(lead.status) === 'PAID' && (
                                     <Button
                                       size="small"
                                       variant="contained"
@@ -433,7 +449,7 @@ export default function LeadManagementPage() {
                                     </Button>
                                   )}
 
-                                  {lead.status === 'CONVERTED' && (
+                                  {normalizeLeadStatus(lead.status) === 'CONVERTED' && (
                                     <Chip
                                       label="Đã nhập học"
                                       color="success"
@@ -487,7 +503,7 @@ export default function LeadManagementPage() {
           </Typography>
 
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 select
@@ -512,7 +528,7 @@ export default function LeadManagementPage() {
             </Grid>
 
             {agreeClassId && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)', borderRadius: 3, borderStyle: 'dashed' }}>
                   <Typography variant="subtitle2" color="primary" gutterBottom fontWeight={700}>
                     Thông tin lớp học:
@@ -525,7 +541,7 @@ export default function LeadManagementPage() {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Typography variant="body2" color="text.secondary">Học phí:</Typography>
                           <Typography variant="body2" fontWeight={800} color="error.main">
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selected.price || 0)}
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(selected.basePrice ?? selected.price ?? 0))}
                           </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -563,7 +579,7 @@ export default function LeadManagementPage() {
             <Box>
               <Typography variant="h6" fontWeight={700}>{selectedLead.fullName}</Typography>
               <Typography variant="body2" color="text.secondary">Số điện thoại liên hệ: {selectedLead.phone}</Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Trạng thái hiện tại: {selectedLead.status}</Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>Trạng thái hiện tại: {getLeadStatusLabel(selectedLead.status)}</Typography>
 
               <Divider sx={{ my: 2 }} />
 

@@ -7,6 +7,7 @@ import com.elc.system.modules.finance.dto.InvoiceDto.InvoiceResponse;
 import com.elc.system.modules.finance.entity.Invoice;
 import com.elc.system.modules.finance.entity.InvoiceStatus;
 import com.elc.system.modules.finance.repository.InvoiceRepository;
+import com.elc.system.modules.lms.entity.EnrollmentStatus;
 import com.elc.system.modules.finance.repository.PaymentRepository;
 import com.elc.system.modules.lms.entity.Enrollment;
 import com.elc.system.modules.lms.repository.EnrollmentRepository;
@@ -74,7 +75,33 @@ public class InvoiceService {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found"));
         invoice.setStatus(status);
+        if (status == InvoiceStatus.PAID) {
+            activateEnrollmentIfApplicable(invoice.getEnrollment());
+        }
         invoiceRepository.save(invoice);
+    }
+
+    private void activateEnrollmentIfApplicable(Enrollment enrollment) {
+        if (enrollment == null) {
+            return;
+        }
+
+        if (enrollment.getStatus() == EnrollmentStatus.PENDING
+                || enrollment.getStatus() == EnrollmentStatus.APPROVED) {
+            enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        }
+    }
+
+    @Transactional
+    public void deleteInvoice(UUID id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+
+        if (paymentRepository.existsByInvoiceId(id)) {
+            throw new RuntimeException("Không thể xóa hóa đơn đã có thanh toán");
+        }
+
+        invoiceRepository.delete(invoice);
     }
 
     @Transactional(readOnly = true)

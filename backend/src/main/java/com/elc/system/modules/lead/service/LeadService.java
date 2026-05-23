@@ -41,11 +41,16 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -233,8 +238,12 @@ public class LeadService {
         ZonedDateTime to = toDate != null
                 ? toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1)
                 : null;
-        return leadRepository.findAll(buildLeadSpecification(status, source, from, to), normalizeLeadPageable(pageable))
-                .map(this::mapToResponse);
+        Page<Lead> leadPage = leadRepository.findAll(
+                buildLeadSpecification(status, source, from, to),
+                normalizeLeadPageable(pageable)
+        );
+        LeadBatchContext batchContext = buildBatchContext(leadPage.getContent());
+        return leadPage.map(lead -> mapToResponse(lead, batchContext));
     }
 
     @Transactional(readOnly = true)
@@ -426,21 +435,25 @@ public class LeadService {
     }
 
     private LeadResponse mapToResponse(Lead lead) {
+        return mapToResponse(lead, null);
+    }
+
+    private LeadResponse mapToResponse(Lead lead, LeadBatchContext batchContext) {
         UUID userId = null;
         UUID enrollmentId = null;
         UUID invoiceId = null;
-        Optional<User> linkedUser = findLinkedUser(lead);
-        List<LeadInterestResponse> interests = leadInterestRepository.findByLeadIdOrderByCreatedAtDesc(lead.getId()).stream()
+        Optional<User> linkedUser = findLinkedUser(lead, batchContext);
+        List<LeadInterestResponse> interests = resolveLeadInterests(lead, batchContext).stream()
                 .map(this::mapInterestToResponse)
                 .toList();
 
         if (linkedUser.isPresent()) {
             userId = linkedUser.get().getId();
-            List<Enrollment> enrollments = enrollmentRepository.findByStudentId(userId);
+            List<Enrollment> enrollments = resolveEnrollments(userId, batchContext);
             if (!enrollments.isEmpty()) {
                 Enrollment latest = enrollments.get(enrollments.size() - 1);
                 enrollmentId = latest.getId();
-                List<Invoice> invoices = invoiceRepository.findByEnrollmentId(enrollmentId);
+                List<Invoice> invoices = resolveInvoices(enrollmentId, batchContext);
                 if (!invoices.isEmpty()) {
                     invoiceId = invoices.get(invoices.size() - 1).getId();
                 }
@@ -487,6 +500,122 @@ public class LeadService {
                 .notes(interest.getNotes())
                 .createdAt(interest.getCreatedAt())
                 .build();
+    }
+
+    private LeadBatchContext buildBatchContext(List<Lead> leads) {
+        if (leads == null || leads.isEmpty()) {
+            return LeadBatchContext.empty();
+        }
+
+        List<String> emails = leads.stream()
+                .map(Lead::getEmail)
+                .map(this::normalizeBlankToNull)
+                .filter(value -> value != null)
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+
+        List<String> phones = leads.stream()
+                .map(Lead::getPhone)
+                .map(this::normalizeBlankToNull)
+                .filter(value -> value != null)
+                .distinct()
+                .toList();
+
+        Map<String, User> usersByEmail = userRepository.findByEmailIgnoreCaseIn(emails).stream()
+                .filter(user -> normalizeBlankToNull(user.getEmail()) != null)
+                .collect(Collectors.toMap(
+                        user -> user.getEmail().trim().toLowerCase(Locale.ROOT),
+                        user -> user,
+                        (left, right) -> left,
+                        HashMap::new
+                ));
+
+        Map<String, User> usersByPhone = userRepository.findByPhoneIn(phones).stream()
+                .filter(user -> normalizeBlankToNull(user.getPhone()) != null)
+                .collect(Collectors.toMap(
+                        user -> user.getPhone().trim(),
+                        user -> user,
+                        (left, right) -> left,
+                        HashMap::new
+                ));
+
+        List<UUID> leadIds = leads.stream().map(Lead::getId).toList();
+        Map<UUID, List<LeadInterest>> interestsByLeadId = leadInterestRepository.findByLeadIdInOrderByCreatedAtDesc(leadIds).stream()
+                .collect(Collectors.groupingBy(interest -> interest.getLead().getId()));
+
+        List<UUID> userIds = java.util.stream.Stream.concat(
+                        usersByEmail.values().stream(),
+                        usersByPhone.values().stream()
+                )
+                .map(User::getId)
+                .distinct()
+                .toList();
+
+        Map<UUID, List<Enrollment>> enrollmentsByUserId = userIds.isEmpty()
+                ? Map.of()
+                : enrollmentRepository.findByStudentIdIn(userIds).stream()
+                .sorted(Comparator.comparing(Enrollment::getCreatedAt))
+                .collect(Collectors.groupingBy(enrollment -> enrollment.getStudent().getId()));
+
+        List<UUID> enrollmentIds = enrollmentsByUserId.values().stream()
+                .flatMap(List::stream)
+                .map(Enrollment::getId)
+                .distinct()
+                .toList();
+
+        Map<UUID, List<Invoice>> invoicesByEnrollmentId = enrollmentIds.isEmpty()
+                ? Map.of()
+                : invoiceRepository.findByEnrollmentIdIn(enrollmentIds).stream()
+                .sorted(Comparator.comparing(Invoice::getCreatedAt))
+                .collect(Collectors.groupingBy(invoice -> invoice.getEnrollment().getId()));
+
+        return new LeadBatchContext(usersByEmail, usersByPhone, interestsByLeadId, enrollmentsByUserId, invoicesByEnrollmentId);
+    }
+
+    private Optional<User> findLinkedUser(Lead lead, LeadBatchContext batchContext) {
+        if (batchContext == null) {
+            return findLinkedUser(lead);
+        }
+
+        String email = normalizeBlankToNull(lead.getEmail());
+        if (email != null) {
+            User byEmail = batchContext.usersByEmail.get(email.toLowerCase(Locale.ROOT));
+            if (byEmail != null) {
+                return Optional.of(byEmail);
+            }
+        }
+
+        String phone = normalizeBlankToNull(lead.getPhone());
+        if (phone != null) {
+            User byPhone = batchContext.usersByPhone.get(phone);
+            if (byPhone != null) {
+                return Optional.of(byPhone);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private List<LeadInterest> resolveLeadInterests(Lead lead, LeadBatchContext batchContext) {
+        if (batchContext == null) {
+            return leadInterestRepository.findByLeadIdOrderByCreatedAtDesc(lead.getId());
+        }
+        return batchContext.interestsByLeadId.getOrDefault(lead.getId(), List.of());
+    }
+
+    private List<Enrollment> resolveEnrollments(UUID userId, LeadBatchContext batchContext) {
+        if (batchContext == null) {
+            return enrollmentRepository.findByStudentId(userId);
+        }
+        return batchContext.enrollmentsByUserId.getOrDefault(userId, List.of());
+    }
+
+    private List<Invoice> resolveInvoices(UUID enrollmentId, LeadBatchContext batchContext) {
+        if (batchContext == null) {
+            return invoiceRepository.findByEnrollmentId(enrollmentId);
+        }
+        return batchContext.invoicesByEnrollmentId.getOrDefault(enrollmentId, List.of());
     }
 
     private void applyLeadDetails(Lead lead, CreateLeadRequest request, String email, String phone) {
@@ -565,5 +694,17 @@ public class LeadService {
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private record LeadBatchContext(
+            Map<String, User> usersByEmail,
+            Map<String, User> usersByPhone,
+            Map<UUID, List<LeadInterest>> interestsByLeadId,
+            Map<UUID, List<Enrollment>> enrollmentsByUserId,
+            Map<UUID, List<Invoice>> invoicesByEnrollmentId
+    ) {
+        private static LeadBatchContext empty() {
+            return new LeadBatchContext(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+        }
     }
 }

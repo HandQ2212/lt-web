@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, LinearProgress, Paper, Chip, CircularProgress, Alert, Avatar, Divider, Button, useTheme, useMediaQuery, Dialog, DialogTitle, DialogContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Snackbar } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, LinearProgress, Paper, Chip, CircularProgress, Alert, Avatar, Divider, Button, Dialog, DialogTitle, DialogContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Snackbar, Stack } from '@mui/material';
 import {
   School as SchoolIcon,
   Event as EventIcon,
@@ -47,8 +47,6 @@ const formatSessionDateLabel = (date: Date) => {
 };
 
 export default function StudentDashboard() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state: RootState) => state.auth.user);
   const [dashboardData, setDashboardData] = useState<StudentDashboardState>({
     grades: [],
@@ -60,6 +58,7 @@ export default function StudentDashboard() {
   
   // States for session details
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionLoading, setSessionLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -79,12 +78,12 @@ export default function StudentDashboard() {
       if (!userId) return;
 
       const [enrollmentsResponse, submissionsResponse] = await Promise.all([
-        enrollmentApi.getByStudent(userId),
-        submissionApi.getMine()
+        enrollmentApi.getByStudent(userId).catch(() => ({ data: [] })),
+        submissionApi.getMine().catch(() => ({ data: [] }))
       ]);
 
-      const enrollments = Array.isArray(enrollmentsResponse.data) ? enrollmentsResponse.data : [];
-      const submissions = Array.isArray(submissionsResponse.data) ? submissionsResponse.data : [];
+      const enrollments = Array.isArray(enrollmentsResponse?.data) ? enrollmentsResponse.data : [];
+      const submissions = Array.isArray(submissionsResponse?.data) ? submissionsResponse.data : [];
 
       if (enrollments.length > 0) {
         const firstEnrollment = enrollments[0];
@@ -101,14 +100,15 @@ export default function StudentDashboard() {
 
         if (classId) {
           const [scheduleRes, assignmentsRes] = await Promise.all([
-            classApi.getSchedule(classId),
-            assignmentApi.getByClass(classId)
+            classApi.getSchedule(classId).catch(() => ({ data: [] })),
+            assignmentApi.getByClass(classId).catch(() => ({ data: [] }))
           ]);
 
-          const schedules = Array.isArray(scheduleRes.data) ? scheduleRes.data : [];
+          const schedules = Array.isArray(scheduleRes?.data) ? scheduleRes.data : [];
           const now = new Date();
 
-          const getNextDate = (dayOfWeek: string) => {
+          const getNextDate = (dayOfWeek?: string) => {
+            if (!dayOfWeek) return null;
             const daysMap: Record<string, number> = {
               'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6,
               'SUNDAY': 0, 'MONDAY': 1, 'TUESDAY': 2, 'WEDNESDAY': 3, 'THURSDAY': 4, 'FRIDAY': 5, 'SATURDAY': 6
@@ -125,7 +125,7 @@ export default function StudentDashboard() {
           };
 
           const upcomingSessions = schedules
-            .map((s: any) => ({ ...s, fullDate: getNextDate(s.dayOfWeek) }))
+            .map((s: any) => ({ ...s, fullDate: getNextDate(s?.dayOfWeek) }))
             .filter((s: any) => s.fullDate !== null)
             .sort((a: any, b: any) => a.fullDate.getTime() - b.fullDate.getTime());
 
@@ -139,22 +139,22 @@ export default function StudentDashboard() {
             };
           }
 
-          const allAssignments = Array.isArray(assignmentsRes.data) ? assignmentsRes.data : [];
+          const allAssignments = Array.isArray(assignmentsRes?.data) ? assignmentsRes.data : [];
           upcomingAssignments = allAssignments
-            .filter(a => new Date(a.dueDate) > now)
+            .filter(a => a?.dueDate && new Date(a.dueDate) > now)
             .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
             .slice(0, 3);
         }
 
-        const gradedSubmissions = submissions.filter(s => s.grade != null);
+        const gradedSubmissions = submissions.filter(s => s?.grade != null);
         const avgScore = gradedSubmissions.length > 0
-          ? gradedSubmissions.reduce((sum, s) => sum + s.grade, 0) / gradedSubmissions.length
+          ? gradedSubmissions.reduce((sum, s) => sum + Number(s.grade), 0) / gradedSubmissions.length
           : 0;
 
         setDashboardData({
           currentCourse: {
-            name: firstEnrollment.className,
-            progress: 65,
+            name: firstEnrollment.className || 'Lớp học của tôi',
+            progress: firstEnrollment.progress || 65,
             nextClass: nextClassInfo,
           },
           grades: submissions.slice(0, 4),
@@ -169,6 +169,14 @@ export default function StudentDashboard() {
           },
           enrollmentId: firstEnrollment.id,
           classId: classId
+        });
+      } else {
+        // Safe defaults when student has no enrollments
+        setDashboardData({
+          currentCourse: null,
+          grades: [],
+          upcomingAssignments: [],
+          averageScore: 0,
         });
       }
     } catch (err: any) {
@@ -185,12 +193,14 @@ export default function StudentDashboard() {
     try {
       setSessionLoading(true);
       const [classRes, attendanceRes] = await Promise.all([
-        classApi.getById(dashboardData.classId),
-        attendanceApi.getByEnrollment(dashboardData.enrollmentId)
+        classApi.getById(dashboardData.classId).catch(() => ({ data: null })),
+        attendanceApi.getByEnrollment(dashboardData.enrollmentId).catch(() => ({ data: [] }))
       ]);
       
-      const classData = classRes.data;
-      const attendanceList = Array.isArray(attendanceRes.data) ? attendanceRes.data : [];
+      const classData = classRes?.data;
+      if (!classData) return;
+
+      const attendanceList = Array.isArray(attendanceRes?.data) ? attendanceRes.data : [];
       
       const rows: any[] = [];
       const startDate = classData.startDate ? new Date(`${classData.startDate}T00:00:00`) : null;
@@ -198,6 +208,7 @@ export default function StudentDashboard() {
       
       if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
         classData.schedules?.forEach((schedule: any) => {
+          if (!schedule?.dayOfWeek) return;
           const targetDay = dayOfWeekIndexMap[schedule.dayOfWeek.toUpperCase()];
           if (targetDay === undefined) return;
           
@@ -257,7 +268,7 @@ export default function StudentDashboard() {
     }
   };
 
-  if (loading && !dashboardData.currentCourse) {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
         <CircularProgress />
@@ -268,47 +279,55 @@ export default function StudentDashboard() {
   const { currentCourse, upcomingAssignments, averageScore, lecturer } = dashboardData;
 
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: 4, width: '100%', maxWidth: 1240, mx: 'auto' }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={800} color="primary.main" gutterBottom>
           Bảng điều khiển
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Chào mừng trở lại, <strong>{user?.fullName}</strong>! Chúc bạn một ngày học tập hiệu quả.
+          Chào mừng trở lại, <strong>{user?.fullName || user?.name || 'Học viên'}</strong>! Chúc bạn một ngày học tập hiệu quả.
         </Typography>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+          gap: 3,
+          mb: 4,
+          alignItems: 'stretch',
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Card 
-            onClick={fetchSessions}
+            onClick={currentCourse ? fetchSessions : undefined}
             sx={{
               height: '100%',
+              minHeight: 224,
               borderRadius: 4,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              color: 'white',
-              cursor: 'pointer',
-              transition: 'transform 0.3s ease-in-out',
-              '&:hover': {
-                transform: 'scale(1.02)',
-              }
+              bgcolor: '#FFFFFF',
+              color: 'text.primary',
+              cursor: currentCourse ? 'pointer' : 'default',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              '&:hover': currentCourse ? {
+                transform: 'translate(-2px, -2px)',
+              } : {}
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 1.5 }}><SchoolIcon /></Avatar>
-                <Typography variant="h6" fontWeight={700}>Khóa học hiện tại</Typography>
+                <Avatar sx={{ bgcolor: 'rgba(139, 92, 246, 0.14)', color: 'primary.main', border: '2px solid #1E293B', mr: 1.5 }}><SchoolIcon /></Avatar>
+                <Typography variant="h6" fontWeight={800}>Khóa học hiện tại</Typography>
               </Box>
-              <Typography variant="h5" fontWeight={800} gutterBottom>
+              <Typography variant="h5" fontWeight={900} color="text.primary" sx={{ lineHeight: 1.2 }}>
                 {currentCourse?.name || 'Chưa tham gia lớp'}
               </Typography>
-              <Box sx={{ mt: 3 }}>
+              <Box sx={{ mt: 'auto', pt: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>Tiến độ học tập</Typography>
-                  <Typography variant="body2" fontWeight={700}>{currentCourse?.progress || 0}%</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 800 }}>Tiến độ học tập</Typography>
+                  <Typography variant="body2" fontWeight={900} color="primary.main">{currentCourse?.progress || 0}%</Typography>
                 </Box>
                 <LinearProgress
                   variant="determinate"
@@ -316,18 +335,19 @@ export default function StudentDashboard() {
                   sx={{
                     height: 8,
                     borderRadius: 4,
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    '& .MuiLinearProgress-bar': { bgcolor: 'white' }
+                    bgcolor: 'rgba(30, 41, 59, 0.10)',
+                    '& .MuiLinearProgress-bar': { bgcolor: 'primary.main' }
                   }}
                 />
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
+        <Box sx={{ minWidth: 0 }}>
           <Card sx={{
             height: '100%',
+            minHeight: 224,
             borderRadius: 4,
             boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
             border: '1px solid rgba(0,0,0,0.05)'
@@ -340,21 +360,22 @@ export default function StudentDashboard() {
                 </Box>
               </Box>
               <Typography variant="h5" fontWeight={800} color="text.primary">
-                {currentCourse?.nextClass?.date}
+                {currentCourse?.nextClass?.date || 'Chưa có lịch'}
               </Typography>
               <Typography variant="h6" color="success.main" fontWeight={700}>
-                {currentCourse?.nextClass?.time}
+                {currentCourse?.nextClass?.time || '-'}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Phòng học: <strong>{currentCourse?.nextClass?.room}</strong>
+                Phòng học: <strong>{currentCourse?.nextClass?.room || '-'}</strong>
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
+        <Box sx={{ minWidth: 0 }}>
           <Card sx={{
             height: '100%',
+            minHeight: 224,
             borderRadius: 4,
             boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
             border: '1px solid rgba(0,0,0,0.05)'
@@ -365,17 +386,24 @@ export default function StudentDashboard() {
                 <Typography variant="h6" fontWeight={700}>Điểm trung bình</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
-                <Typography variant="h2" fontWeight={900} color="warning.main">{averageScore}</Typography>
+                <Typography variant="h2" fontWeight={900} color="warning.main">{averageScore || 0}</Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ ml: 1 }}>/ 10</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">Kết quả dựa trên các bài tập đã nộp</Typography>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} lg={4}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(280px, 0.85fr) minmax(0, 1.65fr)' },
+          gap: 3,
+          alignItems: 'stretch',
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Paper sx={{ p: 3, borderRadius: 4, height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
             <Typography variant="h6" gutterBottom fontWeight={800} display="flex" alignItems="center">
               <PersonIcon sx={{ mr: 1, color: 'primary.main' }} /> Giảng viên của tôi
@@ -386,8 +414,8 @@ export default function StudentDashboard() {
                 src={lecturer?.avatar}
                 sx={{ width: 100, height: 100, mx: 'auto', mb: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '4px solid white' }}
               />
-              <Typography variant="h6" fontWeight={800}>{lecturer?.name}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{lecturer?.role}</Typography>
+              <Typography variant="h6" fontWeight={800}>{lecturer?.name || 'Chưa phân công'}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{lecturer?.role || 'Giảng viên'}</Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
                 {lecturer?.email && (
@@ -414,26 +442,28 @@ export default function StudentDashboard() {
                 <Button
                   variant="outlined"
                   fullWidth
+                  disabled={!lecturer?.name || lecturer?.name === 'Chưa phân công'}
                   sx={{ borderRadius: 2, py: 1 }}
-                  component={RouterLink}
-                  to="/profile"
+                  onClick={() => setTeacherDialogOpen(true)}
                 >
                   Xem hồ sơ giảng viên
                 </Button>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  sx={{ borderRadius: 2, py: 1 }}
-                  onClick={() => window.open(`https://zalo.me/${lecturer?.phone}`, '_blank')}
-                >
-                  Nhắn tin trao đổi
-                </Button>
+                {lecturer?.phone && (
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    sx={{ borderRadius: 2, py: 1 }}
+                    onClick={() => window.open(`https://zalo.me/${lecturer.phone}`, '_blank')}
+                  >
+                    Nhắn tin trao đổi
+                  </Button>
+                )}
               </Box>
             </Box>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} lg={8}>
+        <Box sx={{ minWidth: 0 }}>
           <Paper sx={{ p: 3, borderRadius: 4, height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" fontWeight={800} display="flex" alignItems="center">
@@ -467,7 +497,7 @@ export default function StudentDashboard() {
                     }}>
                       <Box>
                         <Typography variant="subtitle1" fontWeight={800} color="primary.dark">
-                          {a.title}
+                          {a?.title || 'Bài tập'}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                           <Typography variant="caption" sx={{
@@ -475,7 +505,7 @@ export default function StudentDashboard() {
                             color: 'error.contrastText',
                             px: 1, py: 0.2, borderRadius: 1, fontWeight: 700, mr: 1
                           }}>
-                            Hạn nộp: {new Date(a.dueDate).toLocaleDateString('vi-VN')}
+                            Hạn nộp: {a?.dueDate ? new Date(a.dueDate).toLocaleDateString('vi-VN') : '-'}
                           </Typography>
                         </Box>
                       </Box>
@@ -517,14 +547,14 @@ export default function StudentDashboard() {
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
                   }}>
                     <Box>
-                      <Typography variant="subtitle2" fontWeight={700}>{g.assignmentTitle}</Typography>
+                      <Typography variant="subtitle2" fontWeight={700}>{g?.assignmentTitle || 'Bài làm'}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Đã nộp ngày: {new Date(g.submissionDate).toLocaleDateString('vi-VN')}
+                        Đã nộp ngày: {g?.submissionDate ? new Date(g.submissionDate).toLocaleDateString('vi-VN') : '-'}
                       </Typography>
                     </Box>
                     <Chip
-                      label={g.grade != null ? `${g.grade} / 10` : 'Đang chấm'}
-                      color={g.grade != null ? (g.grade >= 8 ? 'success' : 'warning') : 'default'}
+                      label={g?.grade != null ? `${g.grade} / 10` : 'Đang chấm'}
+                      color={g?.grade != null ? (g.grade >= 8 ? 'success' : 'warning') : 'default'}
                       size="small"
                       sx={{ fontWeight: 800, borderRadius: 1.5 }}
                     />
@@ -537,9 +567,35 @@ export default function StudentDashboard() {
               </Box>
             )}
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
       
+      <Dialog
+        open={teacherDialogOpen}
+        onClose={() => setTeacherDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 4 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 900 }}>Hồ sơ giảng viên</DialogTitle>
+        <DialogContent dividers>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
+            <Avatar src={lecturer?.avatar} sx={{ width: 96, height: 96, boxShadow: 2 }} />
+            <Box sx={{ width: '100%' }}>
+              <Typography variant="h6" fontWeight={900}>{lecturer?.name || 'Chưa phân công'}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{lecturer?.role || 'Giảng viên'}</Typography>
+              <Stack spacing={1}>
+                <Typography variant="body2"><strong>Email:</strong> {lecturer?.email || 'Chưa cập nhật'}</Typography>
+                <Typography variant="body2"><strong>Số điện thoại:</strong> {lecturer?.phone || 'Chưa cập nhật'}</Typography>
+              </Stack>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button variant="contained" onClick={() => setTeacherDialogOpen(false)} sx={{ borderRadius: 2 }}>Đóng</Button>
+        </Box>
+      </Dialog>
+
       {/* Session Details Dialog */}
       <Dialog 
         open={sessionDialogOpen} 
@@ -582,7 +638,7 @@ export default function StudentDashboard() {
                     return (
                       <TableRow key={session.key} hover>
                         <TableCell>{index + 1}</TableCell>
-                        <TableCell fontWeight={700}>{formatSessionDateLabel(session.date)}</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>{formatSessionDateLabel(session.date)}</TableCell>
                         <TableCell>{session.time}</TableCell>
                         <TableCell>{session.room}</TableCell>
                         <TableCell>{session.teacher}</TableCell>

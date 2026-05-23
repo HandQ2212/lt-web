@@ -5,7 +5,6 @@ import {
   Button,
   Checkbox,
   Container,
-  Grid,
   ListItemText,
   MenuItem,
   Paper,
@@ -61,53 +60,62 @@ export default function ContactPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography variant="h3" gutterBottom fontWeight={700} align="center">
+      <Typography variant="h3" gutterBottom fontWeight={800} align="center">
         Liên hệ với chúng tôi
       </Typography>
-      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6 }}>
+      <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, fontWeight: 600 }}>
         Chúng tôi luôn sẵn sàng hỗ trợ bạn
       </Typography>
 
-      <Grid container spacing={4}>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
-            <LocationIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom fontWeight={600}>Địa chỉ</Typography>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+          gap: 4,
+          alignItems: 'stretch',
+          mb: 4,
+        }}
+      >
+        <Box>
+          <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
+            <LocationIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#FFF7DF', border: '2px solid #1E293B', borderRadius: '50%' }} />
+            <Typography variant="h6" gutterBottom fontWeight={800}>Địa chỉ</Typography>
             <Typography variant="body2" color="text.secondary">
               123 Đường ABC, Quận 1
               <br />
               TP. Hồ Chí Minh
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
-            <PhoneIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom fontWeight={600}>Điện thoại</Typography>
+        <Box>
+          <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
+            <PhoneIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#FCE7F3', border: '2px solid #1E293B', borderRadius: '50%' }} />
+            <Typography variant="h6" gutterBottom fontWeight={800}>Điện thoại</Typography>
             <Typography variant="body2" color="text.secondary">
               Hotline: (028) 1234 5678
               <br />
               Mobile: 0901 234 567
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
-            <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom fontWeight={600}>Email</Typography>
+        <Box>
+          <Paper sx={{ p: 3, textAlign: 'center', height: '100%', border: '2px solid #1E293B', boxShadow: '5px 5px 0 #1E293B', borderRadius: 4 }}>
+            <EmailIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2, p: 1, bgcolor: '#D1FAE5', border: '2px solid #1E293B', borderRadius: '50%' }} />
+            <Typography variant="h6" gutterBottom fontWeight={800}>Email</Typography>
             <Typography variant="body2" color="text.secondary">
               info@elcenglish.edu.vn
               <br />
               support@elcenglish.edu.vn
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
+      </Box>
 
-        <Grid item xs={12}>
-          <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 4 }}>
-            <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mb: 4 }}>
+      <Box sx={{ maxWidth: 980, mx: 'auto' }}>
+          <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 5, border: '2px solid #1E293B', boxShadow: '7px 7px 0 #1E293B' }}>
+            <Typography variant="h5" gutterBottom fontWeight={800} align="center" sx={{ mb: 4 }}>
               Gửi tin nhắn cho chúng tôi
             </Typography>
             <form onSubmit={handleSubmit}>
@@ -186,12 +194,12 @@ export default function ContactPage() {
                   onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))} 
                 />
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
                   <Button 
                     type="submit" 
                     variant="contained" 
                     size="large" 
-                    sx={{ px: 6, py: 1.5, borderRadius: 2, fontWeight: 600 }}
+                    sx={{ px: 6, py: 1.5, borderRadius: 1, fontWeight: 800 }}
                     disabled={submitting}
                   >
                     {submitting ? 'Đang gửi...' : 'Gửi tin nhắn'}
@@ -200,8 +208,7 @@ export default function ContactPage() {
               </Box>
             </form>
           </Paper>
-        </Grid>
-      </Grid>
+      </Box>
 
       <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}>
         <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>

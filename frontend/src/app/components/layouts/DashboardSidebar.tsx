@@ -16,6 +16,7 @@ import {
   Notifications as NotificationsIcon,
   MenuBook as MenuBookIcon,
   AccountBalance as AccountBalanceIcon,
+  Dashboard as DashboardIcon,
   Home as HomeIcon,
   Explore as ExploreIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -32,19 +33,19 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { text: 'Trang chủ', icon: <HomeIcon />, path: '/', roles: ['STUDENT', 'LEAD', 'TEACHER', 'MANAGER', 'ACCOUNTANT'] },
   { text: 'Khám phá khóa học', icon: <ExploreIcon />, path: '/courses', roles: ['STUDENT', 'LEAD'] },
-  
+
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard', roles: ['MANAGER'] },
   { text: 'Người dùng', icon: <PeopleIcon />, path: '/admin/users', roles: ['MANAGER'] },
   { text: 'Lớp học', icon: <ClassIcon />, path: '/admin/classes', roles: ['MANAGER'] },
   { text: 'Giảng viên', icon: <SchoolIcon />, path: '/admin/teachers', roles: ['MANAGER'] },
   { text: 'Kế toán', icon: <AccountBalanceIcon />, path: '/admin/accountants', roles: ['MANAGER'] },
   { text: 'Học viên', icon: <GroupsIcon />, path: '/admin/students', roles: ['MANAGER'] },
   { text: 'Quản lý Leads (CRM)', icon: <GroupsIcon />, path: '/admin/leads', roles: ['MANAGER', 'ACCOUNTANT'] },
-  { text: 'Thông báo', icon: <NotificationsIcon />, path: '/admin/notifications', roles: ['MANAGER'] },
+  { text: 'Thông báo', icon: <NotificationsIcon />, path: '/notifications', roles: ['MANAGER', 'TEACHER', 'STUDENT', 'ACCOUNTANT', 'LEAD'] },
   { text: 'Chương trình học', icon: <MenuBookIcon />, path: '/admin/programs', roles: ['MANAGER'] },
 
   { text: 'Lịch giảng dạy', icon: <CalendarTodayIcon />, path: '/teacher/schedule', roles: ['TEACHER'] },
   { text: 'Lớp phụ trách', icon: <ClassIcon />, path: '/teacher/classes', roles: ['TEACHER'] },
-  { text: 'Điểm danh', icon: <AssignmentIcon />, path: '/teacher/attendance', roles: ['TEACHER'] },
   { text: 'Bài tập giao', icon: <AssignmentIcon />, path: '/teacher/assignments', roles: ['TEACHER'] },
 
   { text: 'Khóa học của tôi', icon: <SchoolIcon />, path: '/student/courses', roles: ['STUDENT'] },
@@ -77,9 +78,7 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
   const theme = useTheme();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const filteredMenuItems = menuItems.filter(item =>
-    user && item.roles.includes(user.role)
-  );
+  const filteredMenuItems = menuItems.filter((item) => user && item.roles.includes(user.role));
 
   const isActive = (item: MenuItem) => {
     return location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -87,28 +86,37 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
 
   const getRoleLabel = (role?: string) => {
     switch (role) {
-      case 'MANAGER': return 'Quản trị viên';
-      case 'TEACHER': return 'Giảng viên';
-      case 'STUDENT': return 'Học viên';
-      case 'ACCOUNTANT': return 'Kế toán';
-      case 'LEAD': return 'Khách hàng';
-      default: return 'Thành viên';
+      case 'MANAGER':
+        return 'Quản trị viên';
+      case 'TEACHER':
+        return 'Giảng viên';
+      case 'STUDENT':
+        return 'Học viên';
+      case 'ACCOUNTANT':
+        return 'Kế toán';
+      case 'LEAD':
+        return 'Khách hàng';
+      default:
+        return 'Thành viên';
     }
   };
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Box sx={{ 
-        p: open ? 2.5 : 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        alignItems: open ? 'flex-start' : 'center',
-        justifyContent: 'center',
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        color: 'white',
-        minHeight: 100,
-        transition: 'all 0.3s ease'
-      }}>
+      <Box
+        sx={{
+          p: open ? 2.5 : 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: open ? 'flex-start' : 'center',
+          justifyContent: 'center',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+          color: 'white',
+          borderBottom: '2px solid #1E293B',
+          minHeight: 100,
+          transition: 'all 0.3s ease',
+        }}
+      >
         {open ? (
           <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
@@ -126,17 +134,19 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
             )}
           </Box>
         ) : (
-          <Typography variant="h6" fontWeight={900} color="inherit">ELC</Typography>
+          <Typography variant="h6" fontWeight={900} color="inherit">
+            ELC
+          </Typography>
         )}
       </Box>
-      
+
       <Divider />
-      
+
       <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 2, overflowX: 'hidden' }}>
         <List sx={{ px: open ? 1.5 : 1 }}>
           {filteredMenuItems.map((item) => (
             <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
-              <Tooltip title={!open ? item.text : ""} placement="right">
+              <Tooltip title={!open ? item.text : ''} placement="right">
                 <ListItemButton
                   selected={isActive(item)}
                   onClick={() => {
@@ -144,41 +154,48 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
                     if (isMobile) onClose();
                   }}
                   sx={{
-                    borderRadius: 2,
+                    cursor: 'pointer',
+                    pointerEvents: 'auto',
+                    borderRadius: 1,
                     py: 1.5,
                     minHeight: 48,
                     justifyContent: open ? 'initial' : 'center',
                     px: open ? 2.5 : 2.5,
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    border: '2px solid transparent',
+                    transition: 'all 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
                     '&.Mui-selected': {
                       bgcolor: 'primary.main',
                       color: 'white',
-                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.25)',
+                      borderColor: '#1E293B',
+                      boxShadow: '4px 4px 0 #1E293B',
                       '&:hover': { bgcolor: 'primary.main' },
-                      '& .MuiListItemIcon-root': { color: 'white' }
+                      '& .MuiListItemIcon-root': { color: 'white' },
                     },
                     '&:hover': {
-                      bgcolor: 'rgba(25, 118, 210, 0.08)',
-                    }
+                      bgcolor: 'rgba(251, 191, 36, 0.35)',
+                      borderColor: '#1E293B',
+                    },
                   }}
                 >
-                  <ListItemIcon sx={{ 
-                    minWidth: 0,
-                    mr: open ? 2 : 'auto',
-                    justifyContent: 'center',
-                    color: isActive(item) ? 'white' : 'text.secondary',
-                    transition: 'color 0.2s'
-                  }}>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: open ? 2 : 'auto',
+                      justifyContent: 'center',
+                      color: isActive(item) ? 'white' : 'text.secondary',
+                      transition: 'color 0.2s',
+                    }}
+                  >
                     {item.icon}
                   </ListItemIcon>
                   {open && (
-                    <ListItemText 
-                      primary={item.text} 
-                      primaryTypographyProps={{ 
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{
                         fontWeight: isActive(item) ? 800 : 600,
                         fontSize: '0.875rem',
-                        noWrap: true
-                      }} 
+                        noWrap: true,
+                      }}
                     />
                   )}
                 </ListItemButton>
@@ -188,15 +205,16 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
         </List>
       </Box>
 
-      {/* Toggle Button for Desktop */}
       {!isMobile && (
         <Box sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
-          <IconButton 
+          <IconButton
             onClick={onToggle}
-            sx={{ 
-              bgcolor: 'rgba(0,0,0,0.04)', 
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' },
-              borderRadius: 2
+            sx={{
+              bgcolor: '#FFFFFF',
+              border: '2px solid #1E293B',
+              boxShadow: '3px 3px 0 #1E293B',
+              '&:hover': { bgcolor: '#FBBF24' },
+              borderRadius: 3,
             }}
           >
             {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
@@ -204,7 +222,7 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
         </Box>
       )}
 
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)', textAlign: 'center' }}>
+      <Box sx={{ p: 2, bgcolor: '#FFF7DF', borderTop: '2px solid #1E293B', textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px', fontWeight: 600 }}>
           {open ? 'VERSION 1.4.0' : 'V1.4'}
         </Typography>
@@ -218,11 +236,13 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
       open={open}
       onClose={onClose}
       sx={{
+        zIndex: theme.zIndex.drawer + 2,
         width: open ? drawerWidth : CLOSED_DRAWER_WIDTH,
         flexShrink: 0,
         whiteSpace: 'nowrap',
         boxSizing: 'border-box',
         '& .MuiDrawer-paper': {
+          zIndex: theme.zIndex.drawer + 2,
           width: open ? drawerWidth : CLOSED_DRAWER_WIDTH,
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
@@ -230,7 +250,12 @@ export default function DashboardSidebar({ open, onClose, onToggle, drawerWidth,
           }),
           overflowX: 'hidden',
           borderRight: '1px solid rgba(0,0,0,0.08)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.03)',
+          borderRightColor: '#1E293B',
+          borderRightWidth: 2,
+          borderRadius: '0 !important',
+          bgcolor: '#FFFDF5',
+          boxShadow: '4px 0 0 #1E293B',
+          pointerEvents: 'auto',
         },
       }}
     >

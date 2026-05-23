@@ -7,7 +7,6 @@ import {
   Chip,
   CircularProgress,
   Divider,
-  Grid,
   Paper,
   Stack,
   Tab,
@@ -357,7 +356,7 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <Box sx={{ display: 'grid', gap: 2 }}>
+      <Box sx={{ display: 'grid', gap: 2, width: '100%', maxWidth: 1560, mx: 'auto' }}>
         <Box>
           <Typography variant="h4" gutterBottom fontWeight={800} color="primary.main">
             Dashboard Quản lý
@@ -374,14 +373,13 @@ export default function AdminDashboard() {
   }
 
   return (
-    <Box sx={{ display: 'grid', gap: 3 }}>
+    <Box sx={{ display: 'grid', gap: 3, width: '100%', maxWidth: 1560, mx: 'auto' }}>
       <Paper
         sx={{
           p: { xs: 3, md: 4 },
           borderRadius: 4,
-          color: 'white',
-          background:
-            'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(29, 78, 216, 0.92) 55%, rgba(15, 118, 110, 0.92) 100%)',
+          color: '#1E293B',
+          bgcolor: '#FFFFFF',
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -392,7 +390,7 @@ export default function AdminDashboard() {
             position: 'absolute',
             inset: 0,
             background:
-              'radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 24%), radial-gradient(circle at bottom left, rgba(255,255,255,0.12), transparent 18%)',
+              'radial-gradient(circle at 85% 20%, rgba(244,114,182,0.18), transparent 18rem), radial-gradient(circle at 14% 28%, rgba(251,191,36,0.24), transparent 14rem)',
           }}
         />
         <Box sx={{ position: 'relative', zIndex: 1 }}>
@@ -403,8 +401,9 @@ export default function AdminDashboard() {
                 size="small"
                 sx={{
                   mb: 2,
-                  bgcolor: 'rgba(255,255,255,0.14)',
-                  color: 'white',
+                  bgcolor: '#FFF7DF',
+                  color: '#1E293B',
+                  border: '2px solid #1E293B',
                   fontWeight: 800,
                   letterSpacing: 0.4,
                 }}
@@ -412,12 +411,26 @@ export default function AdminDashboard() {
               <Typography variant="h4" fontWeight={900} sx={{ mb: 1.5, lineHeight: 1.1 }}>
                 Dashboard điều hành trung tâm
               </Typography>
-              <Typography variant="body1" sx={{ maxWidth: 680, color: 'rgba(255,255,255,0.82)', lineHeight: 1.8 }}>
+              <Typography variant="body1" sx={{ maxWidth: 680, color: '#475569', lineHeight: 1.8, fontWeight: 600 }}>
                 Theo dõi học viên, lớp học, doanh thu và hiệu quả vận hành theo thời gian thực. Giao diện này dùng dữ liệu thật từ backend thay vì số liệu mô phỏng.
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent={{ xs: 'flex-start', lg: 'flex-end' }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              flexWrap="wrap"
+              useFlexGap
+              justifyContent={{ xs: 'flex-start', lg: 'flex-end' }}
+              sx={{
+                '& .MuiChip-root': {
+                  bgcolor: '#FFF7DF !important',
+                  color: '#1E293B !important',
+                  border: '2px solid #1E293B',
+                  fontWeight: 800,
+                },
+              }}
+            >
               <Chip label={loading ? 'Đang tải học viên...' : `${dashboardData.summary.totalStudents} học viên`} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: 'white', fontWeight: 700 }} />
               <Chip label={loading ? 'Đang tải lớp...' : `${dashboardData.summary.totalClasses} lớp`} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: 'white', fontWeight: 700 }} />
               <Chip label={loading ? 'Đang tải giảng viên...' : `${dashboardData.summary.totalTeachers} giảng viên`} sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: 'white', fontWeight: 700 }} />
@@ -425,35 +438,47 @@ export default function AdminDashboard() {
           </Stack>
 
           {statusMessage && (
-            <Alert severity="warning" sx={{ mt: 3, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.12)', color: 'white', '& .MuiAlert-icon': { color: 'white' } }}>
+            <Alert severity="warning" sx={{ mt: 3, borderRadius: 3, bgcolor: '#FFF7DF', color: '#1E293B', '& .MuiAlert-icon': { color: '#D97706' } }}>
               {statusMessage}
             </Alert>
           )}
         </Box>
       </Paper>
 
-      <Grid container spacing={2.5}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: 'repeat(3, minmax(0, 1fr))',
+            xl: 'repeat(6, minmax(0, 1fr))',
+          },
+          gap: 2.5,
+          alignItems: 'stretch',
+        }}
+      >
         {summaryCards.map((card) => (
-          <Grid key={card.key} item xs={12} sm={6} lg={4}>
+          <Box key={card.key}>
             <Card
               sx={{
                 height: '100%',
                 position: 'relative',
                 overflow: 'hidden',
-                background: card.gradient,
-                color: 'white',
+                bgcolor: '#FFFFFF',
+                color: '#1E293B',
               }}
             >
               <CardContent sx={{ position: 'relative', zIndex: 1, p: 3 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
                   <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.85, fontWeight: 700, mb: 0.75 }}>
+                    <Typography variant="body2" sx={{ color: '#475569', fontWeight: 800, mb: 0.75 }}>
                       {card.label}
                     </Typography>
                     <Typography variant="h4" fontWeight={900} sx={{ lineHeight: 1.05 }}>
                       {loading ? '...' : card.value}
                     </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
                       {card.subtitle}
                     </Typography>
                   </Box>
@@ -464,8 +489,9 @@ export default function AdminDashboard() {
                       borderRadius: 3,
                       display: 'grid',
                       placeItems: 'center',
-                      bgcolor: 'rgba(255,255,255,0.16)',
+                      bgcolor: '#FFF7DF',
                       backdropFilter: 'blur(10px)',
+                      color: 'primary.main',
                     }}
                   >
                     {card.icon}
@@ -473,20 +499,24 @@ export default function AdminDashboard() {
                 </Stack>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} lg={8}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(12, minmax(0, 1fr))' },
+          gap: 3,
+          alignItems: 'stretch',
+        }}
+      >
+        <Box sx={{ gridColumn: { xs: '1 / -1', lg: 'span 6' } }}>
           <Paper sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 4, height: '100%' }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
               <Box>
                 <Typography variant="h6" fontWeight={900}>
                   Doanh thu theo tháng
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Dữ liệu lấy từ báo cáo tài chính backend, không còn dùng số cứng trong giao diện.
                 </Typography>
               </Box>
               <Chip
@@ -526,9 +556,9 @@ export default function AdminDashboard() {
               </Alert>
             )}
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} lg={4}>
+        <Box sx={{ gridColumn: { xs: '1 / -1', md: 'auto', lg: 'span 3' } }}>
           <Paper sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 4, height: '100%' }}>
             <Stack spacing={2}>
               <Box>
@@ -564,9 +594,9 @@ export default function AdminDashboard() {
               </Stack>
             </Stack>
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} lg={7}>
+        <Box sx={{ gridColumn: { xs: '1 / -1', md: 'auto', lg: 'span 3' } }}>
           <Paper sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 4, height: '100%' }}>
             <Typography variant="h6" fontWeight={900} sx={{ mb: 0.5 }}>
               Phân phối học lực
@@ -595,9 +625,9 @@ export default function AdminDashboard() {
               </Alert>
             )}
           </Paper>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} lg={5}>
+        <Box sx={{ gridColumn: '1 / -1' }}>
           <Paper sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 4, height: '100%' }}>
             <Typography variant="h6" fontWeight={900} sx={{ mb: 0.5 }}>
               Chỉ số vận hành
@@ -647,8 +677,8 @@ export default function AdminDashboard() {
               </Alert>
             </Stack>
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
         <Tabs

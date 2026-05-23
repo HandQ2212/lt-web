@@ -30,7 +30,7 @@ public class Level extends BaseEntity {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String code;
 
     @Column(nullable = false)

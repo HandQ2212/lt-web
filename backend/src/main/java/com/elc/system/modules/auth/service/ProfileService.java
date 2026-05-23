@@ -45,7 +45,8 @@ public class ProfileService {
         if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
         if (request.getGender() != null) user.setGender(request.getGender());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
-        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+        // Bỏ cập nhật ảnh đi vì chưa xử lý upload
+        // if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
 
         userRepository.save(user);
         log.info("Profile updated for user: {}", user.getEmail());

@@ -15,4 +15,6 @@ import java.util.UUID;
 public interface AnnouncementRepository extends JpaRepository<Announcement, UUID> {
     @Query("SELECT a FROM Announcement a WHERE a.active = true AND (a.expiresAt IS NULL OR a.expiresAt > :now)")
     Page<Announcement> findActiveAnnouncements(@Param("now") ZonedDateTime now, Pageable pageable);
+
+    Page<Announcement> findByCreatedByIdOrderByCreatedAtDesc(UUID createdById, Pageable pageable);
 }

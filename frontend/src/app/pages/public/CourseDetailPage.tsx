@@ -56,7 +56,10 @@ export default function CourseDetailPage() {
       setCourse(courseData);
       // Filter classes for this course
       const upcoming = (Array.isArray(classData) ? classData : classData?.content || [])
-        .filter((c: any) => c.courseId === id && (c.status === 'ACCEPTING' || c.status === 'UPCOMING'));
+        .filter((c: any) => {
+          const sameCourse = c.courseId === id || c.course?.id === id || c.courseName === courseData.name;
+          return sameCourse && (c.status === 'ACCEPTING' || c.status === 'UPCOMING');
+        });
       setClasses(upcoming);
     } catch (error) {
       console.error('Failed to fetch course data', error);
@@ -100,7 +103,12 @@ export default function CourseDetailPage() {
     </Box>
   );
 
-  if (!course) return <Container sx={{ py: 10 }}><Alert severity="error">Khóa học không tồn tại</Alert></Container>;
+  if (!course) return <Container sx={{ py: 10 }}><Alert severity="error">Vui lòng đăng ký để xem chi tiết khóa học</Alert></Container>;
+
+  const primaryLevel = Array.isArray(course.levels) ? course.levels[0] : null;
+  const displayPrice = Number(primaryLevel?.basePrice || course.price || 0);
+  const displayLevel = primaryLevel?.name || primaryLevel?.code || course.level || 'Chưa phân cấp';
+  const displayDuration = primaryLevel?.durationWeeks ? `${primaryLevel.durationWeeks} tuần` : 'Theo lộ trình';
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -110,7 +118,15 @@ export default function CourseDetailPage() {
             component="img"
             src={course.imageUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800'}
             alt={course.name}
-            sx={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 4, mb: 3, boxShadow: 3 }}
+            sx={{
+              width: '100%',
+              height: 400,
+              objectFit: 'cover',
+              borderRadius: '40px 40px 40px 8px',
+              mb: 3,
+              border: '2px solid #1E293B',
+              boxShadow: '7px 7px 0 #1E293B',
+            }}
           />
 
           <Typography variant="h3" gutterBottom fontWeight={800} color="primary">
@@ -118,18 +134,18 @@ export default function CourseDetailPage() {
           </Typography>
 
           <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
-            <Chip label={course.level} color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
-            <Chip label="3 tháng" icon={<AccessTimeIcon />} variant="outlined" />
+            <Chip label={displayLevel} color="primary" variant="outlined" sx={{ fontWeight: 800, bgcolor: '#FFFFFF' }} />
+            <Chip label={displayDuration} icon={<AccessTimeIcon />} variant="outlined" />
           </Box>
 
-          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom fontWeight={800} sx={{ mt: 4 }}>
             Giới thiệu khóa học
           </Typography>
           <Typography variant="body1" paragraph color="text.secondary" sx={{ lineHeight: 1.8 }}>
             {course.description || 'Khóa học chất lượng cao tại ELC System, giúp bạn làm chủ kiến thức và kỹ năng trong thời gian ngắn nhất.'}
           </Typography>
 
-          <Typography variant="h5" gutterBottom fontWeight={700} sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom fontWeight={800} sx={{ mt: 4 }}>
             Lớp học sắp khai giảng
           </Typography>
           {classes.length === 0 ? (
@@ -138,9 +154,9 @@ export default function CourseDetailPage() {
             <Grid container spacing={2}>
               {classes.map((cls) => (
                 <Grid item xs={12} md={6} key={cls.id}>
-                  <Card sx={{ borderRadius: 3, border: '1px solid rgba(0,0,0,0.05)', height: '100%' }}>
+                  <Card sx={{ borderRadius: 4, border: '2px solid #1E293B', boxShadow: '4px 4px 0 #1E293B', height: '100%' }}>
                     <CardContent>
-                      <Typography variant="h6" fontWeight={700} color="primary">{cls.name}</Typography>
+                      <Typography variant="h6" fontWeight={800} color="primary">{cls.name}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                         <AccessTimeIcon sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
                         {cls.startDate}
@@ -152,7 +168,7 @@ export default function CourseDetailPage() {
                         startIcon={<FavoriteIcon />}
                         onClick={() => void handleInterest(cls.id)}
                         disabled={actionLoading}
-                        sx={{ borderRadius: 2 }}
+                        sx={{ borderRadius: 1 }}
                       >
                         Quan tâm lớp này
                       </Button>
@@ -165,9 +181,20 @@ export default function CourseDetailPage() {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 4, position: 'sticky', top: 100, borderRadius: 4, boxShadow: 4, bgcolor: 'primary.main', color: 'white' }}>
+          <Paper
+            sx={{
+              p: 4,
+              position: 'sticky',
+              top: 100,
+              borderRadius: 5,
+              border: '2px solid #1E293B',
+              boxShadow: '7px 7px 0 #1E293B',
+              bgcolor: 'primary.main',
+              color: 'white',
+            }}
+          >
             <Typography variant="h4" fontWeight={800} gutterBottom>
-              {Number(course.price || 0).toLocaleString('vi-VN')}đ
+              {displayPrice.toLocaleString('vi-VN')}đ
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8, mb: 3 }}>
               Học phí trọn gói, bao gồm giáo trình và lệ phí thi thử.
@@ -178,7 +205,7 @@ export default function CourseDetailPage() {
             <Box sx={{ mb: 4 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <AccessTimeIcon sx={{ mr: 2 }} />
-                <Typography variant="body1">Thời lượng: 3 tháng</Typography>
+                <Typography variant="body1">Thời lượng: {displayDuration}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <PeopleIcon sx={{ mr: 2 }} />
@@ -190,14 +217,13 @@ export default function CourseDetailPage() {
               variant="contained" 
               fullWidth 
               size="large" 
-              bgcolor="white"
               sx={{ 
                 bgcolor: 'white', 
                 color: 'primary.main', 
-                fontWeight: 700,
+                fontWeight: 800,
                 py: 1.5,
-                borderRadius: 2,
-                '&:hover': { bgcolor: 'grey.100' }
+                borderRadius: 1,
+                '&:hover': { bgcolor: '#FBBF24', color: '#1E293B' }
               }}
               onClick={() => void handleInterest()}
               disabled={actionLoading}
